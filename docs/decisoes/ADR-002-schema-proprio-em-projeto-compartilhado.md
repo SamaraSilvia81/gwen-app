@@ -62,7 +62,7 @@ O padrão vale para os próximos apps: **um schema por app, um projeto por famí
 - **Configurações de Auth são do projeto.** Desligar "Confirm email" vale para todos os apps.
 - **Passo manual extra:** o schema precisa estar em *Project Settings > Data API > Exposed schemas*. Sem isso a API recusa as chamadas.
 - **Espaço dividido:** o limite de banco do projeto é somado entre os apps. Para o volume de apps pessoais, não é problema.
-- O schema é configurável (`VITE_SUPABASE_SCHEMA`), então a G.W.E.N. pode ir para um projeto próprio sem mudar código.
+- O schema é configurável (campo Schema da conexão, em Configurações), então a G.W.E.N. pode ir para um projeto próprio sem mudar código.
 - ⚠️ Num projeto compartilhado, `supabase db reset` apaga o banco de todos os apps. Migrações devem ser rodadas pelo SQL Editor ou com cuidado no CLI.
 
 ### $ revisitar quando

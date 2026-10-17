@@ -69,7 +69,7 @@ flowchart LR
 
 ### $ consequências
 
-- **Distribuição destravada:** o instalador não precisa de `.env`. Sem as variáveis do Supabase, a importação da nuvem simplesmente não aparece.
+- **Distribuição destravada:** o instalador não precisa de `.env`. Sem a conexão do Supabase (colada em Configurações), a importação da nuvem simplesmente não aparece.
 - **Dados de uma pessoa cabem em memória:** filtros e ordenações ficam em JavaScript. Integridade que antes era do banco (uma sessão ativa por vez, apagar sessões junto com o projeto, categoria apagada vira "Sem categoria") agora fica no repositório.
 - **Sem RLS:** não há mais várias pessoas no mesmo banco. A proteção é a do próprio sistema operacional sobre a pasta do usuário.
 - **Migrações do banco local** ficam em `src-tauri/migrations/` e são registradas no Rust. As do Supabase (`supabase/migrations/`) continuam valendo para a importação e para a futura sincronização.

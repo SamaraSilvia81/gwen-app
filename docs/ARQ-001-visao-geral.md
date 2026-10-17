@@ -22,7 +22,7 @@
 
 1. [Em uma frase](#-em-uma-frase)
 2. [Camadas](#-camadas)
-3. [Fluxo do "Codar agora"](#-fluxo-do-codar-agora)
+3. [Fluxo do "Começar agora"](#-fluxo-do-começar-agora)
 4. [Ciclo de vida do tempo](#-ciclo-de-vida-do-tempo)
 5. [Temas](#-temas)
 6. [Dados locais e nuvem](#-dados-locais-e-nuvem)
@@ -90,7 +90,7 @@ flowchart TB
 
 A regra que mais importa: **componente não fala com o banco**. Foi o que permitiu trocar o Supabase pelo SQLite na 0.4 sem mexer em contexto nenhum, e é o que vai permitir ligar a sincronização depois.
 
-### $ fluxo do "Codar agora"
+### $ fluxo do "Começar agora"
 
 ```mermaid
 sequenceDiagram
@@ -102,7 +102,7 @@ sequenceDiagram
   participant Repo as repository.js
   participant DB as gwen.db
 
-  S->>Card: clica em Codar agora
+  S->>Card: clica em Começar agora
   Card->>WS: launchProject(projeto)
   loop cada pasta com "abrir junto"
     WS->>Nat: openFolder(ação, caminho)
@@ -126,11 +126,11 @@ Falha ao abrir uma pasta **não** impede a sessão de começar. Os erros são ju
 ```mermaid
 stateDiagram-v2
   [*] --> Livre
-  Livre --> EmSessao: Codar agora
+  Livre --> EmSessao: Começar agora
   EmSessao --> EmPausa: Pausa
   EmPausa --> EmSessao: Voltar (soma em paused_seconds)
   EmSessao --> Livre: Encerrar
-  EmSessao --> EmSessao: Codar agora em outro projeto<br/>(encerra a atual, abre nova)
+  EmSessao --> EmSessao: Começar agora em outro projeto<br/>(encerra a atual, abre nova)
   Livre --> PausaAvulsa: Pausa sem sessão
   PausaAvulsa --> Livre: Voltar
   EmSessao --> Esquecida: app fechado sem encerrar

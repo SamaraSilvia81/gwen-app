@@ -14,16 +14,18 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Alterado
 - **Dados locais:** tudo fica num banco SQLite no computador, sem conta e sem internet ([`ADR-010`](docs/decisoes/ADR-010-dados-locais-primeiro.md))
-- **Sem login:** a primeira abertura pede só o nome
-- O Supabase deixa de ser obrigatório; o `.env` só é necessário para a importação da nuvem
+- **Sem login obrigatório:** a primeira abertura pede só o nome e, se quiser, uma foto
+- O Supabase deixa de ser obrigatório e o `.env` deixa de ser lido: a conexão é colada em Configurações e fica só neste computador
+- O botão principal passa a se chamar **Começar agora**, e os textos e exemplos deixam de pressupor quem programa
 
 ### Adicionado
+- **Conta na nuvem (avançado):** conectar ao próprio Supabase e entrar com Google ou e-mail para guardar os dados lá. Sair da conta volta ao modo local
 - Importação única da nuvem (Google ou e-mail), que só acrescenta o que ainda não existe
 - Exportar e importar backup completo em JSON, e botão para abrir a pasta de dados
 - Cópia automática do banco a cada versão nova, antes das migrações (guarda as 5 mais recentes)
 
 ### Removido
-- Tela de login e saída da conta
+- Tela de login obrigatória
 
 ## [0.3.0] - 2026-10-17
 

@@ -120,9 +120,9 @@ erDiagram
 
 | Campo | Regra |
 |---|---|
-| `status` | Vira `andamento` automaticamente quando um projeto em `ideia` ou `pausado` é aberto pelo Codar agora |
+| `status` | Vira `andamento` automaticamente quando um projeto em `ideia` ou `pausado` é aberto pelo Começar agora |
 | `completed_at` | Preenchido ao mudar para `concluido`, limpo ao sair desse status. É o que conta em "Concluídos no ano" |
-| `last_opened_at` | Atualizado a cada Codar agora. Ordena a lista dentro de cada status |
+| `last_opened_at` | Atualizado a cada Começar agora. Ordena a lista dentro de cada status |
 | `folders[].path` | Caminho absoluto **da máquina onde foi cadastrado**. Em outro computador pode não existir |
 
 **`sessions`**: um intervalo de trabalho num projeto.

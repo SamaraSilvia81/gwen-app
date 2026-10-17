@@ -31,7 +31,7 @@
 
 A **G.W.E.N.** (*Gestão de Wellness, Eficiência e Navegação*) é um assistente desktop para quem trabalha com muitos projetos ao mesmo tempo.
 
-Todo dia o ritual é o mesmo: abrir o VS Code na pasta certa, o terminal no diretório certo, o Jira, o Confluence, o repositório. Depois de horas, não dá para saber quanto tempo foi para cada projeto, e a pausa vira culpa. A G.W.E.N. junta essas três coisas num lugar só: **abre o ambiente de cada projeto com um clique**, **conta o tempo dedicado a cada um** e **trata a pausa como parte do trabalho**.
+Todo dia o ritual é o mesmo: abrir a pasta certa, o documento, o repositório, as referências, o quadro de tarefas. Depois de horas, não dá para saber quanto tempo foi para cada projeto, e a pausa vira culpa. A G.W.E.N. junta essas três coisas num lugar só: **abre o ambiente de cada projeto com um clique**, **conta o tempo dedicado a cada um** e **trata a pausa como parte do trabalho**. Serve a quem programa, estuda, escreve ou desenha: um projeto é um conjunto de pastas e links.
 
 A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs de desenvolvimento deu o empurrão para tirá-la do papel e levá-la além, com várias ferramentas no mesmo fluxo, não só vários editores. O que a diferencia é o descanso: a barra de pausa enche em vez de contar para trás.
 
@@ -49,7 +49,7 @@ A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs 
 | **Conta na nuvem** | Opcional e avançado: conecte o seu próprio Supabase e entre com Google ou e-mail para guardar os dados na nuvem em vez do computador. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
 | **Projetos** | Status, descrição, várias pastas e vários links por projeto. |
-| **Codar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
+| **Começar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
 | **Pastas com ação** | Cada pasta abre no VS Code, no Explorer ou no Git Bash. |
 | **Sessões de tempo** | Tempo por projeto, categoria, dia e semana. Projetos concluídos no ano. |
 | **Modo pausa** | Café, refeição, leitura, respiro. A tela escurece e a barra de energia enche. |
@@ -79,7 +79,7 @@ node -v          # 20 ou mais
 yarn -v
 rustc --version
 cargo --version
-code --version   # necessário para o Codar agora abrir o VS Code
+code --version   # necessário para abrir pastas no VS Code
 ```
 
 | Se faltar | Como resolver |
@@ -107,7 +107,7 @@ O modo local é o padrão e não precisa de nada. Quem preferir os dados na nuve
 3. Se mais ninguém precisa criar conta nesse projeto, desligue **Allow new users to sign up** em Authentication. Assim só as contas que já existem conseguem entrar.
 4. Na G.W.E.N., abra **Configurações > Conta na nuvem**, cole a URL e a chave anon (**Project Settings > API**) e use **Entrar na conta**, com Google ou e-mail.
 
-A URL e a chave ficam só neste computador, e o instalador público não leva nenhuma. No modo conta, nenhum dado seu fica no computador e o app precisa de internet. **Sair da conta** volta ao modo local, e os dados na nuvem continuam intactos. Em desenvolvimento, o `.env` (copie de `.env.example`) faz o papel da conexão.
+A URL e a chave ficam só neste computador, e o instalador público não leva nenhuma. No modo conta, nenhum dado seu fica no computador e o app precisa de internet. **Sair da conta** volta ao modo local, e os dados na nuvem continuam intactos. O `.env` não é lido.
 
 **Trazer dados das versões até a 0.3, que gravavam no Supabase:** com a conexão salva e ainda no modo local, use **Configurações > Dados > Importar da nuvem**. Ela entra na conta, copia tudo para o computador e sai. Nada é apagado, nem aqui nem na nuvem.
 
@@ -176,8 +176,8 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto. Dá para trocar depois em **Configurações > Perfil**.
 
 1. **Crie categorias** no `+` da lateral. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria".
-2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows. Escolha a ação de cada pasta e marque **abrir junto** no que deve abrir com o *Codar agora*. A mesma pasta pode entrar duas vezes, uma no VS Code e outra no Git Bash.
-3. **Codar agora** abre tudo e inicia a sessão. O timer aparece na barra superior. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*.
+2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows. Escolha a ação de cada pasta e marque **abrir junto** no que deve abrir com o *Começar agora*. A mesma pasta pode entrar duas vezes, uma no VS Code e outra no Git Bash.
+3. **Começar agora** abre tudo e inicia a sessão. O timer aparece na barra superior. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*.
 4. **Pausa** fica na barra superior. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
 
 5. **Modo saúde** (Configurações > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
@@ -186,7 +186,7 @@ Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto.
   <img src="_assets/prints/modo-saude.png" alt="Lembretes do modo saúde" width="100%">
 </div>
 
-**Como o tempo é contado:** a sessão vai do *Codar agora* ao *Encerrar*, menos as pausas. Hoje e semana (a partir de segunda) contam só a parte que caiu no período. Com o app aberto, ele registra um sinal por minuto. Se abrir e encontrar uma sessão sem sinal há mais de 15 minutos, pergunta se encerra no último sinal, se você informa os minutos ou se continua (e o tempo com o app fechado entra como pausa).
+**Como o tempo é contado:** a sessão vai do *Começar agora* ao *Encerrar*, menos as pausas. Hoje e semana (a partir de segunda) contam só a parte que caiu no período. Com o app aberto, ele registra um sinal por minuto. Se abrir e encontrar uma sessão sem sinal há mais de 15 minutos, pergunta se encerra no último sinal, se você informa os minutos ou se continua (e o tempo com o app fechado entra como pausa).
 
 > A V1 mede o tempo que você marcou, não o tempo real dentro de cada programa. A detecção de janela ativa está no roadmap.
 
@@ -292,7 +292,7 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 
 | Código | Título |
 |---|---|
-| [`ARQ-001`](docs/ARQ-001-visao-geral.md) | Visão geral da arquitetura: camadas, fluxo do Codar agora, ciclo do tempo |
+| [`ARQ-001`](docs/ARQ-001-visao-geral.md) | Visão geral da arquitetura: camadas, fluxo do Começar agora, ciclo do tempo |
 | [`DAT-001`](docs/DAT-001-modelo-de-dados.md) | Modelo de dados: tabelas, invariantes, regras de tempo |
 | [`ADR-001`](docs/decisoes/ADR-001-tauri-em-vez-de-electron.md) | Tauri em vez de Electron |
 | [`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) | Schema próprio num projeto Supabase compartilhado |
