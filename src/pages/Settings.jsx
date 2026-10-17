@@ -158,6 +158,24 @@ export default function Settings() {
     }
   }
 
+  /** Texto sobre um acento: 'auto' (pelo contraste), 'light' ou 'dark' */
+  function setOnColor(key, choice) {
+    const hex = choice === 'light' ? '#FFFFFF' : choice === 'dark' ? '#0A0A0B' : null;
+    const apply = (obj) => {
+      const next = { ...obj };
+      if (hex) next[key] = hex;
+      else delete next[key];
+      return next;
+    };
+    if (palette === 'escuro') setCustom((c) => apply(c));
+    else setCustom((c) => ({ ...c, light: apply({ ...resolveColors('custom', c, 'claro'), ...c.light }) }));
+  }
+
+  const onChoice = (key) => {
+    const v = String(paletteColors[key] || '').toUpperCase();
+    return v === '#FFFFFF' ? 'light' : v === '#0A0A0B' ? 'dark' : 'auto';
+  };
+
   function resetToNoir() {
     setCustom({ name: custom.name || 'Meu tema', ...NOIR.colors });
     setHexDraft({});
@@ -329,6 +347,27 @@ export default function Settings() {
                       />
                     </span>
                   </label>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 max-[900px]:grid-cols-1 gap-x-4 gap-y-3 mt-5">
+                {[
+                  { key: 'onPhosphor', label: 'Texto sobre o acento principal' },
+                  { key: 'onEmber', label: 'Texto sobre o acento secundário' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="field">
+                    <span className="field-label">{label}</span>
+                    <div className="segmented">
+                      {[
+                        ['auto', 'Automático'],
+                        ['light', 'Claro'],
+                        ['dark', 'Escuro'],
+                      ].map(([id, text]) => (
+                        <button key={id} type="button" className={onChoice(key) === id ? 'active' : ''} onClick={() => setOnColor(key, id)}>
+                          {text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
               {palette === 'claro' && !custom.light && (

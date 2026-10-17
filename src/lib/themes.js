@@ -24,7 +24,7 @@ export const COLOR_TOKENS = [
   { key: 'ruleLight', label: 'Linhas em destaque', hint: 'bordas no hover/foco' },
 ];
 
-/** Chaves opcionais, aceitas só via JSON: forçam a cor do texto sobre os acentos */
+/** Chaves opcionais: forçam a cor do texto sobre os acentos (escolha no editor do tema ou via JSON) */
 const OPTIONAL_KEYS = ['onPhosphor', 'onEmber'];
 
 export const NOIR = {
@@ -95,12 +95,16 @@ function luminance(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Escolhe texto claro ou escuro pelo maior contraste */
+/**
+ * Escolhe texto claro ou escuro pelo contraste. Em tons médios (como um roxo vivo) os dois
+ * contrastes ficam quase iguais, e o texto claro parece melhor ao olho. Por isso o escuro
+ * só ganha quando o contraste dele é bem maior.
+ */
 export function onColor(hex) {
   const l = luminance(hex);
   const withWhite = 1.05 / (l + 0.05);
   const withDark = (l + 0.05) / (luminance('#0A0A0B') + 0.05);
-  return withDark >= withWhite ? '#0A0A0B' : '#FFFFFF';
+  return withDark >= withWhite * 1.25 ? '#0A0A0B' : '#FFFFFF';
 }
 
 const ALL_KEYS = () => [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS];
