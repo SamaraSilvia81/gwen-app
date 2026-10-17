@@ -5,6 +5,7 @@ import { useProfile } from '../context/ProfileContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
 import Avatar from './Avatar';
+import { isAccountMode } from '../lib/cloudConfig';
 import { formatDuration } from '../lib/time';
 
 export default function Sidebar({ view, onNavigate, filter, onFilter, stats }) {
@@ -176,7 +177,9 @@ export default function Sidebar({ view, onNavigate, filter, onFilter, stats }) {
         <div className="flex items-center gap-2 h-10 px-2.5">
           <Avatar profile={profile} size={24} />
           <span className="flex-1 truncate text-[13px]">{profile?.display_name || 'Você'}</span>
-<span className="mono text-[10px] text-muted" title="Seus dados ficam neste computador">local</span>
+<span className="mono text-[10px] text-muted" title={isAccountMode() ? 'Seus dados ficam na nuvem' : 'Seus dados ficam neste computador'}>
+            {isAccountMode() ? 'nuvem' : 'local'}
+          </span>
         </div>
       </div>
     </aside>

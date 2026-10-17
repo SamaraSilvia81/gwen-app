@@ -9,6 +9,8 @@
  * repositório, em JavaScript. Ver ADR-010.
  */
 import { isTauri } from '../lib/native';
+import { isAccountMode } from '../lib/cloudConfig';
+import { cloudStore } from './cloudStore';
 
 export const TABLES = ['profiles', 'categories', 'projects', 'sessions', 'breaks', 'wellness_events'];
 
@@ -116,7 +118,22 @@ const browserStore = {
   },
 };
 
-export const store = isTauri ? sqlStore : browserStore;
+const localStore = isTauri ? sqlStore : browserStore;
+
+/**
+ * Local (SQLite) por padrão. No modo conta, os dados vão para a nuvem.
+ * O controle interno (meta) sempre fica no computador.
+ */
+const active = () => (isAccountMode() ? cloudStore : localStore);
+
+export const store = {
+  all: (table) => active().all(table),
+  insert: (table, row) => active().insert(table, row),
+  update: (table, id, patch) => active().update(table, id, patch),
+  remove: (table, id) => active().remove(table, id),
+  getMeta: (key) => localStore.getMeta(key),
+  setMeta: (key, value) => localStore.setMeta(key, value),
+};
 
 export const newId = () => crypto.randomUUID();
 export const nowIso = () => new Date().toISOString();

@@ -15,13 +15,17 @@ import StaleSessionModal from './components/StaleSessionModal';
 import ReminderStack from './components/ReminderStack';
 import UpdateBar from './components/UpdateBar';
 import Logo from './components/Logo';
+import AccountGate from './components/AccountGate';
+import { isAccountMode, setAccountMode } from './lib/cloudConfig';
 
 export default function App() {
   return (
     <ToastProvider>
-      <ProfileProvider>
-        <Gate />
-      </ProfileProvider>
+      <AccountGate>
+        <ProfileProvider>
+          <Gate />
+        </ProfileProvider>
+      </AccountGate>
     </ToastProvider>
   );
 }
@@ -99,16 +103,31 @@ function Splash() {
 }
 
 function DataError({ message }) {
+  const cloud = isAccountMode();
   return (
     <div className="h-full flex items-center justify-center px-8">
       <div className="card max-w-[520px] p-8">
         <Logo size={44} />
-        <h1 className="font-display text-2xl font-bold mt-5 mb-2">Não consegui abrir seus dados.</h1>
+        <h1 className="font-display text-2xl font-bold mt-5 mb-2">
+          {cloud ? 'Não consegui falar com a nuvem.' : 'Não consegui abrir seus dados.'}
+        </h1>
         <p className="text-muted leading-relaxed mb-5">
-          O banco local não abriu. Nada foi apagado. Feche e abra a G.W.E.N. de novo; se continuar, a mensagem abaixo ajuda a
-          entender o que houve.
+          {cloud
+            ? 'Confira a internet e tente abrir de novo. Seus dados na nuvem não foram alterados. Se faltar uma migração no Supabase, a mensagem abaixo costuma dizer qual coluna ou tabela.'
+            : 'O banco local não abriu. Nada foi apagado. Feche e abra a G.W.E.N. de novo; se continuar, a mensagem abaixo ajuda a entender o que houve.'}
         </p>
         <pre className="mono text-[12px] bg-surface-alt border border-rule rounded-ui-sm p-4 overflow-x-auto whitespace-pre-wrap">{message}</pre>
+        {cloud && (
+          <button
+            className="btn btn-ghost w-full mt-5"
+            onClick={() => {
+              setAccountMode(false);
+              window.location.reload();
+            }}
+          >
+            Usar o modo local por enquanto
+          </button>
+        )}
       </div>
     </div>
   );

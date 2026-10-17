@@ -7,6 +7,8 @@ import { cloudImportDoneAt, exportAll, importBackup, describeAdded } from '../da
 import { isSupabaseConfigured } from '../lib/cloudAuth';
 import { openFolder, saveJsonFile, openJsonFile, dataDir } from '../lib/native';
 import CloudImport from '../components/CloudImport';
+import CloudAccountSection from '../components/CloudAccountSection';
+import { isAccountMode } from '../lib/cloudConfig';
 import { formatDay } from '../lib/time';
 import { Database, DownloadSimple, FolderOpen, UploadSimple, CloudArrowDown } from '@phosphor-icons/react';
 import { currentVersion, findUpdate, installUpdate } from '../lib/updater';
@@ -25,6 +27,7 @@ export default function Settings() {
   const { profile, updateProfile, reload } = useProfile();
   const { refresh } = useWorkspace();
   const toast = useToast();
+  const account = isAccountMode();
 
   const [name, setName] = useState(profile?.display_name || '');
   const [gitBash, setGitBash] = useState(profile?.git_bash_path || '');
@@ -195,7 +198,7 @@ export default function Settings() {
         </header>
 
         {/* PERFIL */}
-        <Section title="Perfil" description="Seu perfil fica neste computador, sem conta.">
+        <Section title="Perfil" description={account ? 'Seu perfil fica na nuvem, na sua conta.' : 'Seu perfil fica neste computador, sem conta.'}>
           <div className="mb-5">
             <AvatarPicker
               avatar={profile?.avatar}
@@ -462,7 +465,7 @@ export default function Settings() {
         </Section>
 
         {/* DADOS */}
-        <Section title="Dados" description="Tudo fica neste computador. Atualizar ou desinstalar a G.W.E.N. não apaga nada.">
+        <Section title="Dados" description={account ? 'Seus dados ficam na nuvem. O backup em JSON continua disponível.' : 'Tudo fica neste computador. Atualizar ou desinstalar a G.W.E.N. não apaga nada.'}>
           <div className="card p-4 flex items-center gap-4 mb-3">
             <Database size={20} className="text-phosphor shrink-0" />
             <div className="flex-1 min-w-0">
@@ -488,17 +491,22 @@ export default function Settings() {
               <UploadSimple size={14} />
               <Label>Importar backup</Label>
             </button>
-            {isSupabaseConfigured && (
+            {isSupabaseConfigured && !account && (
               <button className="btn btn-ghost" onClick={() => setCloudOpen(true)}>
                 <CloudArrowDown size={14} />
                 <Label>Importar da nuvem</Label>
               </button>
             )}
           </div>
-          {isSupabaseConfigured && importedAt && (
+          {isSupabaseConfigured && !account && importedAt && (
             <p className="text-[12px] text-muted mt-3">Última importação da nuvem: {formatDay(importedAt)}</p>
           )}
           <p className="text-[12px] text-muted mt-3">Importar nunca apaga nada: só entra o que ainda não existe aqui.</p>
+        </Section>
+
+        {/* CONTA NA NUVEM */}
+        <Section title="Conta na nuvem" description="Opcional e avançado. Para guardar os dados no seu próprio Supabase em vez de neste computador.">
+          <CloudAccountSection />
         </Section>
 
         {/* SISTEMA */}
