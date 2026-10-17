@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const p = await profileRepo.get(u.id);
+      const p = await profileRepo.ensure(u);
       setProfile(p);
       if (p) {
         const appearance = { theme: p.theme, style: p.style, custom: p.custom_colors };

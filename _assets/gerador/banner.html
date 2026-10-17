@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  Gerador dos banners do README.
+  Abra no navegador com um destes parâmetros e tire o print do elemento #banner
+  (DevTools > clique direito no elemento > Capture node screenshot):
+
+    banner.html?peca=topo&tema=escuro     -> _assets/banners/banner-topo.webp
+    banner.html?peca=topo&tema=claro      -> _assets/banners/banner-topo-claro.webp
+    banner.html?peca=rodape&tema=escuro   -> _assets/banners/banner-rodape.webp
+    banner.html?peca=rodape&tema=claro    -> _assets/banners/banner-rodape-claro.webp
+
+  As fontes vêm do node_modules, então rode `yarn` antes.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>G.W.E.N. · gerador de banners</title>
+<style>
+  @font-face { font-family: 'Space Grotesk'; src: url('../../node_modules/@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2') format('woff2'); font-weight: 300 700; }
+  @font-face { font-family: 'JetBrains Mono'; src: url('../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2'); font-weight: 100 800; }
+  @font-face { font-family: 'Inter'; src: url('../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2'); font-weight: 100 900; }
+
+  /* identidade Noir da G.W.E.N.: só preto, branco e cinzas */
+  :root { --void:#0A0A0B; --surface:#121214; --alt:#19191C; --accent:#EDEBE7; --charge:#77777F; --bone:#EDEBE7; --muted:#77777F; --rule:#26262A; --wall-filter:none; }
+  [data-tema='claro'] { --void:#F4F3F0; --surface:#FFFFFF; --alt:#E6E4E0; --accent:#0A0A0B; --charge:#8A8A90; --bone:#0A0A0B; --muted:#77777F; --rule:#DAD8D3; --wall-filter:invert(1); }
+
+  * { margin: 0; box-sizing: border-box; }
+  body { background: #333; padding: 40px; font-family: 'Inter', sans-serif; }
+  #banner { width: max-content; background: var(--void); color: var(--bone); position: relative; overflow: hidden; }
+
+  /* ─── TOPO ─── */
+  .topo { width: 1280px; height: 400px; display: grid; grid-template-columns: 1fr 470px; border-bottom: 1px solid var(--rule); }
+  .topo .texto { padding: 64px 0 56px 72px; display: flex; flex-direction: column; justify-content: space-between; position: relative; z-index: 2; }
+  .prompt { font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--muted); letter-spacing: .02em; }
+  .prompt b { color: var(--bone); font-weight: 500; }
+  .titulo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 132px; line-height: .9; letter-spacing: -.02em; }
+  .titulo span { color: var(--charge); }
+  .sub { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 500; margin-top: 18px; }
+  .sub { color: var(--muted); }
+  .sub em { font-style: normal; color: var(--bone); }
+  .rodape-texto { display: flex; gap: 28px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; }
+  .rodape-texto i { font-style: normal; color: var(--bone); }
+  .arte { position: relative; overflow: hidden; border-left: 1px solid var(--rule); }
+  .arte img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 42%; filter: var(--wall-filter); }
+
+  /* ─── RODAPÉ ─── */
+  .rodape { width: 1280px; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 72px; border-top: 1px solid var(--rule); }
+  .rodape .marca { display: flex; align-items: center; gap: 16px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: .18em; }
+  .rodape .frase { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
+  .rodape .frase b { color: var(--bone); font-weight: 500; }
+  .energia { display: flex; gap: 5px; }
+  .energia span { width: 14px; height: 26px; background: var(--alt); border: 1px solid var(--rule); }
+  .energia span.on { background: var(--charge); border-color: var(--charge); }
+  .energia span.on:nth-child(-n+3) { background: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="banner"></div>
+
+<template id="logo">
+  <svg viewBox="14 14 36 36" width="44" height="44">
+    <g fill="var(--accent)">
+      <path d="M32 19 A13 13 0 0 0 32 45" fill="none" stroke="var(--accent)" stroke-width="10"/>
+      <rect x="32" y="14" width="18" height="10"/><rect x="32" y="40" width="18" height="10"/>
+      <rect x="40" y="30" width="10" height="20"/><rect x="30" y="30" width="20" height="8"/>
+    </g>
+    <rect x="30" y="30" width="13" height="8" fill="var(--charge)"/>
+  </svg>
+</template>
+
+<template id="topo">
+  <div class="topo">
+    <div class="texto">
+      <p class="prompt"><b>$</b> gwen --start</p>
+      <div>
+        <h1 class="titulo">G.W.E.N<span>.</span></h1>
+        <p class="sub"><em>Gestão</em> de Wellness, Eficiência e Navegação</p>
+      </div>
+      <p class="rodape-texto"><span>app desktop</span><span>·</span><span>projetos</span><span>·</span><span>tempo</span><span>·</span><span>pausa</span><span>·</span><i>@devs_sam</i></p>
+    </div>
+    <div class="arte"><img src="wallpaper.webp" alt=""></div>
+  </div>
+</template>
+
+<template id="rodape">
+  <div class="rodape">
+    <div class="marca"><span data-logo></span>G.W.E.N.</div>
+    <p class="frase">uma sessão de cada vez. <b>uma pausa</b> de cada vez.</p>
+    <div class="energia"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></div>
+  </div>
+</template>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const peca = q.get('peca') === 'rodape' ? 'rodape' : 'topo';
+  const banner = document.getElementById('banner');
+  banner.dataset.tema = q.get('tema') === 'claro' ? 'claro' : 'escuro';
+  banner.appendChild(document.getElementById(peca).content.cloneNode(true));
+  banner.querySelectorAll('[data-logo]').forEach((el) => el.appendChild(document.getElementById('logo').content.cloneNode(true)));
+</script>
+</body>
+</html>

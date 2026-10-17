@@ -2,7 +2,7 @@
  * Marca da G.W.E.N.: um G geométrico cuja barra central é a barra de energia.
  * `charge` (0 a 1) controla quanto da barra está carregada, então o mesmo
  * componente serve de logo estático e de indicador no modo pausa.
- * As cores vêm dos tokens do tema ativo.
+ * No Noir é branco com a carga em cinza; no Personalizado usa os acentos.
  */
 export default function Logo({ size = 28, charge = 0.65, className = '', title = 'G.W.E.N.' }) {
   const c = Math.max(0, Math.min(1, charge));
@@ -15,8 +15,8 @@ export default function Logo({ size = 28, charge = 0.65, className = '', title =
       aria-label={title}
       className={className}
     >
-      <g fill="var(--c-phosphor)">
-        <path d="M32 19 A13 13 0 0 0 32 45" fill="none" stroke="var(--c-phosphor)" strokeWidth="10" />
+      <g fill="var(--c-logo)">
+        <path d="M32 19 A13 13 0 0 0 32 45" fill="none" stroke="var(--c-logo)" strokeWidth="10" />
         <rect x="32" y="14" width="18" height="10" />
         <rect x="32" y="40" width="18" height="10" />
         <rect x="40" y="30" width="10" height="20" />
@@ -27,7 +27,7 @@ export default function Logo({ size = 28, charge = 0.65, className = '', title =
         y="30"
         width={20 * c}
         height="8"
-        fill="var(--c-ember)"
+        fill="var(--c-logo-charge)"
         style={{ transition: 'width 0.8s var(--ease-out)' }}
       />
     </svg>

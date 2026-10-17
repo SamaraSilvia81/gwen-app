@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowCounterClockwise, Check } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Check, ClipboardText, Copy } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { COLOR_TOKENS, PRESETS, STYLES, applyAppearance, isHex, resolveColors } from '../lib/themes';
+import { COLOR_TOKENS, NOIR, STYLES, THEMES, applyAppearance, exportTheme, isHex, parseTheme, resolveColors } from '../lib/themes';
 import Logo from '../components/Logo';
 import { Label } from '../components/Modal';
 
@@ -14,8 +14,9 @@ export default function Settings() {
   const [gitBash, setGitBash] = useState(profile?.git_bash_path || '');
   const [theme, setTheme] = useState(profile?.theme || 'noir');
   const [style, setStyle] = useState(profile?.style || 'moderno');
-  const [custom, setCustom] = useState(() => profile?.custom_colors || { ...PRESETS.devs_sam.colors });
-  const [hexDraft, setHexDraft] = useState(() => profile?.custom_colors || { ...PRESETS.devs_sam.colors });
+  // custom_colors guarda { name, void, surface, ... } do tema do usuário
+  const [custom, setCustom] = useState(() => profile?.custom_colors || { name: 'Meu tema', ...NOIR.colors });
+  const [hexDraft, setHexDraft] = useState(() => profile?.custom_colors || { name: 'Meu tema', ...NOIR.colors });
   const [saving, setSaving] = useState(false);
 
   // pré-visualização ao vivo
@@ -56,11 +57,35 @@ export default function Settings() {
     if (isHex(value)) setCustom((c) => ({ ...c, [key]: value }));
   }
 
-  function startCustomFrom(presetId) {
-    const base = { ...resolveColors(presetId, custom) };
+  function resetToNoir() {
+    const base = { name: custom.name || 'Meu tema', ...NOIR.colors };
     setCustom(base);
     setHexDraft(base);
-    setTheme('custom');
+  }
+
+  async function copyTheme() {
+    const json = exportTheme(custom.name, resolveColors('custom', custom));
+    try {
+      await navigator.clipboard.writeText(json);
+      toast('Tema copiado em JSON. Cole em qualquer conta da G.W.E.N.');
+    } catch {
+      window.prompt('Copie o JSON do tema:', json);
+    }
+  }
+
+  function pasteTheme() {
+    const text = window.prompt('Cole o JSON do tema:');
+    if (!text) return;
+    try {
+      const { name: themeName, colors } = parseTheme(text);
+      const next = { ...NOIR.colors, ...colors, name: themeName || custom.name || 'Meu tema' };
+      setCustom(next);
+      setHexDraft(next);
+      setTheme('custom');
+      toast(`Tema "${next.name}" importado. Salve para manter.`);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
   }
 
   return (
@@ -91,45 +116,62 @@ export default function Settings() {
         {/* APARÊNCIA */}
         <Section title="Aparência" description="Cor e estilo são independentes. As mudanças aparecem na hora; salve para manter.">
           <p className="field-label mb-2.5">Cores</p>
-          <div className="grid grid-cols-3 gap-3 mb-7">
-            {[...Object.entries(PRESETS), ['custom', { label: 'Personalizado', description: 'Defina cada cor por HEX.' }]].map(
-              ([id, preset]) => {
-                const colors = id === 'custom' ? custom : preset.colors;
-                return (
-                  <button
-                    key={id}
-                    onClick={() => setTheme(id)}
-                    className={`card text-left p-3.5 flex flex-col justify-start ${theme === id ? 'is-active' : ''}`}
+          <div className="grid grid-cols-2 gap-3 mb-7">
+            {Object.entries(THEMES).map(([id, t]) => {
+              const colors = id === 'custom' ? resolveColors('custom', custom) : NOIR.colors;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTheme(id)}
+                  className={`card text-left p-3.5 flex flex-col justify-start ${theme === id ? 'is-active' : ''}`}
+                >
+                  <div
+                    className="h-16 rounded-ui-sm mb-3 flex items-center justify-center gap-1.5 border border-rule"
+                    style={{ background: colors.void }}
                   >
-                    <div
-                      className="h-16 rounded-ui-sm mb-3 flex items-center justify-center gap-1.5 border border-rule"
-                      style={{ background: colors.void }}
-                    >
-                      {['surface', 'phosphor', 'ember', 'bone'].map((k) => (
-                        <span key={k} className="w-5 h-5 rounded-full border border-black/20" style={{ background: colors[k] }} />
-                      ))}
-                    </div>
-                    <span className="flex items-center justify-between">
-                      <span className="font-display font-semibold">{preset.label}</span>
-                      {theme === id && <Check size={14} className="text-phosphor" weight="bold" />}
+                    {['surface', 'phosphor', 'ember', 'bone'].map((k) => (
+                      <span key={k} className="w-5 h-5 rounded-full border border-black/20" style={{ background: colors[k] }} />
+                    ))}
+                  </div>
+                  <span className="flex items-center justify-between">
+                    <span className="font-display font-semibold">
+                      {t.label}
+                      {id === 'custom' && custom.name && (
+                        <span className="mono text-[11px] text-muted font-normal ml-2">{custom.name}</span>
+                      )}
                     </span>
-                    <span className="block text-[12px] text-muted mt-1 leading-snug">{preset.description}</span>
-                  </button>
-                );
-              },
-            )}
+                    {theme === id && <Check size={14} className="text-phosphor" weight="bold" />}
+                  </span>
+                  <span className="block text-[12px] text-muted mt-1 leading-snug">{t.description}</span>
+                </button>
+              );
+            })}
           </div>
 
           {theme === 'custom' && (
             <div className="card p-4 mb-7 anim-rise">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-[13px] text-muted">Use o seletor ou digite o HEX.</p>
+              <div className="flex items-end justify-between gap-3 mb-4 flex-wrap">
+                <label className="field w-[220px]">
+                  <span className="field-label">Nome do tema</span>
+                  <input
+                    className="input"
+                    value={custom.name || ''}
+                    onChange={(e) => {
+                      setCustom((c) => ({ ...c, name: e.target.value }));
+                      setHexDraft((d) => ({ ...d, name: e.target.value }));
+                    }}
+                    placeholder="Meu tema"
+                  />
+                </label>
                 <div className="flex gap-1.5">
-                  <button className="btn btn-quiet btn-sm" onClick={() => startCustomFrom('noir')}>
-                    <ArrowCounterClockwise size={12} /> partir do Noir
+                  <button className="btn btn-quiet btn-sm" onClick={pasteTheme} title="Importar um tema em JSON">
+                    <ClipboardText size={13} /> colar JSON
                   </button>
-                  <button className="btn btn-quiet btn-sm" onClick={() => startCustomFrom('devs_sam')}>
-                    <ArrowCounterClockwise size={12} /> partir do devs_sam
+                  <button className="btn btn-quiet btn-sm" onClick={copyTheme} title="Copiar este tema em JSON">
+                    <Copy size={13} /> copiar JSON
+                  </button>
+                  <button className="btn btn-quiet btn-sm" onClick={resetToNoir}>
+                    <ArrowCounterClockwise size={12} /> recomeçar do Noir
                   </button>
                 </div>
               </div>

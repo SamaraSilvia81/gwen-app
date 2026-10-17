@@ -13,6 +13,15 @@ export const profileRepo = {
   async update(userId, patch) {
     return unwrap(await supabase.from('profiles').update(patch).eq('id', userId).select().single());
   },
+  /** Sem trigger no auth.users (o projeto pode ser compartilhado), o perfil nasce no primeiro login */
+  async ensure(user) {
+    const existing = await this.get(user.id);
+    if (existing) return existing;
+    const display_name = user.user_metadata?.display_name || user.email?.split('@')[0] || 'dev';
+    // upsert ignorando duplicado: o login pode chamar isto duas vezes ao mesmo tempo
+    unwrap(await supabase.from('profiles').upsert({ id: user.id, display_name }, { onConflict: 'id', ignoreDuplicates: true }));
+    return this.get(user.id);
+  },
 };
 
 /* ─── CATEGORIAS ─── */

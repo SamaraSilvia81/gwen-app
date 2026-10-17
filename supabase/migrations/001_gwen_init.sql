@@ -1,13 +1,30 @@
 -- ═══════════════════════════════════════════════
 -- G.W.E.N. V1: schema inicial
--- Rode no Supabase: SQL Editor > New query > cole tudo > Run
+--
+-- Tudo fica no schema "gwen", separado do "public". Assim a G.W.E.N. pode
+-- morar num projeto Supabase que você já usa para outro app, sem conflito
+-- de nomes de tabela. O login (auth.users) é compartilhado entre os apps
+-- do mesmo projeto.
+--
+-- Rode no Supabase: SQL Editor > New query > cole tudo > Run.
+-- Depois: Project Settings > Data API > Exposed schemas > adicione "gwen".
 -- ═══════════════════════════════════════════════
 
+create schema if not exists gwen;
+
+-- a API (PostgREST) precisa enxergar o schema
+grant usage on schema gwen to anon, authenticated, service_role;
+alter default privileges in schema gwen grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema gwen grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema gwen grant all on sequences to anon, authenticated, service_role;
+
 -- ─── PERFIL ───
-create table if not exists public.profiles (
+-- criado pelo próprio app no primeiro login (sem trigger no auth.users,
+-- para não interferir nos outros apps do mesmo projeto)
+create table if not exists gwen.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text,
-  theme text not null default 'noir' check (theme in ('noir', 'devs_sam', 'custom')),
+  theme text not null default 'noir' check (theme in ('noir', 'custom')),
   style text not null default 'moderno' check (style in ('moderno', 'terminal')),
   custom_colors jsonb,
   git_bash_path text,
@@ -15,26 +32,8 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- cria o perfil automaticamente no cadastro
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1)));
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
 -- ─── CATEGORIAS ───
-create table if not exists public.categories (
+create table if not exists gwen.categories (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name text not null,
@@ -45,10 +44,10 @@ create table if not exists public.categories (
 -- ─── PROJETOS ───
 -- folders: [{ "label": "...", "path": "C:\\...", "action": "vscode|explorer|gitbash", "on_launch": true }]
 -- links:   [{ "label": "...", "url": "https://...", "on_launch": true }]
-create table if not exists public.projects (
+create table if not exists gwen.projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  category_id uuid references public.categories (id) on delete set null,
+  category_id uuid references gwen.categories (id) on delete set null,
   name text not null,
   description text,
   status text not null default 'ideia' check (status in ('ideia', 'andamento', 'pausado', 'concluido')),
@@ -63,10 +62,10 @@ create table if not exists public.projects (
 -- ─── SESSÕES DE TRABALHO ───
 -- ended_at nulo = sessão ativa. last_seen_at é atualizado pelo app a cada minuto
 -- e serve para detectar sessão esquecida aberta.
-create table if not exists public.sessions (
+create table if not exists gwen.sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  project_id uuid not null references public.projects (id) on delete cascade,
+  project_id uuid not null references gwen.projects (id) on delete cascade,
   started_at timestamptz not null default now(),
   ended_at timestamptz,
   last_seen_at timestamptz not null default now(),
@@ -76,10 +75,10 @@ create table if not exists public.sessions (
 );
 
 -- ─── PAUSAS ───
-create table if not exists public.breaks (
+create table if not exists gwen.breaks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  session_id uuid references public.sessions (id) on delete set null,
+  session_id uuid references gwen.sessions (id) on delete set null,
   kind text not null check (kind in ('cafe', 'refeicao', 'leitura', 'respiro', 'outro')),
   started_at timestamptz not null default now(),
   ended_at timestamptz,
@@ -87,15 +86,18 @@ create table if not exists public.breaks (
 );
 
 -- uma sessão ativa e uma pausa ativa por pessoa
-create unique index if not exists sessions_one_active on public.sessions (user_id) where ended_at is null;
-create unique index if not exists breaks_one_active on public.breaks (user_id) where ended_at is null;
+create unique index if not exists sessions_one_active on gwen.sessions (user_id) where ended_at is null;
+create unique index if not exists breaks_one_active on gwen.breaks (user_id) where ended_at is null;
 
-create index if not exists sessions_user_started on public.sessions (user_id, started_at desc);
-create index if not exists projects_user on public.projects (user_id);
-create index if not exists breaks_user_started on public.breaks (user_id, started_at desc);
+create index if not exists sessions_user_started on gwen.sessions (user_id, started_at desc);
+create index if not exists projects_user on gwen.projects (user_id);
+create index if not exists breaks_user_started on gwen.breaks (user_id, started_at desc);
+
+-- permissões nas tabelas já criadas (o default privileges vale só para as próximas)
+grant all on all tables in schema gwen to anon, authenticated, service_role;
 
 -- updated_at automático
-create or replace function public.touch_updated_at()
+create or replace function gwen.touch_updated_at()
 returns trigger language plpgsql as $$
 begin
   new.updated_at = now();
@@ -103,37 +105,37 @@ begin
 end;
 $$;
 
-drop trigger if exists projects_touch on public.projects;
-create trigger projects_touch before update on public.projects
-  for each row execute function public.touch_updated_at();
+drop trigger if exists projects_touch on gwen.projects;
+create trigger projects_touch before update on gwen.projects
+  for each row execute function gwen.touch_updated_at();
 
-drop trigger if exists profiles_touch on public.profiles;
-create trigger profiles_touch before update on public.profiles
-  for each row execute function public.touch_updated_at();
+drop trigger if exists profiles_touch on gwen.profiles;
+create trigger profiles_touch before update on gwen.profiles
+  for each row execute function gwen.touch_updated_at();
 
 -- ─── RLS: cada pessoa só vê e mexe nos próprios dados ───
-alter table public.profiles enable row level security;
-alter table public.categories enable row level security;
-alter table public.projects enable row level security;
-alter table public.sessions enable row level security;
-alter table public.breaks enable row level security;
+alter table gwen.profiles enable row level security;
+alter table gwen.categories enable row level security;
+alter table gwen.projects enable row level security;
+alter table gwen.sessions enable row level security;
+alter table gwen.breaks enable row level security;
 
-drop policy if exists "profiles_own" on public.profiles;
-create policy "profiles_own" on public.profiles
+drop policy if exists "profiles_own" on gwen.profiles;
+create policy "profiles_own" on gwen.profiles
   for all using (id = auth.uid()) with check (id = auth.uid());
 
-drop policy if exists "categories_own" on public.categories;
-create policy "categories_own" on public.categories
+drop policy if exists "categories_own" on gwen.categories;
+create policy "categories_own" on gwen.categories
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
-drop policy if exists "projects_own" on public.projects;
-create policy "projects_own" on public.projects
+drop policy if exists "projects_own" on gwen.projects;
+create policy "projects_own" on gwen.projects
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
-drop policy if exists "sessions_own" on public.sessions;
-create policy "sessions_own" on public.sessions
+drop policy if exists "sessions_own" on gwen.sessions;
+create policy "sessions_own" on gwen.sessions
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
-drop policy if exists "breaks_own" on public.breaks;
-create policy "breaks_own" on public.breaks
+drop policy if exists "breaks_own" on gwen.breaks;
+create policy "breaks_own" on gwen.breaks
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());

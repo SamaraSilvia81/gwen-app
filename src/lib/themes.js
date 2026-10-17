@@ -1,61 +1,52 @@
 /**
  * Temas de cor da G.W.E.N.
  *
- * Os nomes dos tokens seguem o padrão do globals.css da devs_sam
- * (--c-void, --c-surface, --c-phosphor, --c-ember...), então qualquer
- * tema novo é só um objeto com estas chaves.
+ * A identidade do sistema é Noir: preto, branco e cinzas, inclusive no logo.
+ * Qualquer outra identidade é do usuário, criada no tema Personalizado
+ * (e pode ser exportada/importada em JSON para compartilhar).
  *
- * Cor e estilo são eixos separados:
- *   - cor:    noir | devs_sam | custom   -> tokens --c-*
- *   - estilo: moderno | terminal         -> atributo data-style no <html>
+ * Os nomes dos tokens seguem o padrão --c-void, --c-surface, --c-phosphor,
+ * --c-ember... Cor e estilo são eixos separados:
+ *   - cor:    noir | custom          -> tokens --c-*
+ *   - estilo: moderno | terminal     -> atributo data-style no <html>
  */
 
 export const COLOR_TOKENS = [
   { key: 'void', label: 'Fundo', hint: 'cor de fundo da janela' },
   { key: 'surface', label: 'Superfície', hint: 'cards e painéis' },
   { key: 'surfaceAlt', label: 'Superfície alternativa', hint: 'inputs, áreas destacadas' },
-  { key: 'phosphor', label: 'Acento principal', hint: 'botões, seleção, logo' },
-  { key: 'ember', label: 'Acento secundário', hint: 'barra de energia, CTA principal' },
+  { key: 'phosphor', label: 'Acento principal', hint: 'seleção, status ativo, logo' },
+  { key: 'ember', label: 'Acento secundário', hint: 'Codar agora, barra de energia' },
   { key: 'bone', label: 'Texto', hint: 'cor do texto principal' },
   { key: 'muted', label: 'Texto apagado', hint: 'legendas e metadados' },
   { key: 'rule', label: 'Linhas', hint: 'bordas e divisores' },
   { key: 'ruleLight', label: 'Linhas em destaque', hint: 'bordas no hover/foco' },
 ];
 
-export const PRESETS = {
-  noir: {
-    label: 'Noir',
-    description: 'Padrão da G.W.E.N. Preto, grafite e branco.',
-    colors: {
-      void: '#0A0A0B',
-      surface: '#121214',
-      surfaceAlt: '#19191C',
-      phosphor: '#9A9AA3',
-      ember: '#FFFFFF',
-      bone: '#EDEBE7',
-      muted: '#77777F',
-      rule: '#26262A',
-      ruleLight: '#34343A',
-    },
+/** Chaves opcionais, aceitas só via JSON: forçam a cor do texto sobre os acentos */
+const OPTIONAL_KEYS = ['onPhosphor', 'onEmber'];
+
+export const NOIR = {
+  label: 'Noir',
+  description: 'A identidade da G.W.E.N. Preto, branco e cinzas.',
+  colors: {
+    void: '#0A0A0B',
+    surface: '#121214',
+    surfaceAlt: '#19191C',
+    phosphor: '#9A9AA3',
+    ember: '#FFFFFF',
+    bone: '#EDEBE7',
+    muted: '#77777F',
+    rule: '#26262A',
+    ruleLight: '#34343A',
   },
-  devs_sam: {
-    label: 'devs_sam',
-    description: 'Identidade da Sams. Roxo, magenta e bone sobre void.',
-    colors: {
-      void: '#0B0B0B',
-      surface: '#141413',
-      surfaceAlt: '#1A1A18',
-      phosphor: '#972fff',
-      ember: '#ff22d6',
-      bone: '#E8E4DE',
-      muted: '#6B6B63',
-      rule: '#252523',
-      ruleLight: '#2E2E2A',
-      // decisão da identidade: texto branco sobre o magenta, como no portfólio
-      onEmber: '#FFFFFF',
-      onPhosphor: '#FFFFFF',
-    },
-  },
+  // no Noir o logo é branco com a carga em cinza
+  logo: { body: '#EDEBE7', charge: '#77777F' },
+};
+
+export const THEMES = {
+  noir: NOIR,
+  custom: { label: 'Personalizado', description: 'Sua identidade. Cada cor por HEX, ou importe um tema em JSON.' },
 };
 
 export const STYLES = {
@@ -71,7 +62,7 @@ function expandHex(hex) {
   return h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
 }
 
-/** Luminância relativa (WCAG) para decidir se o texto sobre o acento é claro ou escuro */
+/** Luminância relativa (WCAG) */
 function luminance(hex) {
   const h = expandHex(hex);
   const [r, g, b] = [0, 2, 4].map((i) => {
@@ -81,7 +72,7 @@ function luminance(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Escolhe texto claro ou escuro pelo maior contraste (WCAG) */
+/** Escolhe texto claro ou escuro pelo maior contraste */
 export function onColor(hex) {
   const l = luminance(hex);
   const withWhite = 1.05 / (l + 0.05);
@@ -89,17 +80,14 @@ export function onColor(hex) {
   return withDark >= withWhite ? '#0A0A0B' : '#FFFFFF';
 }
 
-/** Resolve as cores finais: preset ou personalizado (com fallback para o devs_sam) */
+/** Cores finais. O personalizado parte do Noir e sobrescreve o que for HEX válido. */
 export function resolveColors(themeId, custom) {
-  if (themeId === 'custom') {
-    const { onEmber, onPhosphor, ...base } = PRESETS.devs_sam.colors;
-    const merged = { ...base };
-    for (const { key } of COLOR_TOKENS) {
-      if (custom && isHex(custom[key])) merged[key] = custom[key];
-    }
-    return merged;
+  if (themeId !== 'custom') return { ...NOIR.colors };
+  const merged = { ...NOIR.colors };
+  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
+    if (custom && isHex(custom[key])) merged[key] = custom[key];
   }
-  return (PRESETS[themeId] || PRESETS.noir).colors;
+  return merged;
 }
 
 const toVar = (key) => '--c-' + key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -107,12 +95,42 @@ const toVar = (key) => '--c-' + key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase
 /** Aplica tema e estilo no <html>. Os tokens derivados (color-mix) recalculam sozinhos. */
 export function applyAppearance({ theme = 'noir', style = 'moderno', custom = null } = {}) {
   const root = document.documentElement;
-  const colors = resolveColors(theme, custom);
+  const t = THEMES[theme] ? theme : 'noir';
+  const colors = resolveColors(t, custom);
   for (const { key } of COLOR_TOKENS) root.style.setProperty(toVar(key), colors[key]);
   root.style.setProperty('--c-on-phosphor', colors.onPhosphor || onColor(colors.phosphor));
   root.style.setProperty('--c-on-ember', colors.onEmber || onColor(colors.ember));
-  root.dataset.theme = theme;
+  const logo = t === 'noir' ? NOIR.logo : { body: colors.phosphor, charge: colors.ember };
+  root.style.setProperty('--c-logo', logo.body);
+  root.style.setProperty('--c-logo-charge', logo.charge);
+  root.dataset.theme = t;
   root.dataset.style = STYLES[style] ? style : 'moderno';
+}
+
+/* ─── IMPORTAR / EXPORTAR ─── */
+
+export function exportTheme(name, colors) {
+  const out = { gwenTheme: 1, name: name || 'Meu tema' };
+  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
+    if (isHex(colors[key])) out[key] = colors[key];
+  }
+  return JSON.stringify(out, null, 2);
+}
+
+/** Lê um tema colado. Lança erro legível se não for válido. */
+export function parseTheme(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error('Isso não é um JSON válido.');
+  }
+  const colors = {};
+  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
+    if (isHex(data[key])) colors[key] = data[key];
+  }
+  if (Object.keys(colors).length === 0) throw new Error('Nenhuma cor válida encontrada no JSON.');
+  return { name: typeof data.name === 'string' ? data.name : '', colors };
 }
 
 const STORAGE_KEY = 'gwen.appearance';

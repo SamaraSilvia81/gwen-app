@@ -17,6 +17,8 @@
   --c-rule-light: #34343A;
   --c-on-phosphor: #0A0A0B;
   --c-on-ember: #0A0A0B;
+  --c-logo: #EDEBE7;
+  --c-logo-charge: #77777F;
 
   /* derivados: acompanham qualquer tema, inclusive o personalizado */
   --c-phosphor-8: color-mix(in srgb, var(--c-phosphor) 8%, transparent);
@@ -50,6 +52,14 @@
   /* sem blur, os véus precisam ser mais opacos */
   --c-void-veil: color-mix(in srgb, var(--c-void) 92%, transparent);
   --c-pause-veil: var(--c-void);
+}
+
+/* Área que mantém a identidade Noir do sistema em qualquer tema (ex.: painel do login) */
+.noir {
+  --c-logo: #EDEBE7;
+  --c-logo-charge: #77777F;
+  --c-bone: #EDEBE7;
+  --c-muted: #9A9AA3;
 }
 
 /* Tailwind lê os tokens: bg-surface, text-bone, border-rule, font-display... */

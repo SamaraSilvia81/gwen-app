@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { Wordmark } from '../components/Logo';
-import BrandArt from '../components/BrandArt';
+import wallpaper from '../assets/wallpaper.webp';
 import { Label } from '../components/Modal';
 
 export default function Login() {
@@ -42,17 +42,24 @@ export default function Login() {
 
   return (
     <div className="h-full grid grid-cols-[1.1fr_1fr] max-[900px]:grid-cols-1">
-      {/* lado da marca */}
-      <section className="relative overflow-hidden border-r border-rule bg-surface max-[900px]:hidden">
-        <div className="absolute top-8 left-10">
+      {/* lado da marca: o wallpaper é identidade do sistema, fica igual em qualquer tema */}
+      <section className="relative overflow-hidden border-r border-rule max-[900px]:hidden" style={{ background: '#0A0A0B' }}>
+        <img src={wallpaper} alt="" className="absolute inset-0 w-full h-full object-cover anim-fade" draggable="false" />
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(180deg, rgba(10,10,11,0.85) 0%, rgba(10,10,11,0) 22%, rgba(10,10,11,0) 70%, rgba(10,10,11,0.92) 100%)' }}
+        />
+        <div className="noir absolute top-8 left-10">
           <Wordmark size={26} />
         </div>
-        <div className="h-full flex items-center justify-center px-10 py-20">
-          <BrandArt className="w-full max-w-[420px] h-auto anim-rise" />
+        <div className="noir absolute bottom-8 left-10 right-10 flex items-end justify-between">
+          <p className="font-display text-[15px] font-medium text-bone leading-snug max-w-[280px]">
+            Gestão de Wellness, Eficiência e Navegação.
+          </p>
+          <p className="mono text-[11px] text-muted">
+            by <span className="text-bone">@devs_sam</span> · v0.1 beta
+          </p>
         </div>
-        <p className="absolute bottom-8 left-10 mono text-[11px] text-muted">
-          by <span className="text-bone">@devs_sam</span> · v0.1 beta
-        </p>
       </section>
 
       {/* formulário */}
