@@ -11,6 +11,7 @@ import {
   loadConnection,
   saveConnection,
   setAccountMode,
+  PENDING_KEY,
   WELCOME_KEY,
 } from '../lib/cloudConfig';
 
@@ -50,6 +51,7 @@ export default function CloudAccountSection() {
   }
 
   function enterAccount(session) {
+    sessionStorage.removeItem(PENDING_KEY);
     sessionStorage.setItem(WELCOME_KEY, JSON.stringify(identityOf(session)));
     setAccountMode(true);
     window.location.reload();
@@ -130,13 +132,27 @@ export default function CloudAccountSection() {
             <Label>Remover conexão</Label>
           </button>
         )}
-        <button className="btn btn-primary" onClick={() => setSigning(true)}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            sessionStorage.setItem(PENDING_KEY, '1');
+            setSigning(true);
+          }}
+        >
           <SignIn size={14} />
           <Label>Entrar na conta</Label>
         </button>
       </div>
       {signing && (
-        <Modal eyebrow="conta na nuvem" title="Entrar na sua conta" onClose={() => setSigning(false)} width={440}>
+        <Modal
+          eyebrow="conta na nuvem"
+          title="Entrar na sua conta"
+          onClose={() => {
+            sessionStorage.removeItem(PENDING_KEY);
+            setSigning(false);
+          }}
+          width={440}
+        >
           <p className="text-[13px] text-muted leading-relaxed mb-5">
             Depois de entrar, a G.W.E.N. passa a usar os dados da nuvem e recarrega. Os dados deste computador não são apagados.
           </p>

@@ -16,6 +16,13 @@ const ACCOUNT_KEY = 'gwen.cloud.account';
 /** Guarda quem acabou de entrar, para o app mostrar a confirmação depois de recarregar */
 export const WELCOME_KEY = 'gwen.welcomeAccount';
 
+/**
+ * Pedido de entrada na conta em andamento. No navegador, o login com Google sai da
+ * página e volta recarregando tudo; este marcador (que sobrevive à ida e volta)
+ * diz ao app que, ao voltar com sessão, deve ligar o modo conta.
+ */
+export const PENDING_KEY = 'gwen.pendingAccount';
+
 const get = (k) => {
   try {
     return localStorage.getItem(k);

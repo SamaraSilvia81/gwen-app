@@ -3,9 +3,9 @@ import { Cloud } from '@phosphor-icons/react';
 import Logo from './Logo';
 import { Label } from './Modal';
 import CloudSignIn from './CloudSignIn';
-import { currentSession } from '../lib/cloudAuth';
+import { currentSession, identityOf } from '../lib/cloudAuth';
 import { supabase } from '../lib/supabase';
-import { isAccountMode, setAccountMode } from '../lib/cloudConfig';
+import { isAccountMode, PENDING_KEY, setAccountMode, WELCOME_KEY } from '../lib/cloudConfig';
 
 const backToLocal = () => {
   setAccountMode(false);
@@ -19,6 +19,27 @@ const backToLocal = () => {
 export default function AccountGate({ children }) {
   const account = isAccountMode();
   const [state, setState] = useState(account ? 'checking' : 'in'); // checking | in | out | noconn
+
+  // No navegador, o Google devolve recarregando a página: se havia um pedido de entrada
+  // em andamento e a sessão chegou, liga o modo conta e recarrega.
+  useEffect(() => {
+    if (account || !supabase || !sessionStorage.getItem(PENDING_KEY)) return undefined;
+    let alive = true;
+    const done = (session) => {
+      if (!alive || !session) return;
+      alive = false;
+      sessionStorage.removeItem(PENDING_KEY);
+      sessionStorage.setItem(WELCOME_KEY, JSON.stringify(identityOf(session)));
+      setAccountMode(true);
+      window.location.reload();
+    };
+    currentSession().then(done);
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => done(s));
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [account]);
 
   useEffect(() => {
     if (!account) return undefined;
