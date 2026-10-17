@@ -1,10 +1,31 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/adr-007-claro.webp">
+  <img src="../../_assets/banners/docs/adr-007.webp" alt="ADR-007 · Modo claro como terceiro eixo da aparência" width="100%">
+</picture>
+
 # ADR-007 · Modo claro como terceiro eixo da aparência
 
-| Código | Status | Data | Decisão de |
-|---|---|---|---|
-| `ADR-007` | Aceita | 17/10/2026 | Samara Silvia |
+![status](https://img.shields.io/badge/status-aceita-0A0A0B) ![tipo](https://img.shields.io/badge/tipo-registro%20de%20decisão-3A3A3F) ![código](https://img.shields.io/badge/código-ADR--007-5E5E66)
 
-**Complementa:** [`ADR-004`](ADR-004-identidade-noir-e-temas-por-tokens.md)
+| Campo | Valor |
+|---|---|
+| Código | `ADR-007` |
+| Data | sábado, 17/10/2026 |
+| Tipo | Registro de decisão |
+| Status | Aceita |
+| Decisão de | Samara Silvia |
+| Redigido por | Samara Silvia |
+| Complementa | [`ADR-004`](ADR-004-identidade-noir-e-temas-por-tokens.md) |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) |
+
+**Sumário**
+
+1. [Contexto](#-contexto)
+2. [Decisão](#-decisão)
+3. [Alternativas consideradas](#-alternativas-consideradas)
+4. [Consequências](#-consequências)
+
+---
 
 ### $ contexto
 
@@ -40,3 +61,10 @@ A aparência passa a ter **três eixos independentes**:
 - O JSON de tema aceita um bloco `light` com as mesmas chaves.
 - O editor do Personalizado tem as abas **Paleta escura** e **Paleta clara**; editar a clara mostra o app claro na prévia.
 - `color-scheme` do documento acompanha o modo, então barras de rolagem e controles nativos também mudam.
+
+---
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/rodape-claro.webp">
+  <img src="../../_assets/banners/docs/rodape.webp" alt="G.W.E.N. · rodapé da documentação" width="100%">
+</picture>

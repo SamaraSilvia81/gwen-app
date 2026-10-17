@@ -151,6 +151,31 @@ Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro 
 
 > O Windows pode avisar que o app é de um "editor desconhecido", porque o instalador não tem assinatura digital. Clique em **Mais informações > Executar assim mesmo**.
 
+#### 5. Publicando uma versão (com atualização automática)
+
+Quem já instalou recebe a versão nova pelo próprio app, sem perder dados ([`ADR-009`](docs/decisoes/ADR-009-atualizacoes-sem-perder-dados.md)). Para isso, cada versão é assinada.
+
+**Uma vez só, antes da primeira Release:**
+
+```bash
+yarn tauri signer generate -w ~/.tauri/gwen.key
+```
+
+> ⚠️ **Guarde o arquivo `gwen.key` e a senha num gerenciador de senhas, fora do repositório.** Se essa chave for perdida, quem já instalou não recebe mais atualizações automáticas e precisa reinstalar à mão. Não execute o comando de novo depois de publicar versões: uma chave nova invalida a anterior.
+
+1. Copie a chave **pública** que o comando mostra (ou o conteúdo de `gwen.key.pub`) para `plugins.updater.pubkey` em `src-tauri/tauri.conf.json`.
+2. No GitHub, em **Settings > Secrets and variables > Actions**, crie: `TAURI_SIGNING_PRIVATE_KEY` (conteúdo do `gwen.key`), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_SUPABASE_SCHEMA`.
+
+**A cada versão:**
+
+1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, e o `CHANGELOG.md`.
+2. Crie e envie a tag:
+   ```bash
+   git tag v0.3.0
+   git push origin v0.3.0
+   ```
+3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
+
 ### $ como usar
 
 1. **Crie categorias** no `+` da lateral. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria".
@@ -278,6 +303,7 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 | [`ADR-006`](docs/decisoes/ADR-006-login-google-por-deep-link.md) | Login com Google por deep link |
 | [`ADR-007`](docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência |
 | [`ADR-008`](docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho |
+| [`ADR-009`](docs/decisoes/ADR-009-atualizacoes-sem-perder-dados.md) | Atualizações sem perder dados |
 
 O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
 

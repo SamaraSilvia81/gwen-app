@@ -1,0 +1,57 @@
+# Gera o instalador do Windows e publica uma Release quando uma tag vX.Y.Z é enviada.
+# A Release sai como rascunho: confira as notas e publique manualmente.
+#
+# Segredos necessários (Settings > Secrets and variables > Actions):
+#   TAURI_SIGNING_PRIVATE_KEY           conteúdo do arquivo .key gerado por `yarn tauri signer generate`
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  a senha escolhida na geração
+#   VITE_SUPABASE_URL                   URL do projeto Supabase
+#   VITE_SUPABASE_ANON_KEY              anon key do projeto
+#   VITE_SUPABASE_SCHEMA                gwen
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: yarn install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_SCHEMA: ${{ secrets.VITE_SUPABASE_SCHEMA }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'G.W.E.N. ${{ github.ref_name }}'
+          releaseBody: 'Veja o que mudou no CHANGELOG.md.'
+          releaseDraft: true
+          # /releases/latest ignora pré-releases, então a versão precisa sair como release normal
+          prerelease: false
+          includeUpdaterJson: true
+          # só o CI gera os arquivos assinados de atualização; o build local continua sem precisar da chave
+          args: --config src-tauri/tauri.updater.conf.json

@@ -13,6 +13,7 @@ import Topbar from './components/Topbar';
 import PauseOverlay from './components/PauseOverlay';
 import StaleSessionModal from './components/StaleSessionModal';
 import ReminderStack from './components/ReminderStack';
+import UpdateBar from './components/UpdateBar';
 import Logo from './components/Logo';
 
 export default function App() {
@@ -55,6 +56,7 @@ function Shell() {
       <Sidebar view={view} onNavigate={setView} filter={filter} onFilter={setFilter} stats={stats} />
       <main className="flex-1 min-w-0 flex flex-col">
         <Topbar title={view === 'config' ? 'Configurações' : null} />
+        <UpdateBar />
         <div className="flex-1 min-h-0">
           {view === 'config' ? <Settings /> : <Dashboard filter={filter} stats={stats} />}
         </div>

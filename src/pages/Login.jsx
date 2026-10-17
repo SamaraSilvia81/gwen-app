@@ -67,7 +67,7 @@ export default function Login() {
             Gestão de Wellness, Eficiência e Navegação.
           </p>
           <p className="mono text-[11px] text-muted">
-            by <span className="text-bone">@devs_sam</span> · v0.3 beta
+            by <span className="text-bone">@devs_sam</span> · v{import.meta.env.VITE_APP_VERSION} beta
           </p>
         </div>
       </section>

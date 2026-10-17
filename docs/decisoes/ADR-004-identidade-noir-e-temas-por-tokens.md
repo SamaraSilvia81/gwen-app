@@ -1,8 +1,31 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/adr-004-claro.webp">
+  <img src="../../_assets/banners/docs/adr-004.webp" alt="ADR-004 · Identidade Noir e temas por tokens" width="100%">
+</picture>
+
 # ADR-004 · Identidade Noir e temas por tokens
 
-| Código | Status | Data | Decisão de |
-|---|---|---|---|
-| `ADR-004` | Aceita | 17/10/2026 | Samara Silvia |
+![status](https://img.shields.io/badge/status-aceita-0A0A0B) ![tipo](https://img.shields.io/badge/tipo-registro%20de%20decisão-3A3A3F) ![código](https://img.shields.io/badge/código-ADR--004-5E5E66)
+
+| Campo | Valor |
+|---|---|
+| Código | `ADR-004` |
+| Data | sábado, 17/10/2026 |
+| Tipo | Registro de decisão |
+| Status | Aceita |
+| Decisão de | Samara Silvia |
+| Redigido por | Samara Silvia |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/decisoes/ADR-004-identidade-noir-e-temas-por-tokens.md) |
+
+**Sumário**
+
+1. [Contexto](#-contexto)
+2. [Decisão](#-decisão)
+3. [Alternativas consideradas](#-alternativas-consideradas)
+4. [Consequências](#-consequências)
+5. [Revisitar quando](#-revisitar-quando)
+
+---
 
 ### $ contexto
 
@@ -39,3 +62,10 @@ A primeira versão misturou as duas coisas: o tema devs_sam (roxo e magenta da i
 ### $ revisitar quando
 
 - Pedirem modo claro com frequência: um tema claro oficial pode entrar ao lado do Noir, desde que siga a identidade preto e branco.
+
+---
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/rodape-claro.webp">
+  <img src="../../_assets/banners/docs/rodape.webp" alt="G.W.E.N. · rodapé da documentação" width="100%">
+</picture>

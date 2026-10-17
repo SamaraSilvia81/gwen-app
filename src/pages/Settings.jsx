@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowCounterClockwise, Check, ClipboardText, Copy, Desktop, Moon, Sun } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { currentVersion, findUpdate, installUpdate } from '../lib/updater';
+import { isTauri } from '../lib/native';
 import { MIN_INTERVAL, REMINDERS, ensureNotificationPermission, notify, resolveWellness } from '../lib/wellness';
 import {
   COLOR_TOKENS, MODES, NOIR, STYLES, THEMES, applyAppearance, effectiveMode, exportTheme, isHex, parseTheme, resolveColors,
@@ -27,6 +29,30 @@ export default function Settings() {
   const palette = editing || effectiveMode(mode);
   const [hexDraft, setHexDraft] = useState({});
   const [saving, setSaving] = useState(false);
+  const [version, setVersion] = useState('');
+  const [updateState, setUpdateState] = useState('idle'); // idle | checking | none | available | installing
+  const [found, setFound] = useState(null);
+  useEffect(() => {
+    currentVersion().then(setVersion);
+  }, []);
+
+  async function checkUpdate() {
+    setUpdateState('checking');
+    const u = await findUpdate();
+    setFound(u);
+    setUpdateState(u ? 'available' : 'none');
+  }
+
+  async function runUpdate() {
+    setUpdateState('installing');
+    try {
+      await installUpdate(found);
+    } catch (err) {
+      toast(`Não consegui atualizar: ${err?.message || err}`, 'error');
+      setUpdateState('available');
+    }
+  }
+
   const [wellness, setWellness] = useState(() => resolveWellness(profile?.wellness));
   const dirtyWellness = JSON.stringify(wellness) !== JSON.stringify(resolveWellness(profile?.wellness));
   const setReminder = (kind, patch) =>
@@ -417,13 +443,30 @@ export default function Settings() {
           <div className="card p-4 flex items-center gap-4">
             <Logo size={40} charge={1} />
             <div className="flex-1">
-              <p className="font-display font-semibold">G.W.E.N. <span className="mono text-[11px] text-muted font-normal">v0.3.0</span></p>
+              <p className="font-display font-semibold">G.W.E.N. <span className="mono text-[11px] text-muted font-normal">v{version}</span></p>
               <p className="text-[12px] text-muted mt-0.5">Gestão de Wellness, Eficiência e Navegação</p>
             </div>
             <div className="text-right">
               <p className="text-[12px]">por Samara Silvia (@devs_sam)</p>
               <p className="mono text-[11px] text-muted mt-0.5">© 2026 · todos os direitos reservados</p>
             </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+            <p className="text-[12px] text-muted">
+              {!isTauri && 'Atualizações só funcionam no app instalado.'}
+              {isTauri && updateState === 'idle' && 'A G.W.E.N. procura versões novas sozinha ao abrir. Seus dados não são apagados ao atualizar.'}
+              {updateState === 'checking' && 'Procurando...'}
+              {updateState === 'none' && 'Você já está na versão mais recente.'}
+              {updateState === 'available' && found && `Versão ${found.version} disponível.`}
+              {updateState === 'installing' && 'Baixando e instalando. O app reinicia sozinho.'}
+            </p>
+            {isTauri && (updateState === 'available' ? (
+              <button className="btn btn-primary btn-sm" onClick={runUpdate}><Label>Atualizar e reiniciar</Label></button>
+            ) : (
+              <button className="btn btn-ghost btn-sm" onClick={checkUpdate} disabled={updateState === 'checking' || updateState === 'installing'}>
+                <Label>Procurar atualização</Label>
+              </button>
+            ))}
           </div>
         </Section>
       </div>

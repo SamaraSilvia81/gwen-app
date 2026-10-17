@@ -1,10 +1,31 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../_assets/banners/docs/dat-001-claro.webp">
+  <img src="../_assets/banners/docs/dat-001.webp" alt="DAT-001 · Modelo de dados" width="100%">
+</picture>
+
 # DAT-001 · Modelo de dados
 
-| Código | Tipo | Status | Versão do app | Atualizado |
-|---|---|---|---|---|
-| `DAT-001` | Dados | Vigente | 0.3.0 | 17/10/2026 |
+![status](https://img.shields.io/badge/status-vigente-0A0A0B) ![tipo](https://img.shields.io/badge/tipo-dados-3A3A3F) ![código](https://img.shields.io/badge/código-DAT--001-5E5E66)
 
-**Relacionados:** [`ARQ-001`](ARQ-001-visao-geral.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-003`](decisoes/ADR-003-tempo-por-sessao-manual-na-v1.md) · migrações: [`001_gwen_init.sql`](../supabase/migrations/001_gwen_init.sql), [`002_gwen_modo_claro.sql`](../supabase/migrations/002_gwen_modo_claro.sql), [`003_gwen_wellness.sql`](../supabase/migrations/003_gwen_wellness.sql)
+| Campo | Valor |
+|---|---|
+| Código | `DAT-001` |
+| Data | sábado, 17/10/2026 |
+| Tipo | Dados |
+| Status | Vigente |
+| Versão do app | 0.3.0 |
+| Redigido por | Samara Silvia |
+| Referências | [`ARQ-001`](ARQ-001-visao-geral.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-003`](decisoes/ADR-003-tempo-por-sessao-manual-na-v1.md) · migrações: [`001_gwen_init.sql`](../supabase/migrations/001_gwen_init.sql), [`002_gwen_modo_claro.sql`](../supabase/migrations/002_gwen_modo_claro.sql), [`003_gwen_wellness.sql`](../supabase/migrations/003_gwen_wellness.sql) |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/DAT-001-modelo-de-dados.md) |
+
+**Sumário**
+
+1. [Onde mora](#-onde-mora)
+2. [Diagrama](#-diagrama)
+3. [Tabelas](#-tabelas)
+4. [Invariantes](#-invariantes)
+5. [Regras de tempo](#-regras-de-tempo)
+6. [Evoluções previstas](#-evoluções-previstas)
 
 ---
 
@@ -152,3 +173,10 @@ Se havia uma pausa ativa, ela é encerrada no mesmo instante escolhido (ou no in
 - **Uso por programa** (detecção de janela ativa): nova tabela `gwen.app_usage (user_id, app, title, started_at, ended_at)`, independente das sessões.
 - **Caminhos por máquina:** mover `folders[].path` para uma tabela `gwen.folder_paths (folder_id, device_id, path)` se o uso em mais de um computador virar realidade.
 - **Dias de descanso:** pode ser derivado das sessões (dias sem nenhuma), sem tabela nova.
+
+---
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../_assets/banners/docs/rodape-claro.webp">
+  <img src="../_assets/banners/docs/rodape.webp" alt="G.W.E.N. · rodapé da documentação" width="100%">
+</picture>

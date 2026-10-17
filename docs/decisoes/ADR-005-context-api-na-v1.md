@@ -1,8 +1,31 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/adr-005-claro.webp">
+  <img src="../../_assets/banners/docs/adr-005.webp" alt="ADR-005 · Context API na V1" width="100%">
+</picture>
+
 # ADR-005 · Context API na V1
 
-| Código | Status | Data | Decisão de |
-|---|---|---|---|
-| `ADR-005` | Aceita | 17/10/2026 | Samara Silvia |
+![status](https://img.shields.io/badge/status-aceita-0A0A0B) ![tipo](https://img.shields.io/badge/tipo-registro%20de%20decisão-3A3A3F) ![código](https://img.shields.io/badge/código-ADR--005-5E5E66)
+
+| Campo | Valor |
+|---|---|
+| Código | `ADR-005` |
+| Data | sábado, 17/10/2026 |
+| Tipo | Registro de decisão |
+| Status | Aceita |
+| Decisão de | Samara Silvia |
+| Redigido por | Samara Silvia |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/decisoes/ADR-005-context-api-na-v1.md) |
+
+**Sumário**
+
+1. [Contexto](#-contexto)
+2. [Decisão](#-decisão)
+3. [Alternativas consideradas](#-alternativas-consideradas)
+4. [Consequências](#-consequências)
+5. [Revisitar quando](#-revisitar-quando)
+
+---
 
 ### $ contexto
 
@@ -38,3 +61,10 @@ Os componentes acessam só pelos hooks `useAuth()`, `useWorkspace()` e `useToast
 ### $ revisitar quando
 
 - O `WorkspaceContext` passar de umas 400 linhas, ou precisar de estado compartilhado entre duas janelas (widget flutuante).
+
+---
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/rodape-claro.webp">
+  <img src="../../_assets/banners/docs/rodape.webp" alt="G.W.E.N. · rodapé da documentação" width="100%">
+</picture>

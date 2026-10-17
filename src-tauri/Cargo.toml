@@ -26,3 +26,6 @@ serde_json = "1"
 # garante uma janela só: o link gwen:// do login com Google volta para o app já aberto
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+# atualização pelo próprio app (baixa o instalador novo assinado e reinicia)
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"

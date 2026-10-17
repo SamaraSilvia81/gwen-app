@@ -21,6 +21,9 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Resumo do dia no dashboard (copos d'água, alongamentos) e próximo lembrete
 - Registro das respostas em `gwen.wellness_events`
 - Migração `003_gwen_wellness.sql`
+- Atualização pelo próprio app: faixa "Atualizar e reiniciar", instalador assinado, dados preservados ([`ADR-009`](docs/decisoes/ADR-009-atualizacoes-sem-perder-dados.md))
+- Workflow `release.yml`: tag `vX.Y.Z` gera o instalador e a Release com o `latest.json`
+- Documentação no padrão com banner por documento, metadados e sumário, mais o gerador de banners em `_assets/gerador/banners-docs.html`
 
 ## [0.2.0] - 2026-10-17
 
