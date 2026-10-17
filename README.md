@@ -8,7 +8,7 @@
 ### Seu ambiente de trabalho em um clique. Sua pausa levada a sério.
 
 ![Tipo](https://img.shields.io/badge/tipo-aplicativo-19191C?style=for-the-badge)
-![Status](https://img.shields.io/badge/status-beta-9A9AA3?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
 ![Versão](https://img.shields.io/badge/versão-0.1.0-171717?style=for-the-badge)
