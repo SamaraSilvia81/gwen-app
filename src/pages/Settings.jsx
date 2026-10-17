@@ -362,7 +362,7 @@ export default function Settings() {
             <div className="w-40 energy-track">
               <div className="energy-fill" style={{ width: '62%' }} />
             </div>
-            <button className="btn btn-primary btn-sm"><Label>Codar agora</Label></button>
+            <button className="btn btn-primary btn-sm"><Label>Começar agora</Label></button>
           </div>
 
           <div className="flex justify-end gap-2">
@@ -505,7 +505,7 @@ export default function Settings() {
         </Section>
 
         {/* CONTA NA NUVEM */}
-        <Section title="Conta na nuvem" description="Opcional e avançado. Para guardar os dados no seu próprio Supabase em vez de neste computador.">
+        <Section title="Conta na nuvem" description="Opcional e avançado, para quem tem o próprio projeto Supabase. Não é preciso para usar a G.W.E.N.">
           <CloudAccountSection />
         </Section>
 

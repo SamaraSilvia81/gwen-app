@@ -17,7 +17,7 @@ export const COLOR_TOKENS = [
   { key: 'surface', label: 'Superfície', hint: 'cards e painéis' },
   { key: 'surfaceAlt', label: 'Superfície alternativa', hint: 'inputs, áreas destacadas' },
   { key: 'phosphor', label: 'Acento principal', hint: 'seleção, status ativo, logo' },
-  { key: 'ember', label: 'Acento secundário', hint: 'Codar agora, barra de energia' },
+  { key: 'ember', label: 'Acento secundário', hint: 'Começar agora, barra de energia' },
   { key: 'bone', label: 'Texto', hint: 'cor do texto principal' },
   { key: 'muted', label: 'Texto apagado', hint: 'legendas e metadados' },
   { key: 'rule', label: 'Linhas', hint: 'bordas e divisores' },

@@ -146,7 +146,7 @@ export function WorkspaceProvider({ children }) {
     return s;
   }, [activeSession, activeBreak, endSession, endBreak]);
 
-  /** "Codar agora": abre o que está marcado para abrir e inicia a sessão */
+  /** "Começar agora": abre o que está marcado para abrir e inicia a sessão */
   const launchProject = useCallback(async (project) => {
     const errors = [];
     for (const folder of project.folders || []) {

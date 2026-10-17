@@ -134,7 +134,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="field-label">Pastas</p>
-              <p className="text-[12px] text-muted mt-1">Marque "abrir junto" no que deve abrir com o Codar agora.</p>
+              <p className="text-[12px] text-muted mt-1">Marque "abrir junto" no que deve abrir com o Começar agora.</p>
             </div>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => set({ folders: [...draft.folders, emptyFolder()] })}>
               <Plus size={13} /> <Label>Pasta</Label>
@@ -186,7 +186,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="field-label">Links</p>
-              <p className="text-[12px] text-muted mt-1">Repositório, Jira, Confluence, Figma, deploy...</p>
+              <p className="text-[12px] text-muted mt-1">Repositório, documentos, Figma, Drive, deploy...</p>
             </div>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => set({ links: [...draft.links, emptyLink()] })}>
               <LinkSimple size={13} /> <Label>Link</Label>
@@ -195,7 +195,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
           <div className="flex flex-col gap-2">
             {draft.links.map((l, i) => (
               <div key={i} className="grid grid-cols-[130px_1fr_auto_auto] gap-2 items-center">
-                <input className="input" value={l.label} onChange={(e) => setLink(i, { label: e.target.value })} placeholder="GitHub" />
+                <input className="input" value={l.label} onChange={(e) => setLink(i, { label: e.target.value })} placeholder="Documento" />
                 <input className="input mono text-[12px]" value={l.url} onChange={(e) => setLink(i, { url: e.target.value })} placeholder="https://..." />
                 <label className="flex items-center gap-1.5 text-[12px] text-muted whitespace-nowrap cursor-pointer">
                   <input

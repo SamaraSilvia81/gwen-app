@@ -97,7 +97,7 @@ export default function ProjectCard({ project, time, categoryName, onEdit }) {
         ) : (
           <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => run(() => launchProject(project))}>
             <Lightning size={13} weight="fill" />
-            <Label>Codar agora</Label>
+            <Label>Começar agora</Label>
           </button>
         )}
       </footer>

@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CloudCheck, SignOut, SignIn, LinkBreak } from '@phosphor-icons/react';
+import { CloudCheck, SignOut, SignIn, LinkBreak, PencilSimple } from '@phosphor-icons/react';
 import Modal, { Label } from './Modal';
-import CloudSignIn from './CloudSignIn';
-import { currentSession, identityOf, signOutCloud } from '../lib/cloudAuth';
+import CloudEntry from './CloudEntry';
+import ConnectionForm from './ConnectionForm';
+import { currentSession, signOutCloud } from '../lib/cloudAuth';
 import { connectSupabase, supabase } from '../lib/supabase';
-import {
-  clearConnection,
-  connectionHost,
-  isAccountMode,
-  loadConnection,
-  saveConnection,
-  setAccountMode,
-  PENDING_KEY,
-  WELCOME_KEY,
-} from '../lib/cloudConfig';
+import { clearConnection, connectionHost, isAccountMode, loadConnection, setAccountMode } from '../lib/cloudConfig';
 
 /**
  * Conta na nuvem (avançado): conectar ao próprio Supabase, entrar e sair.
@@ -21,9 +13,8 @@ import {
  */
 export default function CloudAccountSection() {
   const [conn, setConn] = useState(() => loadConnection());
-  const [form, setForm] = useState({ url: '', anonKey: '', schema: 'gwen' });
-  const [error, setError] = useState('');
   const [signing, setSigning] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState('');
   const account = isAccountMode();
 
@@ -32,29 +23,10 @@ export default function CloudAccountSection() {
     currentSession().then((s) => setEmail(s?.user?.email || ''));
   }, [account]);
 
-  function connect(e) {
-    e.preventDefault();
-    setError('');
-    try {
-      const saved = saveConnection(form);
-      connectSupabase(saved);
-      setConn(saved);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
   function removeConnection() {
     clearConnection();
-    connectSupabase(loadConnection());
-    setConn(loadConnection());
-  }
-
-  function enterAccount(session) {
-    sessionStorage.removeItem(PENDING_KEY);
-    sessionStorage.setItem(WELCOME_KEY, JSON.stringify(identityOf(session)));
-    setAccountMode(true);
-    window.location.reload();
+    connectSupabase(null);
+    setConn(null);
   }
 
   async function leaveAccount() {
@@ -88,33 +60,18 @@ export default function CloudAccountSection() {
     );
   }
 
-  if (!conn) {
+  if (!conn || editing) {
     return (
-      <form onSubmit={connect} className="card p-4 flex flex-col gap-3">
-        <p className="text-[13px] text-muted leading-relaxed">
-          Use o seu próprio projeto Supabase. Antes, rode as migrações da pasta{' '}
-          <span className="mono text-bone">supabase/migrations</span> no SQL Editor e adicione o schema em Project Settings, Data
-          API. A URL e a chave anon ficam só neste computador.
-        </p>
-        <label className="field">
-          <span className="field-label">URL do projeto</span>
-          <input className="input" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://abcd1234.supabase.co" required />
-        </label>
-        <label className="field">
-          <span className="field-label">Chave anon</span>
-          <input className="input mono" value={form.anonKey} onChange={(e) => setForm({ ...form, anonKey: e.target.value })} placeholder="eyJ..." required />
-        </label>
-        <label className="field">
-          <span className="field-label">Schema</span>
-          <input className="input" value={form.schema} onChange={(e) => setForm({ ...form, schema: e.target.value })} />
-        </label>
-        {error && <p className="text-[13px] text-ember">{error}</p>}
-        <div>
-          <button type="submit" className="btn btn-ghost">
-            <Label>Salvar conexão</Label>
-          </button>
-        </div>
-      </form>
+      <div className="card p-4">
+        <ConnectionForm
+          initial={conn}
+          onSaved={(saved) => {
+            setConn(saved);
+            setEditing(false);
+          }}
+          onCancel={conn ? () => setEditing(false) : undefined}
+        />
+      </div>
     );
   }
 
@@ -126,39 +83,20 @@ export default function CloudAccountSection() {
           <p className="font-medium">Conectado a {connectionHost(conn)}</p>
           <p className="text-[12px] text-muted">Seus dados continuam neste computador até você entrar na conta.</p>
         </div>
-        {!conn.fromEnv && (
-          <button className="btn btn-ghost btn-sm" onClick={removeConnection}>
-            <LinkBreak size={13} />
-            <Label>Remover conexão</Label>
-          </button>
-        )}
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            sessionStorage.setItem(PENDING_KEY, '1');
-            setSigning(true);
-          }}
-        >
+        <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+          <PencilSimple size={13} />
+          <Label>Trocar</Label>
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={removeConnection}>
+          <LinkBreak size={13} />
+          <Label>Remover conexão</Label>
+        </button>
+        <button className="btn btn-primary" onClick={() => setSigning(true)}>
           <SignIn size={14} />
           <Label>Entrar na conta</Label>
         </button>
       </div>
-      {signing && (
-        <Modal
-          eyebrow="conta na nuvem"
-          title="Entrar na sua conta"
-          onClose={() => {
-            sessionStorage.removeItem(PENDING_KEY);
-            setSigning(false);
-          }}
-          width={440}
-        >
-          <p className="text-[13px] text-muted leading-relaxed mb-5">
-            Depois de entrar, a G.W.E.N. passa a usar os dados da nuvem e recarrega. Os dados deste computador não são apagados.
-          </p>
-          <CloudSignIn onSession={enterAccount} />
-        </Modal>
-      )}
+      {signing && <CloudEntry onClose={() => setSigning(false)} />}
     </>
   );
 }

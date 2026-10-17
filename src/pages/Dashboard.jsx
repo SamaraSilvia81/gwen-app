@@ -134,7 +134,7 @@ function EmptyState({ hasAny, onCreate }) {
       <p className="text-muted max-w-[420px] mx-auto mb-6 leading-relaxed">
         {hasAny
           ? 'Troque o filtro de status ou de categoria na lateral.'
-          : 'Escolha as pastas e os links dele. Depois é só clicar em Codar agora para abrir tudo e começar a contar o tempo.'}
+          : 'Escolha as pastas e os links dele. Depois é só clicar em Começar agora para abrir tudo e contar o tempo.'}
       </p>
       {!hasAny && (
         <button className="btn btn-primary" onClick={onCreate}>
