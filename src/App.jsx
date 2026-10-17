@@ -33,7 +33,9 @@ export default function App() {
 
 function Gate() {
   const { loading, error, needsOnboarding } = useProfile();
-  if (loading) return <Splash />;
+  // a abertura roda inteira uma vez por inicialização, mesmo que os dados carreguem antes
+  const [intro, setIntro] = useState(true);
+  if (loading || intro) return <Splash ready={!loading} onDone={() => setIntro(false)} />;
   if (error) return <DataError message={error} />;
   if (needsOnboarding) return <Onboarding />;
   return (
@@ -117,12 +119,51 @@ function Shell() {
   );
 }
 
-function Splash() {
+/**
+ * Abertura: o G aparece, a barra do logo carrega em etapas (a mesma barra da
+ * tela de pausa), o nome se forma e a tela some quando os dados estão prontos.
+ * Dura ~1,6 s; com "reduzir movimento" do sistema, quase nada.
+ */
+const SPLASH_STEPS = [
+  { at: 0, charge: 0, text: 'iniciando' },
+  { at: 280, charge: 0.3, text: 'abrindo seus dados' },
+  { at: 700, charge: 0.7, text: 'lendo projetos' },
+  { at: 1150, charge: 1, text: 'pronto' },
+];
+const SPLASH_MIN_MS = 1600;
+
+function Splash({ ready = false, onDone }) {
+  const reduced = useMemo(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
+  const [step, setStep] = useState(reduced ? SPLASH_STEPS.length - 1 : 0);
+  const [minDone, setMinDone] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => {
+    const timers = reduced ? [] : SPLASH_STEPS.slice(1).map((s, i) => setTimeout(() => setStep(i + 1), s.at));
+    timers.push(setTimeout(() => setMinDone(true), reduced ? 300 : SPLASH_MIN_MS));
+    return () => timers.forEach(clearTimeout);
+  }, [reduced]);
+
+  // dados prontos e animação completa: some e entrega a tela
+  useEffect(() => {
+    if (!ready || !minDone) return;
+    setLeaving(true);
+    const id = setTimeout(() => onDone?.(), reduced ? 0 : 320);
+    return () => clearTimeout(id);
+  }, [ready, minDone, onDone, reduced]);
+
+  // dados demorando (nuvem lenta): a barra fica em 70% esperando
+  const current = SPLASH_STEPS[!ready && step === SPLASH_STEPS.length - 1 ? step - 1 : step];
+
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-5 anim-fade">
-      <Logo size={64} charge={0.65} />
-      <p className="mono text-[12px] text-muted">
-        iniciando a G.W.E.N.<span className="blink">_</span>
+    <div className={`splash h-full flex flex-col items-center justify-center gap-6 ${leaving ? 'is-leaving' : ''}`}>
+      <div className="splash-logo">
+        <Logo size={76} charge={current.charge} />
+      </div>
+      <p className="splash-word font-display font-bold text-bone text-[20px]">G.W.E.N.</p>
+      <p className="mono text-[12px] text-muted h-4">
+        {current.text}
+        <span className="blink">_</span>
       </p>
     </div>
   );

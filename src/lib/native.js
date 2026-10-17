@@ -120,3 +120,16 @@ export function repoHostLabel(url) {
   if (/bitbucket/i.test(url)) return 'Bitbucket';
   return 'Repositório';
 }
+
+/** Abrir com o Windows: lê e muda a opção no sistema (não fica no banco). */
+export async function autostartEnabled() {
+  if (!isTauri) return false;
+  const { isEnabled } = await import('@tauri-apps/plugin-autostart');
+  return isEnabled();
+}
+
+export async function setAutostart(on) {
+  if (!isTauri) return;
+  const { enable, disable } = await import('@tauri-apps/plugin-autostart');
+  await (on ? enable() : disable());
+}

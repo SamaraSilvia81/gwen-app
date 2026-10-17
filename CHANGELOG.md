@@ -18,6 +18,8 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Várias ações por pasta:** a mesma pasta pode abrir no VS Code, no Explorer e no Git Bash juntos, sem cadastrar duas vezes
 - **Link do repositório automático:** ao escolher uma pasta que é repositório Git, o link do GitHub (ou GitLab, Bitbucket) entra sozinho
 - **Rascunho:** fechar o formulário de projeto novo sem salvar guarda o que já foi preenchido
+- **Abrir com o Windows:** opção em Configurações, Sistema (plugin oficial de inicialização automática)
+- **Abertura animada:** o G aparece, a barra do logo carrega e o nome se forma antes de entrar no app. Respeita o "reduzir movimento" do sistema
 
 ### Corrigido
 - VS Code abrindo um arquivo vazio quando o caminho da pasta tinha espaço ou `&`: agora o `Code.exe` é chamado direto

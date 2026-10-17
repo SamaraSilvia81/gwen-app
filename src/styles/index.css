@@ -236,6 +236,18 @@ select option { background: var(--c-surface); color: var(--c-bone); }
 .anim-fade { animation: fade-in 0.4s ease both; }
 .anim-rise { animation: rise-in 0.45s var(--ease-out) both; }
 .anim-breathe { animation: breathe 6s ease-in-out infinite; }
+
+/* abertura (App.jsx > Splash) */
+@keyframes splash-logo { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes splash-word { from { opacity: 0; letter-spacing: 0.6em; } to { opacity: 1; letter-spacing: 0.22em; } }
+.splash { transition: opacity 0.3s ease, transform 0.3s ease; }
+.splash.is-leaving { opacity: 0; transform: scale(1.02); }
+.splash-logo { animation: splash-logo 0.5s var(--ease-out) both; }
+.splash-word { letter-spacing: 0.22em; animation: splash-word 0.9s var(--ease-out) 0.25s both; }
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo, .splash-word { animation: none; }
+  .splash { transition: none; }
+}
 .blink { animation: blink 1s step-end infinite; }
 
 @media (prefers-reduced-motion: reduce) {

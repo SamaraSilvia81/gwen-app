@@ -30,3 +30,5 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 # atualização pelo próprio app (baixa o instalador novo assinado e reinicia)
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# abrir junto com o Windows (chave em Configurações > Sistema)
+tauri-plugin-autostart = "2"

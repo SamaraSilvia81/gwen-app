@@ -745,6 +745,13 @@
     "@tauri-apps/cli-win32-ia32-msvc" "2.12.3"
     "@tauri-apps/cli-win32-x64-msvc" "2.12.3"
 
+"@tauri-apps/plugin-autostart@^2.7.0":
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-autostart/-/plugin-autostart-2.7.0.tgz#63fde1a5a0eba28782bec12e4d150ac6e43f9846"
+  integrity sha512-4uRq+rqKSAh6MWAxgk6FnUPigc8VMG8eDVYTLk3A7OfKs9sLVwfeM8kbUvzjpabRQvyl4zd9tfzXBTrrtuprsA==
+  dependencies:
+    "@tauri-apps/api" "^2.12.0"
+
 "@tauri-apps/plugin-deep-link@^2.6.2":
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-deep-link/-/plugin-deep-link-2.6.2.tgz#25031e0e6470e0a092c2670e56e5b3ba2a8a3c00"

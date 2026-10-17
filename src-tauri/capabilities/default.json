@@ -13,6 +13,7 @@
     "notification:default",
     "updater:default",
     "process:allow-restart",
+    "autostart:default",
     "sql:default",
     "sql:allow-execute"
   ]

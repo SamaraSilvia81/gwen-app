@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { cloudImportDoneAt, exportAll, importBackup, describeAdded } from '../data/portability';
 import { isSupabaseConfigured } from '../lib/cloudAuth';
-import { openFolder, saveJsonFile, openJsonFile, dataDir } from '../lib/native';
+import { openFolder, saveJsonFile, openJsonFile, dataDir, autostartEnabled, setAutostart } from '../lib/native';
 import CloudImport from '../components/CloudImport';
 import CloudAccountSection from '../components/CloudAccountSection';
 import { isAccountMode } from '../lib/cloudConfig';
@@ -549,7 +549,8 @@ export default function Settings() {
         </Section>
 
         {/* SISTEMA */}
-        <Section title="Sistema" description="Onde a G.W.E.N. encontra os programas do seu computador.">
+        <Section title="Sistema" description="Como a G.W.E.N. se encaixa no seu computador.">
+          <AutostartToggle />
           <div className="flex gap-2 items-end">
             <label className="field flex-1">
               <span className="field-label">Caminho do Git Bash</span>
@@ -569,8 +570,8 @@ export default function Settings() {
             </button>
           </div>
           <p className="text-[12px] text-muted mt-2">
-            Deixe vazio para usar o padrão. O VS Code precisa do comando <span className="mono text-bone">code</span> no PATH
-            (vem ativado na instalação padrão).
+            Deixe vazio para usar o padrão. O VS Code é encontrado na pasta de instalação; se não estiver lá, a G.W.E.N. usa o
+            comando <span className="mono text-bone">code</span> do PATH.
           </p>
         </Section>
 
@@ -616,6 +617,45 @@ export default function Settings() {
         />
       )}
     </div>
+  );
+}
+
+/** Abrir com o Windows. O estado vem do sistema, então vale para o computador, não para o perfil. */
+function AutostartToggle() {
+  const toast = useToast();
+  const [on, setOn] = useState(null);
+
+  useEffect(() => {
+    autostartEnabled().then(setOn).catch(() => setOn(false));
+  }, []);
+
+  async function toggle() {
+    const next = !on;
+    try {
+      await setAutostart(next);
+      setOn(next);
+      toast(next ? 'A G.W.E.N. vai abrir quando o Windows iniciar.' : 'A G.W.E.N. não abre mais sozinha.');
+    } catch (err) {
+      toast(err?.message || String(err), 'error');
+    }
+  }
+
+  return (
+    <label className={`card p-4 flex items-center gap-4 mb-4 ${isTauri ? 'cursor-pointer' : 'opacity-60'}`}>
+      <input
+        type="checkbox"
+        className="w-4 h-4 accent-[var(--c-phosphor)]"
+        checked={!!on}
+        disabled={!isTauri || on === null}
+        onChange={toggle}
+      />
+      <span className="flex-1">
+        <span className="block font-display font-semibold">Abrir quando o Windows iniciar</span>
+        <span className="block text-[12px] text-muted mt-0.5">
+          {isTauri ? 'A G.W.E.N. abre sozinha depois que você entra no Windows.' : 'Disponível no app instalado.'}
+        </span>
+      </span>
+    </label>
   );
 }
 
