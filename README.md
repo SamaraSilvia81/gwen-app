@@ -33,7 +33,7 @@ A **G.W.E.N.** (*Gestão de Wellness, Eficiência e Navegação*) é um assisten
 
 Todo dia o ritual é o mesmo: abrir o VS Code na pasta certa, o terminal no diretório certo, o Jira, o Confluence, o repositório. Depois de horas, não dá para saber quanto tempo foi para cada projeto, e a pausa vira culpa. A G.W.E.N. junta essas três coisas num lugar só: **abre o ambiente de cada projeto com um clique**, **conta o tempo dedicado a cada um** e **trata a pausa como parte do trabalho**.
 
-A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um fluxo com várias ferramentas, não vários editores. O cuidado com o descanso é o que diferencia: a barra de pausa enche em vez de contar para trás.
+A ideia já existia antes de qualquer referência: abrir o ambiente inteiro de um projeto com um clique. Um post sobre hubs de desenvolvimento chegou depois e deu a motivação para levá-la adiante e refiná-la. O caminho da G.W.E.N. é outro: o fluxo tem várias ferramentas (editor, terminal, Jira, Confluence, repositório), não vários editores. E o cuidado com o descanso é o que a diferencia: a barra de pausa enche em vez de contar para trás.
 
 > Projeto pessoal em uso diário. Cada versão nasce de uma necessidade real de quem usa.
 
@@ -45,7 +45,8 @@ A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um f
 
 | Recurso | O que faz |
 |---|---|
-| **Seus dados, no seu computador** | Sem conta e sem internet. Tudo num banco local, com backup em JSON e cópia automática a cada versão. |
+| **Seus dados, no seu computador** | Sem conta e sem internet. Tudo num banco local, com backup em JSON e cópia automática a cada versão. Você escolhe o nome e, se quiser, uma foto. |
+| **Conta na nuvem** | Opcional e avançado: conecte o seu próprio Supabase e entre com Google ou e-mail para guardar os dados na nuvem em vez do computador. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
 | **Projetos** | Status, descrição, várias pastas e vários links por projeto. |
 | **Codar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
@@ -95,24 +96,20 @@ code --version   # necessário para o Codar agora abrir o VS Code
 **Não precisa configurar nada.** Os dados ficam num banco SQLite (`gwen.db`) na pasta de dados do app, criado na primeira abertura. Sem `.env`, sem conta, sem internet.
 
 <details>
-<summary><b>Opcional: importar dados da nuvem (quem usou as versões até a 0.3)</b></summary>
+<summary><b>Opcional: guardar os dados na sua própria nuvem (Supabase)</b></summary>
 
 <br>
 
-As versões até a 0.3 gravavam no Supabase. Para trazer esses dados uma vez:
+O modo local é o padrão e não precisa de nada. Quem preferir os dados na nuvem, em vez do computador, pode ligar o **modo conta** com um projeto Supabase próprio:
 
-1. Copie `.env.example` para `.env` e preencha com o mesmo projeto que você usava (**Project Settings > API**):
+1. No SQL Editor do projeto, rode em ordem as migrações de [`supabase/migrations/`](supabase/migrations/) (001 a 004). Em **Project Settings > Data API**, adicione o schema `gwen` aos expostos ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)).
+2. Em **Authentication > URL Configuration > Redirect URLs**, confira se estão `gwen://auth/callback` e, em desenvolvimento, `http://localhost:1420/`.
+3. Se mais ninguém precisa criar conta nesse projeto, desligue **Allow new users to sign up** em Authentication. Assim só as contas que já existem conseguem entrar.
+4. Na G.W.E.N., abra **Configurações > Conta na nuvem**, cole a URL e a chave anon (**Project Settings > API**) e use **Entrar na conta**, com Google ou e-mail.
 
-   ```env
-   VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
-   VITE_SUPABASE_SCHEMA=gwen
-   ```
+A URL e a chave ficam só neste computador, e o instalador público não leva nenhuma. No modo conta, nenhum dado seu fica no computador e o app precisa de internet. **Sair da conta** volta ao modo local, e os dados na nuvem continuam intactos. Em desenvolvimento, o `.env` (copie de `.env.example`) faz o papel da conexão.
 
-2. Para entrar com Google, confira em **Authentication > URL Configuration > Redirect URLs** se estão `gwen://auth/callback` e `http://localhost:1420/`.
-3. Abra a G.W.E.N. e use **Começar e importar da nuvem** na primeira tela, ou **Configurações > Dados > Importar da nuvem**. Ela entra na conta, copia tudo e sai. Nada é apagado, nem aqui nem na nuvem.
-
-O esquema da nuvem continua em [`supabase/migrations/`](supabase/migrations/), com tabelas no schema `gwen` ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)). Sem essas variáveis, a opção de importar simplesmente não aparece.
+**Trazer dados das versões até a 0.3, que gravavam no Supabase:** com a conexão salva e ainda no modo local, use **Configurações > Dados > Importar da nuvem**. Ela entra na conta, copia tudo para o computador e sai. Nada é apagado, nem aqui nem na nuvem.
 
 </details>
 
@@ -162,7 +159,7 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 > ⚠️ **Guarde o arquivo `gwen.key` e a senha num gerenciador de senhas, fora do repositório.** Se essa chave for perdida, quem já instalou não recebe mais atualizações automáticas e precisa reinstalar à mão. Não execute o comando de novo depois de publicar versões: uma chave nova invalida a anterior.
 
 1. Copie a chave **pública** que o comando mostra (ou o conteúdo de `gwen.key.pub`) para `plugins.updater.pubkey` em `src-tauri/tauri.conf.json`.
-2. No GitHub, em **Settings > Secrets and variables > Actions**, crie `TAURI_SIGNING_PRIVATE_KEY` (conteúdo do `gwen.key`) e `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. As variáveis do Supabase são opcionais: sem elas, a versão publicada não mostra a importação da nuvem, que é o certo para quem nunca usou as versões antigas.
+2. No GitHub, em **Settings > Secrets and variables > Actions**, crie `TAURI_SIGNING_PRIVATE_KEY` (conteúdo do `gwen.key`) e `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Não crie variáveis do Supabase: o instalador público não leva chaves, e quem quiser nuvem conecta a própria em Configurações.
 
 **A cada versão:**
 
@@ -175,6 +172,8 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
 
 ### $ como usar
+
+Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto. Dá para trocar depois em **Configurações > Perfil**.
 
 1. **Crie categorias** no `+` da lateral. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria".
 2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows. Escolha a ação de cada pasta e marque **abrir junto** no que deve abrir com o *Codar agora*. A mesma pasta pode entrar duas vezes, uma no VS Code e outra no Git Bash.
@@ -250,18 +249,19 @@ Os derivados dos tokens (`--c-phosphor-12`, `--c-void-veil`...) usam `color-mix`
 ```text
 gwen/
 ├── src/
-│   ├── components/      sidebar, topbar, cards, formulário, pausa, logo
-│   ├── context/         auth, workspace (dados e sessões), toasts
-│   ├── data/            repository, store (SQLite/localStorage), backup e importação
-│   ├── lib/             temas, tempo, estatísticas, ponte com o Rust
+│   ├── components/      sidebar, topbar, cards, formulário, pausa, logo, avatar, conta na nuvem
+│   ├── context/         perfil, workspace (dados e sessões), saúde, toasts
+│   ├── data/            repository, store (SQLite ou nuvem), backup e importação
+│   ├── lib/             temas, tempo, estatísticas, conexão com a nuvem, ponte com o Rust
 │   ├── pages/           primeira abertura, dashboard, configurações
 │   └── styles/          tokens e estilos Moderno/Terminal
 ├── src-tauri/
-│   ├── src/lib.rs       comandos nativos: abrir VS Code, Explorer, Git Bash
+│   ├── src/lib.rs       comandos nativos: abrir VS Code, Explorer, Git Bash; migrações do banco local
+│   ├── migrations/      esquema do SQLite local
 │   ├── app-icon.svg     fonte do ícone (yarn tauri icon src-tauri/app-icon.svg)
 │   └── tauri.conf.json
 ├── docs/                arquitetura, modelo de dados e decisões (ADR)
-├── supabase/            migração SQL com RLS
+├── supabase/            migrações SQL com RLS, para a nuvem opcional
 ├── _assets/             banners, prints e gerador dos banners (com o wallpaper)
 ├── CHANGELOG.md
 ├── LICENSE              proprietária, todos os direitos reservados
@@ -276,16 +276,17 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - Caminhos de pasta são por máquina. Em outro computador, a pasta pode não existir (o app avisa).
 - O instalador não tem assinatura digital, então o Windows avisa na primeira instalação.
 - Uma sessão por vez.
-- Ainda sem sincronização: os dados de um computador não aparecem no outro (dá para levar com o backup em JSON).
+- No modo local, os dados de um computador não aparecem no outro (dá para levar com o backup em JSON).
+- O modo conta guarda tudo na nuvem, então exige internet, e cada leitura baixa a tabela inteira. Com históricos muito grandes, fica mais lento.
 
 ### $ roadmap
 
 - [x] **V0.1** · launcher, categorias, sessões, modo pausa, temas
 - [x] **V0.2** · login com Google, modo claro e escuro
 - [x] **V0.3** · modo saúde: água, alongamento, olhos
-- [x] **V0.4** · dados locais (SQLite), sem login, backup e importação da nuvem
+- [x] **V0.4** · dados locais (SQLite), foto do perfil, conta na nuvem opcional, backup e importação
 - [ ] **V0.5** · mapeamento de comportamento: foco, programas abertos e áudio, por categoria
-- [ ] Widget flutuante · histórico por mês e ano · check-in de humor
+- [ ] Widget flutuante · histórico por mês e ano · check-in de humor · sincronização entre computadores (plano pago)
 
 ### $ documentação
 
