@@ -1,13 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FolderOpen, LinkSimple, Plus, Trash } from '@phosphor-icons/react';
 import Modal, { Label } from './Modal';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
-import { FOLDER_ACTIONS, pickFolder } from '../lib/native';
+import { FOLDER_ACTIONS, gitInfo, pickFolder, remoteToWebUrl, repoHostLabel } from '../lib/native';
 import { STATUS } from '../lib/stats';
+import { folderActions, projectFronts } from '../lib/projectModel';
 
-const emptyFolder = () => ({ label: '', path: '', action: 'vscode', on_launch: true });
-const emptyLink = () => ({ label: '', url: '', on_launch: false });
+const emptyFolder = () => ({ label: '', path: '', actions: ['vscode'], on_launch: true, front: '' });
+const emptyLink = () => ({ label: '', url: '', on_launch: false, front: '' });
+
+/* Rascunho do projeto novo: fechar sem salvar não perde o que foi preenchido */
+const DRAFT_KEY = 'gwen:rascunho-projeto';
+function readDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+function writeDraft(d) {
+  try {
+    if (d) localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    else localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* sem armazenamento, sem rascunho */
+  }
+}
+const hasContent = (d) =>
+  !!(d.name.trim() || d.description.trim() || d.folders.some((f) => f.path.trim()) || d.links.some((l) => l.url.trim()));
+
+const normalize = (url) => String(url || '').trim().replace(/^https?:\/\//, '').replace(/\.git$|\/$/g, '').toLowerCase();
 
 /** Nome da pasta a partir do caminho, para sugerir o rótulo */
 const baseName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || '';
@@ -15,26 +38,73 @@ const baseName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || '';
 export default function ProjectForm({ project, defaultCategory, onClose }) {
   const { categories, saveProject, deleteProject } = useWorkspace();
   const toast = useToast();
-  const [draft, setDraft] = useState(() => ({
-    name: project?.name || '',
-    description: project?.description || '',
-    status: project?.status || 'ideia',
-    category_id: project?.category_id || (defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : ''),
-    folders: project?.folders?.length ? project.folders : [emptyFolder()],
-    links: project?.links || [],
-  }));
+  const [initial] = useState(() => {
+    const fresh = {
+      name: project?.name || '',
+      description: project?.description || '',
+      status: project?.status || 'ideia',
+      category_id: project?.category_id || (defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : ''),
+      folders: project?.folders?.length
+        ? project.folders.map((f) => ({ ...f, actions: folderActions(f), front: f.front || '' }))
+        : [emptyFolder()],
+      links: (project?.links || []).map((l) => ({ ...l, front: l.front || '' })),
+    };
+    if (project) return { draft: fresh, restored: false };
+    const saved = readDraft();
+    if (saved && hasContent({ ...fresh, ...saved })) return { draft: { ...fresh, ...saved }, restored: true };
+    return { draft: fresh, restored: false };
+  });
+  const [draft, setDraft] = useState(initial.draft);
+  const [restored, setRestored] = useState(initial.restored);
   const [busy, setBusy] = useState(false);
+
+  // só o projeto novo vira rascunho; edição de projeto existente não
+  useEffect(() => {
+    if (project) return;
+    writeDraft(hasContent(draft) ? draft : null);
+  }, [draft, project]);
+
+  function discardDraft() {
+    writeDraft(null);
+    setRestored(false);
+    setDraft({
+      name: '',
+      description: '',
+      status: 'ideia',
+      category_id: defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : '',
+      folders: [emptyFolder()],
+      links: [],
+    });
+  }
+
+  const fronts = projectFronts(draft);
 
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const setFolder = (i, patch) => set({ folders: draft.folders.map((f, idx) => (idx === i ? { ...f, ...patch } : f)) });
   const setLink = (i, patch) => set({ links: draft.links.map((l, idx) => (idx === i ? { ...l, ...patch } : l)) });
 
+  function toggleAction(i, action) {
+    const current = folderActions(draft.folders[i]);
+    const next = current.includes(action) ? current.filter((a) => a !== action) : [...current, action];
+    if (next.length) setFolder(i, { actions: next });
+  }
+
+  /** Escolher a pasta preenche o rótulo, o nome do projeto (se vazio) e,
+   *  se for um repositório Git com remoto, já cria o link do repositório. */
   async function choose(i) {
     const path = await pickFolder();
     if (!path) return;
     const f = draft.folders[i];
-    setFolder(i, { path, label: f.label || baseName(path) });
-    if (!draft.name.trim()) set({ name: baseName(path) });
+    const info = await gitInfo(path).catch(() => null);
+    const repoUrl = remoteToWebUrl(info?.remote_url);
+    const addLink = repoUrl && !draft.links.some((l) => normalize(l.url) === normalize(repoUrl));
+    setDraft((d) => ({
+      ...d,
+      name: d.name.trim() ? d.name : baseName(path),
+      folders: d.folders.map((x, idx) => (idx === i ? { ...x, path, label: x.label || baseName(path) } : x)),
+      links: addLink ? [...d.links, { label: repoHostLabel(repoUrl), url: repoUrl, on_launch: false, front: f.front || '' }] : d.links,
+    }));
+    if (addLink) toast(`Link do repositório adicionado: ${repoUrl.replace('https://', '')}`);
   }
 
   async function handleSave(e) {
@@ -46,6 +116,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
     setBusy(true);
     try {
       await saveProject(draft, project);
+      if (!project) writeDraft(null);
       toast(project ? 'Projeto atualizado.' : 'Projeto criado.');
       onClose();
     } catch (err) {
@@ -91,6 +162,19 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
       }
     >
       <form onSubmit={handleSave} className="flex flex-col gap-5">
+        {restored && (
+          <div className="flex items-center gap-3 px-3 py-2 rounded-ui-sm border border-rule text-[12px]">
+            <span className="flex-1 text-muted">Rascunho restaurado: você saiu sem salvar da última vez.</span>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={discardDraft}>
+              <Label>Descartar rascunho</Label>
+            </button>
+          </div>
+        )}
+        <datalist id="gwen-frentes">
+          {fronts.map((f) => (
+            <option key={f} value={f} />
+          ))}
+        </datalist>
         <div className="grid grid-cols-[1fr_200px] gap-4">
           <label className="field">
             <span className="field-label">Nome</span>
@@ -131,52 +215,77 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
 
         {/* PASTAS */}
         <section>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between gap-4 mb-2">
             <div>
               <p className="field-label">Pastas</p>
-              <p className="text-[12px] text-muted mt-1">Marque "abrir junto" no que deve abrir com o Começar agora.</p>
+              <p className="text-[12px] text-muted mt-1">
+                Marque com o que cada pasta abre. A frente é opcional: use para separar partes do projeto (ex.: Landing e Plataforma).
+              </p>
             </div>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => set({ folders: [...draft.folders, emptyFolder()] })}>
+            <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={() => set({ folders: [...draft.folders, emptyFolder()] })}>
               <Plus size={13} /> <Label>Pasta</Label>
             </button>
           </div>
-          <div className="flex flex-col gap-2">
-            {draft.folders.map((f, i) => (
-              <div key={i} className="grid grid-cols-[130px_1fr_auto_120px_auto_auto] gap-2 items-center">
-                <input className="input" value={f.label} onChange={(e) => setFolder(i, { label: e.target.value })} placeholder="Rótulo" />
-                <input
-                  className="input mono text-[12px]"
-                  value={f.path}
-                  onChange={(e) => setFolder(i, { path: e.target.value })}
-                  placeholder="C:\Projetos\..."
-                />
-                <button type="button" className="btn btn-ghost btn-icon" onClick={() => choose(i)} title="Escolher pasta" aria-label="Escolher pasta">
-                  <FolderOpen size={15} />
-                </button>
-                <select className="input" value={f.action} onChange={(e) => setFolder(i, { action: e.target.value })}>
-                  {Object.entries(FOLDER_ACTIONS).map(([id, a]) => (
-                    <option key={id} value={id}>{a.label}</option>
-                  ))}
-                </select>
-                <label className="flex items-center gap-1.5 text-[12px] text-muted whitespace-nowrap cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-[var(--c-phosphor)]"
-                    checked={f.on_launch}
-                    onChange={(e) => setFolder(i, { on_launch: e.target.checked })}
-                  />
-                  abrir junto
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-quiet btn-icon btn-sm"
-                  onClick={() => set({ folders: draft.folders.filter((_, idx) => idx !== i) })}
-                  aria-label="Remover pasta"
-                >
-                  <Trash size={13} />
-                </button>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            {draft.folders.map((f, i) => {
+              const actions = folderActions(f);
+              return (
+                <div key={i} className="flex flex-col gap-2 p-2.5 rounded-ui-sm border border-rule">
+                  <div className="grid grid-cols-[130px_1fr_auto_auto] gap-2 items-center">
+                    <input className="input" value={f.label} onChange={(e) => setFolder(i, { label: e.target.value })} placeholder="Rótulo" />
+                    <input
+                      className="input mono text-[12px]"
+                      value={f.path}
+                      onChange={(e) => setFolder(i, { path: e.target.value })}
+                      placeholder="C:\Projetos\..."
+                    />
+                    <button type="button" className="btn btn-ghost btn-icon" onClick={() => choose(i)} title="Escolher pasta" aria-label="Escolher pasta">
+                      <FolderOpen size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-quiet btn-icon btn-sm"
+                      onClick={() => set({ folders: draft.folders.filter((_, idx) => idx !== i) })}
+                      aria-label="Remover pasta"
+                    >
+                      <Trash size={13} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="segmented" role="group" aria-label="Abrir com">
+                      {Object.entries(FOLDER_ACTIONS).map(([id, a]) => (
+                        <button
+                          type="button"
+                          key={id}
+                          className={actions.includes(id) ? 'active' : ''}
+                          aria-pressed={actions.includes(id)}
+                          onClick={() => toggleAction(i, id)}
+                        >
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      className="input w-[150px] text-[12px]"
+                      list="gwen-frentes"
+                      value={f.front}
+                      onChange={(e) => setFolder(i, { front: e.target.value })}
+                      placeholder="Frente (todas)"
+                      aria-label="Frente"
+                    />
+                    <label className="flex items-center gap-1.5 text-[12px] text-muted whitespace-nowrap cursor-pointer ml-auto">
+                      <input
+                        type="checkbox"
+                        className="accent-[var(--c-phosphor)]"
+                        checked={f.on_launch}
+                        onChange={(e) => setFolder(i, { on_launch: e.target.checked })}
+                      />
+                      abrir no Começar agora
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
             {draft.folders.length === 0 && <p className="text-[12px] text-muted">Nenhuma pasta. Projetos sem pasta ainda contam tempo.</p>}
           </div>
         </section>
@@ -186,7 +295,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="field-label">Links</p>
-              <p className="text-[12px] text-muted mt-1">Repositório, documentos, Figma, Drive, deploy...</p>
+              <p className="text-[12px] text-muted mt-1">Repositório, documentos, Figma, Drive, deploy... O do repositório entra sozinho ao escolher a pasta.</p>
             </div>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => set({ links: [...draft.links, emptyLink()] })}>
               <LinkSimple size={13} /> <Label>Link</Label>
@@ -194,9 +303,17 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
           </div>
           <div className="flex flex-col gap-2">
             {draft.links.map((l, i) => (
-              <div key={i} className="grid grid-cols-[130px_1fr_auto_auto] gap-2 items-center">
+              <div key={i} className="grid grid-cols-[130px_1fr_110px_auto_auto] gap-2 items-center">
                 <input className="input" value={l.label} onChange={(e) => setLink(i, { label: e.target.value })} placeholder="Documento" />
                 <input className="input mono text-[12px]" value={l.url} onChange={(e) => setLink(i, { url: e.target.value })} placeholder="https://..." />
+                <input
+                  className="input text-[12px]"
+                  list="gwen-frentes"
+                  value={l.front}
+                  onChange={(e) => setLink(i, { front: e.target.value })}
+                  placeholder="Frente"
+                  aria-label="Frente"
+                />
                 <label className="flex items-center gap-1.5 text-[12px] text-muted whitespace-nowrap cursor-pointer">
                   <input
                     type="checkbox"

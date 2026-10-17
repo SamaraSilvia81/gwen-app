@@ -91,3 +91,32 @@ export async function openJsonFile() {
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke('read_text_file', { path });
 }
+
+/**
+ * Situação do Git de uma pasta: branch, alterações, commits sem push e remoto.
+ * Devolve null se a pasta não for um repositório ou se o Git não estiver instalado.
+ */
+export async function gitInfo(path) {
+  if (!isTauri || !path) return null;
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('git_info', { path });
+}
+
+/** Converte o remote do Git (https ou ssh) no endereço da página do repositório. */
+export function remoteToWebUrl(remote) {
+  const r = String(remote || '').trim();
+  if (!r) return null;
+  const ssh = r.match(/^(?:ssh:\/\/)?git@([^:/]+)[:/](.+?)(?:\.git)?\/?$/);
+  if (ssh) return `https://${ssh[1]}/${ssh[2]}`;
+  const http = r.match(/^https?:\/\/(?:[^@/]+@)?([^/]+)\/(.+?)(?:\.git)?\/?$/);
+  if (http) return `https://${http[1]}/${http[2]}`;
+  return null;
+}
+
+/** Nome amigável do serviço pelo endereço do repositório */
+export function repoHostLabel(url) {
+  if (/github\.com/i.test(url)) return 'GitHub';
+  if (/gitlab/i.test(url)) return 'GitLab';
+  if (/bitbucket/i.test(url)) return 'Bitbucket';
+  return 'Repositório';
+}

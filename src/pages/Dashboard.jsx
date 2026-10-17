@@ -103,6 +103,7 @@ export default function Dashboard({ filter, stats }) {
                 key={p.id}
                 project={p}
                 time={stats.byProject.get(p.id)?.week || 0}
+                frontTimes={stats.byFront}
                 categoryName={filter === 'all' ? categoryName.get(p.category_id) : null}
                 onEdit={() => setEditing(p)}
               />

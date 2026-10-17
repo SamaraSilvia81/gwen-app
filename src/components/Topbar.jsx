@@ -73,8 +73,9 @@ export default function Topbar({ title }) {
         {activeSession ? (
           <div className="flex items-center gap-3 h-9 pl-3 pr-1 rounded-ui-sm border border-[var(--c-phosphor-40)] bg-[var(--c-phosphor-8)]">
             <span className="w-2 h-2 rounded-full bg-phosphor anim-breathe" />
-            <span className="text-[13px] font-medium max-w-[180px] truncate" title={project?.name}>
+            <span className="text-[13px] font-medium max-w-[220px] truncate" title={project?.name}>
               {project?.name || 'Projeto'}
+              {activeSession.front && <span className="text-muted font-normal"> · {activeSession.front}</span>}
             </span>
             <span className="mono text-[13px] tabular text-phosphor" title={`Desde ${formatHour(activeSession.started_at)}`}>
               {formatClock(elapsed)}

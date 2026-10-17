@@ -83,6 +83,7 @@ erDiagram
     text ended_at "nulo = ativa"
     text last_seen_at
     integer paused_seconds
+    text front "frente aberta (0.5), nulo = projeto todo"
   }
   WELLNESS_EVENTS {
     text id PK
@@ -110,11 +111,11 @@ erDiagram
 
 ```json
 "folders": [
-  { "label": "gwen", "path": "C:\\Dev\\gwen", "action": "vscode", "on_launch": true },
-  { "label": "terminal", "path": "C:\\Dev\\gwen", "action": "gitbash", "on_launch": true }
+  { "label": "landing", "path": "C:\\Dev\\checkai-lp", "actions": ["vscode", "gitbash"], "action": "vscode", "on_launch": true, "front": "Landing" },
+  { "label": "plataforma", "path": "C:\\Dev\\checkai-app", "actions": ["vscode"], "action": "vscode", "on_launch": true, "front": "Plataforma" }
 ],
 "links": [
-  { "label": "GitHub", "url": "https://github.com/...", "on_launch": false }
+  { "label": "GitHub", "url": "https://github.com/...", "on_launch": false, "front": "" }
 ]
 ```
 
@@ -124,8 +125,10 @@ erDiagram
 | `completed_at` | Preenchido ao mudar para `concluido`, limpo ao sair desse status. É o que conta em "Concluídos no ano" |
 | `last_opened_at` | Atualizado a cada Começar agora. Ordena a lista dentro de cada status |
 | `folders[].path` | Caminho absoluto **da máquina onde foi cadastrado**. Em outro computador pode não existir |
+| `folders[].actions` | Com o que a pasta abre (0.5). Projetos da 0.4 só têm `action`; quem lê usa `actions` e cai em `[action]`. `action` continua gravado com a primeira ação, para versões antigas seguirem lendo |
+| `front` | Frente do item (0.5), opcional. Vazio = vale para todas. As frentes do projeto são as que aparecem nos itens, sem tabela própria. Regras em `src/lib/projectModel.js` |
 
-**`sessions`**: um intervalo de trabalho num projeto.
+**`sessions`**: um intervalo de trabalho num projeto. Desde a 0.5, `front` guarda a frente aberta no Começar agora (nulo quando o projeto foi aberto inteiro), para somar o tempo por frente.
 
 **`breaks`**: uma pausa, ligada à sessão ativa no momento (ou avulsa).
 

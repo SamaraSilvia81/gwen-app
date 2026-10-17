@@ -10,6 +10,25 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
 - Widget flutuante "sempre no topo"
 
+## [0.5.0] - 2026-10-17
+
+### Adicionado
+- **Status do Git no card:** branch, alterações sem commit, commits sem push, commits para puxar e data do último commit de cada pasta que é repositório. Atualiza ao voltar para a janela e a cada 2 minutos
+- **Frentes:** pastas e links podem pertencer a uma frente do projeto (ex.: Landing e Plataforma). Com mais de uma frente, o Começar agora pergunta qual abrir, e a sessão guarda a frente para somar o tempo de cada uma
+- **Várias ações por pasta:** a mesma pasta pode abrir no VS Code, no Explorer e no Git Bash juntos, sem cadastrar duas vezes
+- **Link do repositório automático:** ao escolher uma pasta que é repositório Git, o link do GitHub (ou GitLab, Bitbucket) entra sozinho
+- **Rascunho:** fechar o formulário de projeto novo sem salvar guarda o que já foi preenchido
+
+### Corrigido
+- VS Code abrindo um arquivo vazio quando o caminho da pasta tinha espaço ou `&`: agora o `Code.exe` é chamado direto
+
+### Alterado
+- O instalador gerado é só o NSIS (`.exe`). O MSI (WiX) falhava em caminhos com `&`
+
+### Migração
+- Local: `003_frentes.sql`, automática
+- Nuvem (conta no próprio Supabase): rode `supabase/migrations/005_gwen_frentes.sql` no SQL Editor. Sem ela, o app continua funcionando, mas sessões com frente não são salvas na nuvem
+
 ## [0.4.0] - 2026-10-17
 
 ### Alterado
@@ -23,6 +42,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Importação única da nuvem (Google ou e-mail), que só acrescenta o que ainda não existe
 - Exportar e importar backup completo em JSON, e botão para abrir a pasta de dados
 - Cópia automática do banco a cada versão nova, antes das migrações (guarda as 5 mais recentes)
+- Escolha da cor do texto sobre os acentos no tema Personalizado (Automático, Claro ou Escuro)
 
 ### Removido
 - Tela de login obrigatória

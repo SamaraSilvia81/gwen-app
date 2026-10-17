@@ -9,6 +9,7 @@ export function computeStats({ sessions, projects, now, activeBreak }) {
   const week = startOfWeek(now);
   const byProject = new Map();
   const byCategory = new Map();
+  const byFront = new Map(); // chave `${project_id}::${frente em minúsculas}`
   let todayTotal = 0;
   let weekTotal = 0;
 
@@ -23,6 +24,10 @@ export function computeStats({ sessions, projects, now, activeBreak }) {
     entry.week += w;
     entry.today += t;
     byProject.set(s.project_id, entry);
+    if (s.front) {
+      const key = `${s.project_id}::${s.front.toLowerCase()}`;
+      byFront.set(key, (byFront.get(key) || 0) + w);
+    }
     const cat = categoryOf.get(s.project_id) || 'none';
     byCategory.set(cat, (byCategory.get(cat) || 0) + w);
   }
@@ -31,7 +36,7 @@ export function computeStats({ sessions, projects, now, activeBreak }) {
   const doneThisYear = projects.filter((p) => p.completed_at && new Date(p.completed_at).getFullYear() === year).length;
   const inProgress = projects.filter((p) => p.status === 'andamento').length;
 
-  return { todayTotal, weekTotal, byProject, byCategory, doneThisYear, inProgress, year };
+  return { todayTotal, weekTotal, byProject, byCategory, byFront, doneThisYear, inProgress, year };
 }
 
 export const STATUS = {

@@ -45,6 +45,69 @@ fn open_folder(action: String, path: String, git_bash_path: Option<String>) -> R
     result.map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Situação do repositório Git de uma pasta, para o card do projeto.
+#[derive(serde::Serialize, Default)]
+struct GitInfo {
+    branch: Option<String>,
+    /// arquivos alterados ou novos, ainda sem commit
+    changes: u32,
+    /// commits locais que ainda não foram para o remoto
+    ahead: u32,
+    /// commits do remoto que ainda não vieram para cá
+    behind: u32,
+    /// false quando a branch não tem remoto configurado (upstream)
+    has_upstream: bool,
+    remote_url: Option<String>,
+    /// data do último commit, ISO 8601
+    last_commit_at: Option<String>,
+}
+
+/// Roda um comando git na pasta e devolve a saída, ou None se falhar.
+fn git(path: &str, args: &[&str]) -> Option<String> {
+    let mut cmd = Command::new("git");
+    cmd.arg("-C").arg(path).args(args);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let out = cmd.output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+/// Lê branch, alterações, commits sem push e remoto. Devolve None quando a
+/// pasta não é um repositório Git (ou o Git não está instalado).
+#[tauri::command(async)]
+fn git_info(path: String) -> Option<GitInfo> {
+    if !Path::new(&path).exists() {
+        return None;
+    }
+    let status = git(&path, &["status", "--porcelain=v2", "--branch"])?;
+    let mut info = GitInfo::default();
+    for line in status.lines() {
+        if let Some(head) = line.strip_prefix("# branch.head ") {
+            if head != "(detached)" {
+                info.branch = Some(head.to_string());
+            }
+        } else if line.starts_with("# branch.upstream ") {
+            info.has_upstream = true;
+        } else if let Some(ab) = line.strip_prefix("# branch.ab ") {
+            for part in ab.split_whitespace() {
+                if let Some(n) = part.strip_prefix('+') {
+                    info.ahead = n.parse().unwrap_or(0);
+                } else if let Some(n) = part.strip_prefix('-') {
+                    info.behind = n.parse().unwrap_or(0);
+                }
+            }
+        } else if !line.starts_with('#') && !line.is_empty() {
+            info.changes += 1;
+        }
+    }
+    info.remote_url = git(&path, &["remote", "get-url", "origin"]).filter(|s| !s.is_empty());
+    info.last_commit_at = git(&path, &["log", "-1", "--format=%cI"]).filter(|s| !s.is_empty());
+    Some(info)
+}
+
 /// Procura o executável do VS Code nas pastas de instalação comuns.
 #[cfg(target_os = "windows")]
 fn find_vscode_exe() -> Option<std::path::PathBuf> {
@@ -131,6 +194,12 @@ fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 2,
             description: "foto do perfil",
             sql: include_str!("../migrations/002_avatar.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 3,
+            description: "frente da sessao",
+            sql: include_str!("../migrations/003_frentes.sql"),
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
@@ -243,7 +312,8 @@ pub fn run() {
             open_folder,
             data_dir,
             write_text_file,
-            read_text_file
+            read_text_file,
+            git_info
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");

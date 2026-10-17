@@ -4,6 +4,7 @@ import { useProfile } from './ProfileContext';
 import { useToast } from './ToastContext';
 import { openFolder, openLink, normalizeUrl } from '../lib/native';
 import { secondsBetween, startOfWeek } from '../lib/time';
+import { folderActions, inFront } from '../lib/projectModel';
 
 /** Sessão sem sinal do app há mais que isso é considerada esquecida */
 const STALE_AFTER_MIN = 15;
@@ -136,29 +137,32 @@ export function WorkspaceProvider({ children }) {
     return ended;
   }, [activeSession, activeBreak, endBreak]);
 
-  const startSession = useCallback(async (projectId) => {
-    if (activeSession?.project_id === projectId) return activeSession;
+  const startSession = useCallback(async (projectId, front = null) => {
+    if (activeSession?.project_id === projectId && (activeSession.front || null) === (front || null)) return activeSession;
     if (activeSession) await endSession();
     if (activeBreak) await endBreak();
-    const s = await sessionRepo.start(projectId);
+    const s = await sessionRepo.start(projectId, front);
     setActiveSession(s);
     replaceSession(s);
     return s;
   }, [activeSession, activeBreak, endSession, endBreak]);
 
-  /** "Começar agora": abre o que está marcado para abrir e inicia a sessão */
-  const launchProject = useCallback(async (project) => {
+  /** "Começar agora": abre o que está marcado para abrir e inicia a sessão.
+   *  Com `front`, abre só os itens dessa frente (e os que valem para todas). */
+  const launchProject = useCallback(async (project, front = null) => {
     const errors = [];
     for (const folder of project.folders || []) {
-      if (!folder.on_launch) continue;
-      try {
-        await openFolder(folder.action, folder.path, profile?.git_bash_path);
-      } catch (err) {
-        errors.push(`${folder.label || folder.path}: ${err?.message || err}`);
+      if (!folder.on_launch || !inFront(folder, front)) continue;
+      for (const action of folderActions(folder)) {
+        try {
+          await openFolder(action, folder.path, profile?.git_bash_path);
+        } catch (err) {
+          errors.push(`${folder.label || folder.path}: ${err?.message || err}`);
+        }
       }
     }
     for (const link of project.links || []) {
-      if (!link.on_launch) continue;
+      if (!link.on_launch || !inFront(link, front)) continue;
       try {
         await openLink(normalizeUrl(link.url));
       } catch (err) {
@@ -166,7 +170,7 @@ export function WorkspaceProvider({ children }) {
       }
     }
 
-    await startSession(project.id);
+    await startSession(project.id, front);
 
     // abrir pelo launcher significa que o projeto está em andamento
     let updated = await projectRepo.touchOpened(project.id);
@@ -176,7 +180,7 @@ export function WorkspaceProvider({ children }) {
     setProjects((list) => [updated, ...list.filter((p) => p.id !== updated.id)]);
 
     if (errors.length) toast(`Sessão iniciada, mas falhou ao abrir: ${errors.join(' · ')}`, 'error');
-    else toast(`Sessão de ${project.name} iniciada.`);
+    else toast(`Sessão de ${project.name}${front ? ` · ${front}` : ''} iniciada.`);
   }, [profile, startSession, toast]);
 
   /* ─── SESSÃO ESQUECIDA ─── */

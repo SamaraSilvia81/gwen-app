@@ -1,6 +1,6 @@
 [package]
 name = "gwen"
-version = "0.4.0"
+version = "0.5.0"
 description = "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação"
 authors = ["Samara Silvia Sabino (@devs_sam)"]
 edition = "2021"

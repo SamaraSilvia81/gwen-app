@@ -5,6 +5,7 @@
  * então contextos e componentes não mudaram. Ver ADR-010.
  */
 import { store, newId, nowIso } from './store';
+import { cleanFolder, cleanLink } from '../lib/projectModel';
 
 const LOCAL_ID = 'local';
 const byDesc = (key) => (a, b) => String(b[key] || '').localeCompare(String(a[key] || ''));
@@ -65,8 +66,8 @@ const cleanProject = (p) => ({
   description: p.description?.trim() || null,
   status: p.status,
   category_id: p.category_id || null,
-  folders: (p.folders || []).filter((f) => f.path?.trim()),
-  links: (p.links || []).filter((l) => l.url?.trim()),
+  folders: (p.folders || []).filter((f) => f.path?.trim()).map(cleanFolder),
+  links: (p.links || []).filter((l) => l.url?.trim()).map(cleanLink),
 });
 
 const getProject = async (id) => (await store.all('projects')).find((p) => p.id === id);
@@ -124,12 +125,14 @@ export const sessionRepo = {
       .filter((s) => s.started_at >= iso || !s.ended_at || s.ended_at >= iso)
       .sort(byDesc('started_at'));
   },
-  async start(projectId) {
+  /** `front`: frente aberta (opcional). Só vai no registro quando existe, para
+   *  a nuvem sem a migração 005 continuar aceitando sessões sem frente. */
+  async start(projectId, front = null) {
     // garante uma sessão ativa por vez (no Supabase era um índice único)
     const current = await this.active();
     if (current) await this.end(current.id);
     const now = nowIso();
-    return store.insert('sessions', {
+    const row = {
       id: newId(),
       project_id: projectId,
       started_at: now,
@@ -138,7 +141,9 @@ export const sessionRepo = {
       paused_seconds: 0,
       note: null,
       created_at: now,
-    });
+    };
+    if (front) row.front = front;
+    return store.insert('sessions', row);
   },
   async heartbeat(id) {
     await store.update('sessions', id, { last_seen_at: nowIso() });
