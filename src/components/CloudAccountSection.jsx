@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CloudCheck, SignOut, SignIn, LinkBreak } from '@phosphor-icons/react';
 import Modal, { Label } from './Modal';
 import CloudSignIn from './CloudSignIn';
-import { currentSession, signOutCloud } from '../lib/cloudAuth';
+import { currentSession, identityOf, signOutCloud } from '../lib/cloudAuth';
 import { connectSupabase, supabase } from '../lib/supabase';
 import {
   clearConnection,
@@ -11,6 +11,7 @@ import {
   loadConnection,
   saveConnection,
   setAccountMode,
+  WELCOME_KEY,
 } from '../lib/cloudConfig';
 
 /**
@@ -48,7 +49,8 @@ export default function CloudAccountSection() {
     setConn(loadConnection());
   }
 
-  function enterAccount() {
+  function enterAccount(session) {
+    sessionStorage.setItem(WELCOME_KEY, JSON.stringify(identityOf(session)));
     setAccountMode(true);
     window.location.reload();
   }

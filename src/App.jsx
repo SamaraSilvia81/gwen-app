@@ -16,7 +16,8 @@ import ReminderStack from './components/ReminderStack';
 import UpdateBar from './components/UpdateBar';
 import Logo from './components/Logo';
 import AccountGate from './components/AccountGate';
-import { isAccountMode, setAccountMode } from './lib/cloudConfig';
+import { isAccountMode, setAccountMode, WELCOME_KEY } from './lib/cloudConfig';
+import { fileToAvatar } from './lib/avatar';
 
 export default function App() {
   return (
@@ -48,8 +49,33 @@ function Shell() {
   const [view, setView] = useState('projetos');
   const [filter, setFilter] = useState('all');
   const { sessions, projects, activeBreak, refresh } = useWorkspace();
-  const { reload } = useProfile();
+  const { profile, updateProfile, reload } = useProfile();
   const toast = useToast();
+  // acabou de entrar na conta: confirma e, se faltar, traz nome e foto da conta Google
+  useEffect(() => {
+    const raw = sessionStorage.getItem(WELCOME_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(WELCOME_KEY);
+    let who;
+    try {
+      who = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    (async () => {
+      const patch = {};
+      if (!profile?.avatar && who.picture) {
+        try {
+          patch.avatar = await fileToAvatar(await (await fetch(who.picture)).blob());
+        } catch {
+          /* sem foto: segue sem */
+        }
+      }
+      if ((!profile?.display_name || profile.display_name === 'você') && who.name) patch.display_name = who.name;
+      if (Object.keys(patch).length) await updateProfile(patch).catch(() => {});
+      toast(`Você entrou como ${who.email}. Seus dados agora estão na nuvem.`);
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // pedido de importação vindo da primeira abertura
   const [importing, setImporting] = useState(false);
   useEffect(() => {

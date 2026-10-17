@@ -33,7 +33,7 @@ A **G.W.E.N.** (*Gestão de Wellness, Eficiência e Navegação*) é um assisten
 
 Todo dia o ritual é o mesmo: abrir o VS Code na pasta certa, o terminal no diretório certo, o Jira, o Confluence, o repositório. Depois de horas, não dá para saber quanto tempo foi para cada projeto, e a pausa vira culpa. A G.W.E.N. junta essas três coisas num lugar só: **abre o ambiente de cada projeto com um clique**, **conta o tempo dedicado a cada um** e **trata a pausa como parte do trabalho**.
 
-A ideia já existia antes de qualquer referência: abrir o ambiente inteiro de um projeto com um clique. Um post sobre hubs de desenvolvimento chegou depois e deu a motivação para levá-la adiante e refiná-la. O caminho da G.W.E.N. é outro: o fluxo tem várias ferramentas (editor, terminal, Jira, Confluence, repositório), não vários editores. E o cuidado com o descanso é o que a diferencia: a barra de pausa enche em vez de contar para trás.
+A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs de desenvolvimento deu o empurrão para tirá-la do papel e levá-la além, com várias ferramentas no mesmo fluxo, não só vários editores. O que a diferencia é o descanso: a barra de pausa enche em vez de contar para trás.
 
 > Projeto pessoal em uso diário. Cada versão nasce de uma necessidade real de quem usa.
 

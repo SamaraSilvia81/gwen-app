@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 
 export default function Modal({ title, eyebrow, onClose, children, footer, width = 560, dismissable = true }) {
@@ -9,7 +10,9 @@ export default function Modal({ title, eyebrow, onClose, children, footer, width
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, dismissable]);
 
-  return (
+  // Portal no body: dentro de uma seção animada (transform), `fixed` passaria a
+  // valer em relação à seção e o modal ficaria cortado.
+  return createPortal(
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-6 anim-fade"
       style={{ background: 'var(--c-void-veil)' }}
@@ -30,7 +33,8 @@ export default function Modal({ title, eyebrow, onClose, children, footer, width
         <div className="px-6 py-5 overflow-y-auto">{children}</div>
         {footer && <footer className="flex justify-end gap-2 px-6 py-4 border-t border-rule">{footer}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

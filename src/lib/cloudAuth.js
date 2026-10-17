@@ -48,6 +48,13 @@ export async function listenOAuthReturn(onSession, onError) {
   };
 }
 
+/** Nome, foto e e-mail da conta, como o provedor (Google) informou */
+export function identityOf(session) {
+  const u = session?.user;
+  const m = u?.user_metadata || {};
+  return { email: u?.email || '', name: m.full_name || m.name || '', picture: m.avatar_url || m.picture || '' };
+}
+
 export async function currentSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;

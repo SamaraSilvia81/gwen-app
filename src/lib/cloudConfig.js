@@ -13,6 +13,9 @@
 const CONN_KEY = 'gwen.cloud.conn';
 const ACCOUNT_KEY = 'gwen.cloud.account';
 
+/** Guarda quem acabou de entrar, para o app mostrar a confirmação depois de recarregar */
+export const WELCOME_KEY = 'gwen.welcomeAccount';
+
 const get = (k) => {
   try {
     return localStorage.getItem(k);
