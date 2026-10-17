@@ -11,7 +11,8 @@
 ![Status](https://img.shields.io/badge/status-beta-972FFF?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.1.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.2.0-171717?style=for-the-badge)
+![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
 ![React](https://img.shields.io/badge/React%2019-171717?style=flat-square&logo=react&logoColor=61DAFB)
@@ -20,7 +21,7 @@
 ![Supabase](https://img.shields.io/badge/Supabase-171717?style=flat-square&logo=supabase&logoColor=3ECF8E)
 ![Rust](https://img.shields.io/badge/Rust-171717?style=flat-square&logo=rust&logoColor=E8E4DE)
 
-[Sobre](#-sobre-o-projeto) · [Funcionalidades](#-funcionalidades) · [Como rodar](#-como-rodar) · [Como usar](#-como-usar) · [Temas](#-temas) · [Estrutura](#-estrutura) · [Roadmap](#-roadmap)
+[Sobre](#-sobre-o-projeto) · [Funcionalidades](#-funcionalidades) · [Como rodar](#-como-rodar) · [Como usar](#-como-usar) · [Temas](#-temas) · [Estrutura](#-estrutura) · [Documentação](#-documentação) · [Licença](#-licença)
 
 </div>
 
@@ -44,7 +45,7 @@ A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um f
 
 | Recurso | O que faz |
 |---|---|
-| **Login** | Conta com e-mail e senha. Projetos, tempos e aparência ficam na nuvem. |
+| **Login** | Google ou e-mail e senha. Projetos, tempos e aparência ficam na nuvem. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
 | **Projetos** | Status, descrição, várias pastas e vários links por projeto. |
 | **Codar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
@@ -52,7 +53,7 @@ A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um f
 | **Sessões de tempo** | Tempo por projeto, categoria, dia e semana. Projetos concluídos no ano. |
 | **Modo pausa** | Café, refeição, leitura, respiro. A tela escurece e a barra de energia enche. |
 | **Sessão esquecida** | Se o app fechar com uma sessão rodando, ele pergunta quanto tempo foi de verdade. |
-| **Temas** | Noir (a identidade do sistema) ou Personalizado por HEX/JSON. Estilo Moderno ou Terminal. |
+| **Aparência** | Modo claro, escuro ou do sistema. Noir ou Personalizado por HEX/JSON. Estilo Moderno ou Terminal. |
 
 <table>
 <tr>
@@ -93,7 +94,7 @@ code --version   # necessário para o Codar agora abrir o VS Code
 As tabelas ficam num schema próprio, o `gwen`. Então dá para usar **um projeto Supabase que você já tem** para outro app, sem criar um novo e sem conflito de nomes.
 
 1. Abra o projeto no [supabase.com](https://supabase.com) (um existente ou um novo).
-2. Em **SQL Editor > New query**, cole todo o [`supabase/migrations/001_gwen_init.sql`](supabase/migrations/001_gwen_init.sql) e clique em **Run**.
+2. Em **SQL Editor > New query**, rode os arquivos de [`supabase/migrations/`](supabase/migrations/) **em ordem** (`001`, depois `002`). Cole, clique em **Run**, repita. Eles podem ser rodados de novo sem estragar nada.
 3. Em **Project Settings > Data API > Exposed schemas**, adicione `gwen` e salve. Sem isso a API responde que o schema não existe.
 4. Copie `.env.example` para `.env` e preencha com os dados de **Project Settings > API**:
 
@@ -103,11 +104,20 @@ As tabelas ficam num schema próprio, o `gwen`. Então dá para usar **um projet
    VITE_SUPABASE_SCHEMA=gwen
    ```
 
-5. *Opcional:* em **Authentication > Sign In / Providers > Email**, desligue **Confirm email** para a conta entrar direto depois do cadastro. Se o projeto for compartilhado, isso vale para os outros apps dele também.
+5. **Login com Google:** em **Authentication > URL Configuration > Redirect URLs**, adicione:
+
+   ```text
+   gwen://auth/callback
+   http://localhost:1420/
+   ```
+
+   O provedor Google precisa estar ativo em **Authentication > Sign In / Providers > Google**. Se o projeto já é usado por outro app com Google (como o Sparky), isso já está feito.
+
+6. *Opcional:* em **Authentication > Sign In / Providers > Email**, desligue **Confirm email** para a conta entrar direto depois do cadastro. Se o projeto for compartilhado, isso vale para os outros apps dele também.
 
 > O login (`auth.users`) é do projeto inteiro: a mesma conta funciona em todos os apps que usam aquele projeto. Os dados da G.W.E.N. ficam isolados no schema `gwen`, com RLS.
 
-#### 3. Rodando
+#### 3. Rodando em desenvolvimento
 
 ```bash
 yarn          # instala as dependências
@@ -118,9 +128,27 @@ A primeira execução compila o Rust e leva alguns minutos. As próximas são r�
 
 | Comando | O que faz |
 |---|---|
-| `yarn app` | Abre o app desktop em modo desenvolvimento |
-| `yarn dev` | Só a interface, no navegador (`localhost:1420`). Pastas não abrem, só aparecem no console. |
-| `yarn app:build` | Gera o instalador em `src-tauri/target/release/bundle/` (`.exe` e `.msi`) |
+| `yarn app` | Abre o **app desktop** em modo desenvolvimento, com recarga ao salvar |
+| `yarn dev` | Só a interface, **no navegador** (`localhost:1420`). Pastas não abrem, só aparecem no console |
+| `yarn app:build` | Gera o **instalador** do Windows |
+
+> `yarn dev` é para trabalhar na interface. Para usar a G.W.E.N. de verdade (abrir VS Code, Git Bash, login com Google voltando para o app), use `yarn app` ou instale.
+
+#### 4. Instalando como aplicativo
+
+```bash
+yarn app:build
+```
+
+Ao terminar, o instalador fica em:
+
+```text
+src-tauri/target/release/bundle/nsis/GWEN_0.2.0_x64-setup.exe
+```
+
+Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. O instalador também registra o endereço `gwen://`, usado pelo login com Google. Para atualizar, gere o instalador da versão nova e instale por cima.
+
+> O Windows pode avisar que o app é de um "editor desconhecido", porque o instalador não tem assinatura digital. Clique em **Mais informações > Executar assim mesmo**.
 
 ### $ como usar
 
@@ -135,12 +163,14 @@ A primeira execução compila o Rust e leva alguns minutos. As próximas são r�
 
 ### $ temas
 
-A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpaper. Qualquer outra identidade é de quem usa, criada no tema **Personalizado** em **Configurações > Aparência**. Cor e estilo são escolhas independentes.
+A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpaper. Qualquer outra identidade é de quem usa, criada no tema **Personalizado** em **Configurações > Aparência**. Modo, cor e estilo são escolhas independentes.
+
+**Modo:** escuro, claro ou o do sistema (acompanha o Windows). O botão de sol e lua na barra superior alterna rápido entre claro e escuro.
 
 | Cores | | Estilo | |
 |---|---|---|---|
 | **Noir** | identidade do sistema | **Moderno** | cantos arredondados, vidro na navegação e na pausa |
-| **Personalizado** | 9 tokens por HEX, com nome | **Terminal** | tudo em mono, cantos retos, botões `[ assim ]` |
+| **Personalizado** | 9 tokens por HEX, com nome e paleta clara opcional | **Terminal** | tudo em mono, cantos retos, botões `[ assim ]` |
 
 <table>
 <tr>
@@ -150,6 +180,14 @@ A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpap
 <tr>
 <td align="center"><sub>Noir + Terminal</sub></td>
 <td align="center"><sub>Personalizado com uma identidade de usuário</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="_assets/prints/dashboard-noir-claro.png" alt="Noir claro"></td>
+<td width="50%"><img src="_assets/prints/modo-pausa-claro.png" alt="Modo pausa no claro"></td>
+</tr>
+<tr>
+<td align="center"><sub>Noir no modo claro</sub></td>
+<td align="center"><sub>Modo pausa no claro</sub></td>
 </tr>
 </table>
 
@@ -192,32 +230,57 @@ gwen/
 │   ├── src/lib.rs       comandos nativos: abrir VS Code, Explorer, Git Bash
 │   ├── app-icon.svg     fonte do ícone (yarn tauri icon src-tauri/app-icon.svg)
 │   └── tauri.conf.json
+├── docs/                arquitetura, modelo de dados e decisões (ADR)
 ├── supabase/            migração SQL com RLS
 ├── _assets/             banners, prints e gerador dos banners (com o wallpaper)
+├── CHANGELOG.md
+├── LICENSE              proprietária, todos os direitos reservados
+├── NOTICE.md            autoria e termos adicionais
 └── README.md
 ```
 
-**Decisões que valem registro:**
-
-- **Repository pattern:** trocar o backend ou adicionar cache local mexe só em `src/data/repository.js`.
-- **Rust mínimo:** o lado nativo só faz o que o navegador não pode. Links usam o plugin `opener` do Tauri.
-- **Vidro só na navegação e na pausa:** cards e listas são sólidos para não atrapalhar a leitura.
-- **Context API:** suficiente para a V1. Se crescer, migra para Redux Toolkit sem mudar quem usa `useWorkspace` e `useAuth`.
+As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arquivo.
 
 ### $ limitações
 
 - Caminhos de pasta são por máquina. Em outro computador, a pasta pode não existir (o app avisa).
-- Login só com e-mail e senha. Google OAuth em desktop precisa de deep link.
+- O instalador não tem assinatura digital, então o Windows avisa na primeira instalação.
 - Uma sessão por vez.
 - Precisa de internet para salvar e carregar dados.
 
 ### $ roadmap
 
 - [x] **V0.1** · launcher, categorias, sessões, modo pausa, temas
-- [ ] **V0.2** · detecção automática da janela ativa (tempo real em cada programa)
-- [ ] **V0.3** · widget flutuante "sempre no topo" com timer e energia
-- [ ] **V0.4** · modo saúde opcional: água, alongamento, check-in de humor, alerta de excesso
-- [ ] Histórico por mês e ano · dias sem uso como descanso · Google OAuth · modo offline
+- [x] **V0.2** · login com Google, modo claro e escuro
+- [ ] **V0.3** · detecção automática da janela ativa (tempo real em cada programa)
+- [ ] **V0.4** · widget flutuante "sempre no topo" com timer e energia
+- [ ] **V0.5** · modo saúde opcional: água, alongamento, check-in de humor, alerta de excesso
+- [ ] Histórico por mês e ano · dias sem uso como descanso · modo offline
+
+### $ documentação
+
+| Código | Título |
+|---|---|
+| [`ARQ-001`](docs/ARQ-001-visao-geral.md) | Visão geral da arquitetura: camadas, fluxo do Codar agora, ciclo do tempo |
+| [`DAT-001`](docs/DAT-001-modelo-de-dados.md) | Modelo de dados: tabelas, invariantes, regras de tempo |
+| [`ADR-001`](docs/decisoes/ADR-001-tauri-em-vez-de-electron.md) | Tauri em vez de Electron |
+| [`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) | Schema próprio num projeto Supabase compartilhado |
+| [`ADR-003`](docs/decisoes/ADR-003-tempo-por-sessao-manual-na-v1.md) | Tempo por sessão manual na V1 |
+| [`ADR-004`](docs/decisoes/ADR-004-identidade-noir-e-temas-por-tokens.md) | Identidade Noir e temas por tokens |
+| [`ADR-005`](docs/decisoes/ADR-005-context-api-na-v1.md) | Context API na V1 |
+| [`ADR-006`](docs/decisoes/ADR-006-login-google-por-deep-link.md) | Login com Google por deep link |
+| [`ADR-007`](docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência |
+
+O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
+
+### $ licença
+
+A G.W.E.N. é **software proprietário**. Copyright (c) 2026 Samara Silvia Sabino. Todos os direitos reservados. Os termos estão em [`LICENSE`](LICENSE) e o resumo em [`NOTICE.md`](NOTICE.md).
+
+- **Pode:** instalar e usar o instalador oficial recebido da autora, para uso pessoal.
+- **Não pode sem autorização:** copiar o código, modificar, criar versões derivadas, redistribuir (inclusive o instalador), vender ou usar o nome, o logo e a identidade visual.
+
+Qualquer outro uso precisa ser combinado antes com a autora ([@devs_sam](https://instagram.com/devs_sam)).
 
 <div align="center">
 

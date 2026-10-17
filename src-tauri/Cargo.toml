@@ -1,9 +1,11 @@
 [package]
 name = "gwen"
-version = "0.1.0"
+version = "0.2.0"
 description = "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação"
 authors = ["Samara Silvia Sabino (@devs_sam)"]
 edition = "2021"
+license-file = "../LICENSE"
+publish = false
 
 [lib]
 name = "gwen_lib"
@@ -16,5 +18,10 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-deep-link = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# garante uma janela só: o link gwen:// do login com Google volta para o app já aberto
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }

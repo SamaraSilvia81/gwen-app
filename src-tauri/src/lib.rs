@@ -5,6 +5,9 @@
 //! Links (Jira, Confluence, GitHub...) são abertos pelo plugin `opener` no frontend.
 
 use std::path::Path;
+
+#[cfg(desktop)]
+use tauri::Manager;
 use std::process::Command;
 
 #[cfg(target_os = "windows")]
@@ -88,9 +91,36 @@ fn open_git_bash(path: &str, _custom: Option<String>) -> std::io::Result<std::pr
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    // Precisa ser o primeiro plugin. Quando o navegador abre gwen://auth/callback,
+    // o Windows tenta iniciar outra cópia do app; este plugin entrega o link para a
+    // janela que já está aberta (o evento chega no frontend pelo plugin deep-link).
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|_app| {
+            // No Windows e no Linux o esquema gwen:// também é registrado em tempo de
+            // execução, então o login com Google funciona até no `yarn app` (modo dev).
+            #[cfg(any(windows, target_os = "linux"))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                _app.deep_link().register_all()?;
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![path_exists, open_folder])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");

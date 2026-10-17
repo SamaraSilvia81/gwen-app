@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { CaretDown, Pause, Stop } from '@phosphor-icons/react';
+import { CaretDown, Moon, Pause, Stop, Sun } from '@phosphor-icons/react';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatClock, formatHour, sessionSeconds } from '../lib/time';
 import { BREAK_KINDS } from '../lib/breaks';
+import { effectiveMode } from '../lib/themes';
 import { Label } from './Modal';
 
 function greeting(date) {
@@ -16,7 +17,7 @@ function greeting(date) {
 }
 
 export default function Topbar({ title }) {
-  const { profile } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const { activeSession, activeBreak, projects, endSession, startBreak } = useWorkspace();
   const toast = useToast();
   const now = useNow(1000);
@@ -37,6 +38,15 @@ export default function Topbar({ title }) {
     setMenuOpen(false);
     try {
       await startBreak(kind);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  const isLight = effectiveMode(profile?.mode) === 'claro';
+  async function toggleMode() {
+    try {
+      await updateProfile({ mode: isLight ? 'escuro' : 'claro' });
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -75,6 +85,18 @@ export default function Topbar({ title }) {
           </div>
         ) : (
           <span className="mono text-[12px] text-muted hidden md:inline">nenhuma sessão ativa</span>
+        )}
+
+        {/* nas Configurações o modo é escolhido lá dentro, com prévia */}
+        {!title && (
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={toggleMode}
+            title={isLight ? 'Mudar para o modo escuro' : 'Mudar para o modo claro'}
+            aria-label={isLight ? 'Mudar para o modo escuro' : 'Mudar para o modo claro'}
+          >
+            {isLight ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
         )}
 
         <div className="relative" ref={menuRef}>

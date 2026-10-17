@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, OAUTH_REDIRECT } from '../lib/supabase';
+import { isTauri, openLink } from '../lib/native';
 import { profileRepo } from '../data/repository';
 import { applyAppearance, loadLocalAppearance, saveLocalAppearance } from '../lib/themes';
 
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
       const p = await profileRepo.ensure(u);
       setProfile(p);
       if (p) {
-        const appearance = { theme: p.theme, style: p.style, custom: p.custom_colors };
+        const appearance = { theme: p.theme, style: p.style, custom: p.custom_colors, mode: p.mode };
         applyAppearance(appearance);
         saveLocalAppearance(appearance);
       }
@@ -55,6 +56,53 @@ export function AuthProvider({ children }) {
     };
   }, [loadProfile]);
 
+  // No app desktop, o Google devolve para gwen://auth/callback?code=...
+  // O deep link entrega a URL aqui e o código é trocado pela sessão.
+  const [oauthPending, setOauthPending] = useState(false);
+  useEffect(() => {
+    if (!isTauri) return;
+    let unlisten;
+    let cancelled = false;
+    const handle = async (urls) => {
+      const raw = (urls || []).find((u) => u.startsWith('gwen://'));
+      if (!raw) return;
+      const url = new URL(raw);
+      const code = url.searchParams.get('code');
+      const err = url.searchParams.get('error_description') || url.searchParams.get('error');
+      if (err) {
+        console.error('[gwen] oauth', err);
+        setOauthPending(false);
+        return;
+      }
+      if (!code) return;
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) console.error('[gwen] oauth', error.message);
+      setOauthPending(false);
+    };
+    import('@tauri-apps/plugin-deep-link').then(async ({ onOpenUrl, getCurrent }) => {
+      if (cancelled) return;
+      // app aberto pelo próprio link (estava fechado)
+      handle(await getCurrent());
+      unlisten = await onOpenUrl(handle);
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: OAUTH_REDIRECT, skipBrowserRedirect: isTauri },
+    });
+    if (error) throw new Error(translateAuthError(error.message));
+    if (isTauri && data?.url) {
+      setOauthPending(true);
+      await openLink(data.url);
+    }
+  }, []);
+
   const signIn = useCallback(async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(translateAuthError(error.message));
@@ -79,7 +127,7 @@ export function AuthProvider({ children }) {
       if (!user) return;
       const next = await profileRepo.update(user.id, patch);
       setProfile(next);
-      const appearance = { theme: next.theme, style: next.style, custom: next.custom_colors };
+      const appearance = { theme: next.theme, style: next.style, custom: next.custom_colors, mode: next.mode };
       applyAppearance(appearance);
       saveLocalAppearance(appearance);
       return next;
@@ -88,8 +136,8 @@ export function AuthProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ user, profile, loading, signIn, signUp, signOut, updateProfile }),
-    [user, profile, loading, signIn, signUp, signOut, updateProfile],
+    () => ({ user, profile, loading, oauthPending, signIn, signInWithGoogle, signUp, signOut, updateProfile }),
+    [user, profile, loading, oauthPending, signIn, signInWithGoogle, signUp, signOut, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -103,6 +151,7 @@ function translateAuthError(message) {
     'Email not confirmed': 'Confirme seu e-mail antes de entrar (veja a caixa de entrada).',
     'User already registered': 'Já existe uma conta com esse e-mail.',
     'Password should be at least 6 characters.': 'A senha precisa ter pelo menos 6 caracteres.',
+    'Unsupported provider: provider is not enabled': 'O login com Google não está ativado no Supabase (Authentication > Sign In / Providers > Google).',
   };
   return map[message] || message;
 }

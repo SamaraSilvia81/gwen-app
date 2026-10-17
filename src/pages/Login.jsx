@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
+import { ArrowRight, Eye, EyeSlash, GoogleLogo } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { Wordmark } from '../components/Logo';
 import wallpaper from '../assets/wallpaper.webp';
 import { Label } from '../components/Modal';
 
 export default function Login() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle, oauthPending } = useAuth();
   const [mode, setMode] = useState('entrar');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -17,6 +17,16 @@ export default function Login() {
   const [info, setInfo] = useState('');
 
   const isSignup = mode === 'criar';
+
+  async function handleGoogle() {
+    setError('');
+    setInfo('');
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -57,7 +67,7 @@ export default function Login() {
             Gestão de Wellness, Eficiência e Navegação.
           </p>
           <p className="mono text-[11px] text-muted">
-            by <span className="text-bone">@devs_sam</span> · v0.1 beta
+            by <span className="text-bone">@devs_sam</span> · v0.2 beta
           </p>
         </div>
       </section>
@@ -74,6 +84,22 @@ export default function Login() {
               ? 'Seus projetos, tempos e preferências ficam salvos na nuvem.'
               : 'Entre para abrir seus projetos e retomar de onde parou.'}
           </p>
+
+          <button type="button" className="btn btn-ghost btn-lg w-full mb-5" onClick={handleGoogle} disabled={busy || oauthPending}>
+            <GoogleLogo size={17} weight="bold" />
+            <Label>{oauthPending ? 'Continue no navegador...' : 'Entrar com Google'}</Label>
+          </button>
+          {oauthPending && (
+            <p className="text-[12px] text-muted -mt-3 mb-5 leading-relaxed">
+              Abrimos o Google no seu navegador. Depois de escolher a conta, ele pede para abrir a G.W.E.N.: é só permitir.
+            </p>
+          )}
+
+          <div className="flex items-center gap-3 mb-5">
+            <span className="h-px flex-1 bg-rule" />
+            <span className="mono text-[11px] text-muted">ou com e-mail</span>
+            <span className="h-px flex-1 bg-rule" />
+          </div>
 
           <div className="segmented mb-6 w-full">
             <button type="button" className={`flex-1 ${!isSignup ? 'active' : ''}`} onClick={() => setMode('entrar')}>

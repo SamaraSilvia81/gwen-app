@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowCounterClockwise, Check, ClipboardText, Copy } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Check, ClipboardText, Copy, Desktop, Moon, Sun } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { COLOR_TOKENS, NOIR, STYLES, THEMES, applyAppearance, exportTheme, isHex, parseTheme, resolveColors } from '../lib/themes';
+import {
+  COLOR_TOKENS, MODES, NOIR, STYLES, THEMES, applyAppearance, effectiveMode, exportTheme, isHex, parseTheme, resolveColors,
+} from '../lib/themes';
+
+const MODE_ICON = { escuro: Moon, claro: Sun, sistema: Desktop };
 import Logo from '../components/Logo';
 import { Label } from '../components/Modal';
 
@@ -14,15 +18,21 @@ export default function Settings() {
   const [gitBash, setGitBash] = useState(profile?.git_bash_path || '');
   const [theme, setTheme] = useState(profile?.theme || 'noir');
   const [style, setStyle] = useState(profile?.style || 'moderno');
-  // custom_colors guarda { name, void, surface, ... } do tema do usuário
+  const [mode, setMode] = useState(profile?.mode || 'escuro');
+  // custom_colors guarda { name, void, surface, ..., light: { ... } } do tema do usuário
   const [custom, setCustom] = useState(() => profile?.custom_colors || { name: 'Meu tema', ...NOIR.colors });
-  const [hexDraft, setHexDraft] = useState(() => profile?.custom_colors || { name: 'Meu tema', ...NOIR.colors });
+  // qual paleta do personalizado está sendo editada; null = a do modo atual
+  const [editing, setEditing] = useState(null);
+  const palette = editing || effectiveMode(mode);
+  const [hexDraft, setHexDraft] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // pré-visualização ao vivo
+  const paletteColors = resolveColors('custom', custom, palette);
+
+  // pré-visualização ao vivo (editando a paleta clara, mostra o app claro)
   useEffect(() => {
-    applyAppearance({ theme, style, custom });
-  }, [theme, style, custom]);
+    applyAppearance({ theme, style, custom, mode: theme === 'custom' && editing ? editing : mode });
+  }, [theme, style, custom, mode, editing]);
 
   // saiu sem salvar: volta para o que está no perfil
   const profileRef = useRef(profile);
@@ -30,7 +40,7 @@ export default function Settings() {
   useEffect(
     () => () => {
       const p = profileRef.current;
-      if (p) applyAppearance({ theme: p.theme, style: p.style, custom: p.custom_colors });
+      if (p) applyAppearance({ theme: p.theme, style: p.style, custom: p.custom_colors, mode: p.mode });
     },
     [],
   );
@@ -38,6 +48,7 @@ export default function Settings() {
   const dirtyAppearance =
     theme !== (profile?.theme || 'noir') ||
     style !== (profile?.style || 'moderno') ||
+    mode !== (profile?.mode || 'escuro') ||
     (theme === 'custom' && JSON.stringify(custom) !== JSON.stringify(profile?.custom_colors || null));
 
   async function save(patch, message) {
@@ -52,19 +63,26 @@ export default function Settings() {
     }
   }
 
+  const draftKey = (key) => `${palette}.${key}`;
+
   function setToken(key, value) {
-    setHexDraft((d) => ({ ...d, [key]: value }));
-    if (isHex(value)) setCustom((c) => ({ ...c, [key]: value }));
+    setHexDraft((d) => ({ ...d, [draftKey(key)]: value }));
+    if (!isHex(value)) return;
+    if (palette === 'escuro') {
+      setCustom((c) => ({ ...c, [key]: value }));
+    } else {
+      // a primeira edição da paleta clara congela o que estava sendo mostrado
+      setCustom((c) => ({ ...c, light: { ...resolveColors('custom', c, 'claro'), ...c.light, [key]: value } }));
+    }
   }
 
   function resetToNoir() {
-    const base = { name: custom.name || 'Meu tema', ...NOIR.colors };
-    setCustom(base);
-    setHexDraft(base);
+    setCustom({ name: custom.name || 'Meu tema', ...NOIR.colors });
+    setHexDraft({});
   }
 
   async function copyTheme() {
-    const json = exportTheme(custom.name, resolveColors('custom', custom));
+    const json = exportTheme(custom.name, resolveColors('custom', custom, 'escuro'), custom.light);
     try {
       await navigator.clipboard.writeText(json);
       toast('Tema copiado em JSON. Cole em qualquer conta da G.W.E.N.');
@@ -77,10 +95,11 @@ export default function Settings() {
     const text = window.prompt('Cole o JSON do tema:');
     if (!text) return;
     try {
-      const { name: themeName, colors } = parseTheme(text);
+      const { name: themeName, colors, light } = parseTheme(text);
       const next = { ...NOIR.colors, ...colors, name: themeName || custom.name || 'Meu tema' };
+      if (Object.keys(light).length) next.light = light;
       setCustom(next);
-      setHexDraft(next);
+      setHexDraft({});
       setTheme('custom');
       toast(`Tema "${next.name}" importado. Salve para manter.`);
     } catch (err) {
@@ -114,11 +133,30 @@ export default function Settings() {
         </Section>
 
         {/* APARÊNCIA */}
-        <Section title="Aparência" description="Cor e estilo são independentes. As mudanças aparecem na hora; salve para manter.">
+        <Section title="Aparência" description="Modo, cor e estilo são independentes. As mudanças aparecem na hora; salve para manter.">
+          <p className="field-label mb-2.5">Modo</p>
+          <div className="segmented mb-7">
+            {Object.entries(MODES).map(([id, m]) => {
+              const Icon = MODE_ICON[id];
+              return (
+                <button
+                  key={id}
+                  className={`inline-flex items-center gap-1.5 ${mode === id ? 'active' : ''}`}
+                  onClick={() => {
+                    setMode(id);
+                    setEditing(null);
+                  }}
+                >
+                  <Icon size={13} weight={mode === id ? 'fill' : 'regular'} /> {m.label}
+                </button>
+              );
+            })}
+          </div>
+
           <p className="field-label mb-2.5">Cores</p>
           <div className="grid grid-cols-2 gap-3 mb-7">
             {Object.entries(THEMES).map(([id, t]) => {
-              const colors = id === 'custom' ? resolveColors('custom', custom) : NOIR.colors;
+              const colors = resolveColors(id, custom, effectiveMode(mode));
               return (
                 <button
                   key={id}
@@ -163,6 +201,13 @@ export default function Settings() {
                     placeholder="Meu tema"
                   />
                 </label>
+                <div className="segmented">
+                  {['escuro', 'claro'].map((p) => (
+                    <button key={p} className={palette === p ? 'active' : ''} onClick={() => setEditing(p)}>
+                      Paleta {p === 'escuro' ? 'escura' : 'clara'}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex gap-1.5">
                   <button className="btn btn-quiet btn-sm" onClick={pasteTheme} title="Importar um tema em JSON">
                     <ClipboardText size={13} /> colar JSON
@@ -183,12 +228,12 @@ export default function Settings() {
                       <input
                         type="color"
                         className="w-9 h-9 shrink-0 rounded-ui-sm border border-rule bg-transparent cursor-pointer p-0.5"
-                        value={isHex(custom[key]) && custom[key].length === 7 ? custom[key] : '#000000'}
+                        value={isHex(paletteColors[key]) && paletteColors[key].length === 7 ? paletteColors[key] : '#000000'}
                         onChange={(e) => setToken(key, e.target.value)}
                       />
                       <input
-                        className={`input mono text-[12px] ${isHex(hexDraft[key]) ? '' : '!border-ember'}`}
-                        value={hexDraft[key] || ''}
+                        className={`input mono text-[12px] ${isHex(hexDraft[draftKey(key)] ?? paletteColors[key]) ? '' : '!border-ember'}`}
+                        value={hexDraft[draftKey(key)] ?? paletteColors[key] ?? ''}
                         onChange={(e) => setToken(key, e.target.value.trim())}
                         spellCheck={false}
                       />
@@ -196,6 +241,11 @@ export default function Settings() {
                   </label>
                 ))}
               </div>
+              {palette === 'claro' && !custom.light && (
+                <p className="text-[12px] text-muted mt-4">
+                  Sem paleta clara própria, o modo claro usa os seus acentos sobre o papel do Noir claro. Edite qualquer cor para criar a sua.
+                </p>
+              )}
             </div>
           )}
 
@@ -231,7 +281,7 @@ export default function Settings() {
               disabled={saving || !dirtyAppearance}
               onClick={() =>
                 save(
-                  { theme, style, custom_colors: theme === 'custom' ? custom : profile?.custom_colors ?? null },
+                  { theme, style, mode, custom_colors: theme === 'custom' ? custom : profile?.custom_colors ?? null },
                   'Aparência salva.',
                 )
               }
@@ -265,6 +315,21 @@ export default function Settings() {
             Deixe vazio para usar o padrão. O VS Code precisa do comando <span className="mono text-bone">code</span> no PATH
             (vem ativado na instalação padrão).
           </p>
+        </Section>
+
+        {/* SOBRE: autoria e licença (LICENSE, NOTICE.md) */}
+        <Section title="Sobre">
+          <div className="card p-4 flex items-center gap-4">
+            <Logo size={40} charge={1} />
+            <div className="flex-1">
+              <p className="font-display font-semibold">G.W.E.N. <span className="mono text-[11px] text-muted font-normal">v0.2.0</span></p>
+              <p className="text-[12px] text-muted mt-0.5">Gestão de Wellness, Eficiência e Navegação</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px]">por Samara Silvia (@devs_sam)</p>
+              <p className="mono text-[11px] text-muted mt-0.5">© 2026 · todos os direitos reservados</p>
+            </div>
+          </div>
         </Section>
       </div>
     </div>

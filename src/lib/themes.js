@@ -6,9 +6,10 @@
  * (e pode ser exportada/importada em JSON para compartilhar).
  *
  * Os nomes dos tokens seguem o padrão --c-void, --c-surface, --c-phosphor,
- * --c-ember... Cor e estilo são eixos separados:
- *   - cor:    noir | custom          -> tokens --c-*
- *   - estilo: moderno | terminal     -> atributo data-style no <html>
+ * --c-ember... São três eixos independentes:
+ *   - cor:    noir | custom              -> tokens --c-*
+ *   - modo:   escuro | claro | sistema   -> qual paleta da cor (data-mode no <html>)
+ *   - estilo: moderno | terminal         -> atributo data-style no <html>
  */
 
 export const COLOR_TOKENS = [
@@ -42,6 +43,28 @@ export const NOIR = {
   },
   // no Noir o logo é branco com a carga em cinza
   logo: { body: '#EDEBE7', charge: '#77777F' },
+};
+
+/** Noir claro: mesma identidade, papel em vez de tinta */
+export const NOIR_LIGHT = {
+  colors: {
+    void: '#F4F3F0',
+    surface: '#FFFFFF',
+    surfaceAlt: '#ECEAE6',
+    phosphor: '#5E5E66',
+    ember: '#0A0A0B',
+    bone: '#0A0A0B',
+    muted: '#74747C',
+    rule: '#DAD8D3',
+    ruleLight: '#C6C3BD',
+  },
+  logo: { body: '#0A0A0B', charge: '#8A8A90' },
+};
+
+export const MODES = {
+  escuro: { label: 'Escuro' },
+  claro: { label: 'Claro' },
+  sistema: { label: 'Sistema' },
 };
 
 export const THEMES = {
@@ -80,40 +103,79 @@ export function onColor(hex) {
   return withDark >= withWhite ? '#0A0A0B' : '#FFFFFF';
 }
 
-/** Cores finais. O personalizado parte do Noir e sobrescreve o que for HEX válido. */
-export function resolveColors(themeId, custom) {
-  if (themeId !== 'custom') return { ...NOIR.colors };
-  const merged = { ...NOIR.colors };
-  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
-    if (custom && isHex(custom[key])) merged[key] = custom[key];
-  }
-  return merged;
+const ALL_KEYS = () => [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS];
+
+function pickHex(obj) {
+  const out = {};
+  if (!obj) return out;
+  for (const key of ALL_KEYS()) if (isHex(obj[key])) out[key] = obj[key];
+  return out;
+}
+
+/** escuro | claro, resolvendo "sistema" pela preferência do Windows */
+export function effectiveMode(mode) {
+  if (mode === 'claro' || mode === 'escuro') return mode;
+  const prefersLight = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches;
+  return prefersLight ? 'claro' : 'escuro';
+}
+
+/**
+ * Cores finais.
+ * - Noir: paleta escura ou clara do sistema.
+ * - Personalizado escuro: Noir escuro + as cores do usuário.
+ * - Personalizado claro: Noir claro + a paleta clara do usuário (custom.light).
+ *   Sem paleta clara definida, usa os acentos da escura sobre o papel do Noir claro.
+ */
+export function resolveColors(themeId, custom, mode = 'escuro') {
+  const light = effectiveMode(mode) === 'claro';
+  const base = light ? NOIR_LIGHT.colors : NOIR.colors;
+  if (themeId !== 'custom') return { ...base };
+  if (!light) return { ...base, ...pickHex(custom) };
+  const lightPalette = pickHex(custom?.light);
+  if (Object.keys(lightPalette).length) return { ...base, ...lightPalette };
+  const dark = pickHex(custom);
+  const accents = {};
+  for (const k of ['phosphor', 'ember', 'onPhosphor', 'onEmber']) if (dark[k]) accents[k] = dark[k];
+  return { ...base, ...accents };
 }
 
 const toVar = (key) => '--c-' + key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
 
 /** Aplica tema e estilo no <html>. Os tokens derivados (color-mix) recalculam sozinhos. */
-export function applyAppearance({ theme = 'noir', style = 'moderno', custom = null } = {}) {
+let lastAppearance = null;
+
+export function applyAppearance({ theme = 'noir', style = 'moderno', custom = null, mode = 'escuro' } = {}) {
+  lastAppearance = { theme, style, custom, mode };
   const root = document.documentElement;
   const t = THEMES[theme] ? theme : 'noir';
-  const colors = resolveColors(t, custom);
+  const m = effectiveMode(mode);
+  const colors = resolveColors(t, custom, m);
   for (const { key } of COLOR_TOKENS) root.style.setProperty(toVar(key), colors[key]);
   root.style.setProperty('--c-on-phosphor', colors.onPhosphor || onColor(colors.phosphor));
   root.style.setProperty('--c-on-ember', colors.onEmber || onColor(colors.ember));
-  const logo = t === 'noir' ? NOIR.logo : { body: colors.phosphor, charge: colors.ember };
+  const noirLogo = m === 'claro' ? NOIR_LIGHT.logo : NOIR.logo;
+  const logo = t === 'noir' ? noirLogo : { body: colors.phosphor, charge: colors.ember };
   root.style.setProperty('--c-logo', logo.body);
   root.style.setProperty('--c-logo-charge', logo.charge);
   root.dataset.theme = t;
+  root.dataset.mode = m;
+  root.style.colorScheme = m === 'claro' ? 'light' : 'dark';
   root.dataset.style = STYLES[style] ? style : 'moderno';
+}
+
+// no modo "sistema", acompanha a troca de tema do Windows sem precisar reabrir
+if (typeof window !== 'undefined' && window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => {
+    if (lastAppearance?.mode === 'sistema') applyAppearance(lastAppearance);
+  });
 }
 
 /* ─── IMPORTAR / EXPORTAR ─── */
 
-export function exportTheme(name, colors) {
-  const out = { gwenTheme: 1, name: name || 'Meu tema' };
-  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
-    if (isHex(colors[key])) out[key] = colors[key];
-  }
+export function exportTheme(name, colors, lightColors) {
+  const out = { gwenTheme: 1, name: name || 'Meu tema', ...pickHex(colors) };
+  const light = pickHex(lightColors);
+  if (Object.keys(light).length) out.light = light;
   return JSON.stringify(out, null, 2);
 }
 
@@ -125,12 +187,10 @@ export function parseTheme(text) {
   } catch {
     throw new Error('Isso não é um JSON válido.');
   }
-  const colors = {};
-  for (const key of [...COLOR_TOKENS.map((t) => t.key), ...OPTIONAL_KEYS]) {
-    if (isHex(data[key])) colors[key] = data[key];
-  }
+  const colors = pickHex(data);
+  const light = pickHex(data.light);
   if (Object.keys(colors).length === 0) throw new Error('Nenhuma cor válida encontrada no JSON.');
-  return { name: typeof data.name === 'string' ? data.name : '', colors };
+  return { name: typeof data.name === 'string' ? data.name : '', colors, light };
 }
 
 const STORAGE_KEY = 'gwen.appearance';
