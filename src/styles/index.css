@@ -144,6 +144,13 @@ button { font-family: inherit; cursor: pointer; }
 .btn-quiet { background: transparent; color: var(--c-muted); padding: 0 8px; }
 .btn-quiet:hover:not(:disabled) { color: var(--c-bone); background: var(--c-phosphor-8); }
 .btn-danger { background: transparent; color: var(--c-ember); border-color: var(--c-ember-20); }
+.btn-google {
+  background: var(--c-surface); color: var(--c-bone); border-color: var(--c-rule-light);
+  font-family: var(--f-body); font-weight: 500; gap: 10px;
+  text-transform: none !important; letter-spacing: 0;
+}
+.btn-google:hover:not(:disabled) { border-color: var(--c-muted); background: var(--c-surface-alt); }
+:root[data-style='terminal'] .btn-google { font-family: 'Inter Variable', 'Inter', system-ui, sans-serif; }
 .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
 .btn-lg { height: 42px; padding: 0 20px; font-size: 14px; }
 .btn-icon { width: 34px; padding: 0; }

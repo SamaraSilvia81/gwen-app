@@ -22,6 +22,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Alterado
 - Supabase em modo PKCE
+- Botão do Google no padrão da marca (G colorido, sem o formato de comando do estilo Terminal)
 
 ## [0.1.0] - 2026-10-17
 
