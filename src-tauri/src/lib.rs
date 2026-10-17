@@ -111,6 +111,7 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|_app| {
             // No Windows e no Linux o esquema gwen:// também é registrado em tempo de
             // execução, então o login com Google funciona até no `yarn app` (modo dev).

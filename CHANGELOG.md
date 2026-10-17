@@ -6,9 +6,21 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ## [Não lançado]
 
 ### Planejado
-- Detecção automática da janela ativa (tempo por programa)
+- Dados locais (SQLite) com nuvem opcional
+- Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
 - Widget flutuante "sempre no topo"
-- Modo saúde opcional
+
+## [0.3.0] - 2026-10-17
+
+### Adicionado
+- **Modo saúde** (opcional, desligado por padrão): lembretes de água, alongamento e descanso dos olhos ([`ADR-008`](docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md))
+- Intervalos contados em tempo de trabalho: param nas pausas e com o app fechado
+- Lembretes ficam na tela até a resposta: fazer, adiar 10 min ou dispensar
+- Notificação do Windows quando a G.W.E.N. não está em primeiro plano
+- Pausa de alongamento guiada, com um movimento por minuto
+- Resumo do dia no dashboard (copos d'água, alongamentos) e próximo lembrete
+- Registro das respostas em `gwen.wellness_events`
+- Migração `003_gwen_wellness.sql`
 
 ## [0.2.0] - 2026-10-17
 

@@ -2,7 +2,7 @@
 
 | Código | Tipo | Status | Versão do app | Atualizado |
 |---|---|---|---|---|
-| `ARQ-001` | Arquitetura | Vigente | 0.2.0 | 17/10/2026 |
+| `ARQ-001` | Arquitetura | Vigente | 0.3.0 | 17/10/2026 |
 
 **Relacionados:** [`DAT-001`](DAT-001-modelo-de-dados.md) · [`ADR-001`](decisoes/ADR-001-tauri-em-vez-de-electron.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-005`](decisoes/ADR-005-context-api-na-v1.md) · [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md) · [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md)
 
@@ -25,6 +25,7 @@ flowchart TB
     subgraph Estado["Estado · Context API"]
       A["AuthContext<br/>usuário, perfil, aparência"]
       W["WorkspaceContext<br/>categorias, projetos,<br/>sessões, pausas"]
+      H["WellnessContext<br/>lembretes do modo saúde"]
     end
     subgraph Lib["lib/"]
       T["themes · time · stats"]
@@ -39,8 +40,9 @@ flowchart TB
   WEB["Navegador padrão<br/>GitHub · Jira · Confluence"]
 
   P --> C
-  C --> A & W
-  A & W --> R
+  C --> A & W & H
+  H --> W
+  A & W & H --> R
   W --> N
   R --> SB
   N --> RS --> OS
@@ -50,7 +52,7 @@ flowchart TB
 | Camada | Responsabilidade | Não faz |
 |---|---|---|
 | `pages/` e `components/` | Renderizar e capturar intenção do usuário | Falar com o banco ou com o sistema |
-| `context/` | Estado da sessão de uso e regras de negócio (iniciar sessão, pausar, corrigir sessão esquecida) | Montar queries |
+| `context/` | Estado da sessão de uso e regras de negócio (iniciar sessão, pausar, corrigir sessão esquecida, lembretes de saúde) | Montar queries |
 | `data/repository.js` | Todas as queries do Supabase | Regras de negócio |
 | `lib/native.js` | Chamar comandos Rust e plugins do Tauri, com fallback no navegador | Saber o que é um projeto |
 | `src-tauri/src/lib.rs` | Abrir pastas em programas do Windows | Rede, banco, links |
@@ -135,7 +137,7 @@ E-mail e senha vão direto ao Supabase Auth. O login com Google abre no navegado
 ### $ segurança
 
 - **RLS em todas as tabelas:** cada linha tem `user_id` (ou `id`, no perfil) e só o dono lê e escreve. A anon key no app é pública por natureza; a proteção está no banco.
-- **Permissões do Tauri mínimas:** a janela só tem `core:default`, `opener:default`, `dialog:default` e `deep-link:default` (`src-tauri/capabilities/default.json`). Não há acesso livre a shell no frontend: abrir programas passa por dois comandos Rust com ações fixas (`vscode`, `explorer`, `gitbash`).
+- **Permissões do Tauri mínimas:** a janela só tem `core:default`, `opener:default`, `dialog:default`, `deep-link:default` e `notification:default` (`src-tauri/capabilities/default.json`). Não há acesso livre a shell no frontend: abrir programas passa por dois comandos Rust com ações fixas (`vscode`, `explorer`, `gitbash`).
 - **O caminho é validado no Rust** antes de qualquer execução (`Path::exists`).
 
 ### $ o que fica para depois

@@ -61,6 +61,16 @@ export default function PauseOverlay() {
           {charge >= 1 ? 'Bateria cheia. Volte quando quiser.' : kind.phrase}
         </h2>
 
+        {kind.steps && (
+          <div className="card w-full px-5 py-4 mb-8 text-center anim-fade" key={Math.floor(elapsed / 60) % kind.steps.length}>
+            <p className="eyebrow mb-1.5">
+              movimento {(Math.floor(elapsed / 60) % kind.steps.length) + 1} de {kind.steps.length}
+            </p>
+            <p className="text-[15px] leading-relaxed">{kind.steps[Math.floor(elapsed / 60) % kind.steps.length]}</p>
+            <p className="text-[11px] text-muted mt-2">Sem forçar. Se doer, pare.</p>
+          </div>
+        )}
+
         <div className="w-full flex items-center gap-4">
           <div className="energy-track flex-1">
             <div className="energy-fill" style={{ width: `${pct}%` }} />

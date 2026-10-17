@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
+import { useWellness } from '../context/WellnessContext';
+import { REMINDERS } from '../lib/wellness';
 import ProjectCard from '../components/ProjectCard';
 import ProjectForm from '../components/ProjectForm';
 import { Label } from '../components/Modal';
@@ -47,7 +49,7 @@ export default function Dashboard({ filter, stats }) {
     <div className="h-full overflow-y-auto">
       <div className="max-w-[1200px] mx-auto px-8 py-7">
         {/* números */}
-        <section className="grid grid-cols-4 max-[1100px]:grid-cols-2 gap-3 mb-8 anim-rise">
+        <section className="grid grid-cols-4 max-[1100px]:grid-cols-2 gap-3 mb-3 anim-rise">
           <Stat label="Hoje" value={formatDuration(stats.todayTotal, { short: true })} hint="em sessões" />
           <Stat
             label={filter === 'all' ? 'Esta semana' : `Semana · ${filterLabel}`}
@@ -57,6 +59,8 @@ export default function Dashboard({ filter, stats }) {
           <Stat label="Em andamento" value={stats.inProgress} hint="projetos ativos" />
           <Stat label={`Concluídos em ${stats.year}`} value={stats.doneThisYear} hint="projetos finalizados" />
         </section>
+
+        <WellnessStrip />
 
         {/* cabeçalho da lista */}
         <section className="flex items-end justify-between gap-4 mb-4 flex-wrap">
@@ -139,5 +143,42 @@ function EmptyState({ hasAny, onCreate }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** Resumo do modo saúde: o que já foi feito hoje e quando vem o próximo lembrete */
+function WellnessStrip() {
+  const { config, counting, counters, todayCount } = useWellness();
+  if (!config.enabled) return <div className="mb-5" />;
+
+  const active = Object.entries(config.reminders).filter(([, r]) => r.on);
+  const next = active
+    .map(([k, r]) => ({ k, left: Math.max(0, r.every * 60 - (counters[k] || 0)) }))
+    .sort((a, b) => a.left - b.left)[0];
+
+  return (
+    <section className="card px-4 py-3 mb-8 flex items-center gap-5 flex-wrap anim-rise">
+      <span className="eyebrow">modo saúde · hoje</span>
+      {active.map(([k]) => {
+        const r = REMINDERS[k];
+        const Icon = r.icon;
+        return (
+          <span key={k} className="inline-flex items-center gap-1.5 text-[13px]">
+            <Icon size={15} className="text-phosphor" />
+            <span className="tabular font-medium">{todayCount[k] || 0}</span>
+            <span className="text-muted">{r.counted(todayCount[k] || 0)}</span>
+          </span>
+        );
+      })}
+      <span className="ml-auto mono text-[11px] text-muted">
+        {!counting
+          ? 'lembretes parados (sem sessão ativa)'
+          : next
+            ? next.left < 60
+              ? `${REMINDERS[next.k].label.toLowerCase()}: agora`
+              : `próximo: ${REMINDERS[next.k].label.toLowerCase()} em ${formatDuration(next.left, { short: true })}`
+            : ''}
+      </span>
+    </section>
   );
 }

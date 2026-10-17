@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkspaceProvider, useNow, useWorkspace } from './context/WorkspaceContext';
 import { ToastProvider } from './context/ToastContext';
+import { WellnessProvider } from './context/WellnessContext';
 import { isSupabaseConfigured } from './lib/supabase';
 import { computeStats } from './lib/stats';
 import Login from './pages/Login';
@@ -11,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import PauseOverlay from './components/PauseOverlay';
 import StaleSessionModal from './components/StaleSessionModal';
+import ReminderStack from './components/ReminderStack';
 import Logo from './components/Logo';
 
 export default function App() {
@@ -30,7 +32,9 @@ function Gate() {
   if (!user) return <Login />;
   return (
     <WorkspaceProvider>
-      <Shell />
+      <WellnessProvider>
+        <Shell />
+      </WellnessProvider>
     </WorkspaceProvider>
   );
 }
@@ -55,6 +59,7 @@ function Shell() {
           {view === 'config' ? <Settings /> : <Dashboard filter={filter} stats={stats} />}
         </div>
       </main>
+      <ReminderStack />
       <PauseOverlay />
       <StaleSessionModal />
     </div>

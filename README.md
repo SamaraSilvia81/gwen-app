@@ -7,11 +7,11 @@
 
 ### Seu ambiente de trabalho em um clique. Sua pausa levada a sério.
 
-![Tipo](https://img.shields.io/badge/tipo-aplicativo-121214?style=for-the-badge)
-![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
+![Tipo](https://img.shields.io/badge/tipo-aplicativo-FF22D6?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-beta-972FFF?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.2.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.3.0-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
@@ -52,6 +52,7 @@ A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um f
 | **Pastas com ação** | Cada pasta abre no VS Code, no Explorer ou no Git Bash. |
 | **Sessões de tempo** | Tempo por projeto, categoria, dia e semana. Projetos concluídos no ano. |
 | **Modo pausa** | Café, refeição, leitura, respiro. A tela escurece e a barra de energia enche. |
+| **Modo saúde** | Opcional: lembretes de água, alongamento e olhos que contam tempo de trabalho, com pausa de alongamento guiada. |
 | **Sessão esquecida** | Se o app fechar com uma sessão rodando, ele pergunta quanto tempo foi de verdade. |
 | **Aparência** | Modo claro, escuro ou do sistema. Noir ou Personalizado por HEX/JSON. Estilo Moderno ou Terminal. |
 
@@ -94,7 +95,7 @@ code --version   # necessário para o Codar agora abrir o VS Code
 As tabelas ficam num schema próprio, o `gwen`. Então dá para usar **um projeto Supabase que você já tem** para outro app, sem criar um novo e sem conflito de nomes.
 
 1. Abra o projeto no [supabase.com](https://supabase.com) (um existente ou um novo).
-2. Em **SQL Editor > New query**, rode os arquivos de [`supabase/migrations/`](supabase/migrations/) **em ordem** (`001`, depois `002`). Cole, clique em **Run**, repita. Eles podem ser rodados de novo sem estragar nada.
+2. Em **SQL Editor > New query**, rode os arquivos de [`supabase/migrations/`](supabase/migrations/) **em ordem** (`001`, `002`, `003`). Cole, clique em **Run**, repita. Eles podem ser rodados de novo sem estragar nada.
 3. Em **Project Settings > Data API > Exposed schemas**, adicione `gwen` e salve. Sem isso a API responde que o schema não existe.
 4. Copie `.env.example` para `.env` e preencha com os dados de **Project Settings > API**:
 
@@ -143,7 +144,7 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.2.0_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.3.0_x64-setup.exe
 ```
 
 Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. O instalador também registra o endereço `gwen://`, usado pelo login com Google. Para atualizar, gere o instalador da versão nova e instale por cima.
@@ -156,6 +157,12 @@ Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro 
 2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows. Escolha a ação de cada pasta e marque **abrir junto** no que deve abrir com o *Codar agora*. A mesma pasta pode entrar duas vezes, uma no VS Code e outra no Git Bash.
 3. **Codar agora** abre tudo e inicia a sessão. O timer aparece na barra superior. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*.
 4. **Pausa** fica na barra superior. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
+
+5. **Modo saúde** (Configurações > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
+
+<div align="center">
+  <img src="_assets/prints/modo-saude.png" alt="Lembretes do modo saúde" width="100%">
+</div>
 
 **Como o tempo é contado:** a sessão vai do *Codar agora* ao *Encerrar*, menos as pausas. Hoje e semana (a partir de segunda) contam só a parte que caiu no período. Com o app aberto, ele registra um sinal por minuto. Se abrir e encontrar uma sessão sem sinal há mais de 15 minutos, pergunta se encerra no último sinal, se você informa os minutos ou se continua (e o tempo com o app fechado entra como pausa).
 
@@ -252,10 +259,10 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 
 - [x] **V0.1** · launcher, categorias, sessões, modo pausa, temas
 - [x] **V0.2** · login com Google, modo claro e escuro
-- [ ] **V0.3** · detecção automática da janela ativa (tempo real em cada programa)
-- [ ] **V0.4** · widget flutuante "sempre no topo" com timer e energia
-- [ ] **V0.5** · modo saúde opcional: água, alongamento, check-in de humor, alerta de excesso
-- [ ] Histórico por mês e ano · dias sem uso como descanso · modo offline
+- [x] **V0.3** · modo saúde: água, alongamento, olhos
+- [ ] **V0.4** · dados locais (SQLite), nuvem opcional
+- [ ] **V0.5** · mapeamento de comportamento: foco, programas abertos e áudio, por categoria
+- [ ] Widget flutuante · histórico por mês e ano · check-in de humor
 
 ### $ documentação
 
@@ -270,6 +277,7 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 | [`ADR-005`](docs/decisoes/ADR-005-context-api-na-v1.md) | Context API na V1 |
 | [`ADR-006`](docs/decisoes/ADR-006-login-google-por-deep-link.md) | Login com Google por deep link |
 | [`ADR-007`](docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência |
+| [`ADR-008`](docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho |
 
 O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
 

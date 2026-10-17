@@ -11,6 +11,7 @@
 | [`ADR-005`](decisoes/ADR-005-context-api-na-v1.md) | Context API na V1 | Decisão | 17/10/2026 |
 | [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md) | Login com Google por deep link | Decisão | 17/10/2026 |
 | [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência | Decisão | 17/10/2026 |
+| [`ADR-008`](decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho | Decisão | 17/10/2026 |
 
 ### $ como os documentos se organizam
 

@@ -2,9 +2,9 @@
 
 | Código | Tipo | Status | Versão do app | Atualizado |
 |---|---|---|---|---|
-| `DAT-001` | Dados | Vigente | 0.2.0 | 17/10/2026 |
+| `DAT-001` | Dados | Vigente | 0.3.0 | 17/10/2026 |
 
-**Relacionados:** [`ARQ-001`](ARQ-001-visao-geral.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-003`](decisoes/ADR-003-tempo-por-sessao-manual-na-v1.md) · migrações: [`001_gwen_init.sql`](../supabase/migrations/001_gwen_init.sql), [`002_gwen_modo_claro.sql`](../supabase/migrations/002_gwen_modo_claro.sql)
+**Relacionados:** [`ARQ-001`](ARQ-001-visao-geral.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-003`](decisoes/ADR-003-tempo-por-sessao-manual-na-v1.md) · migrações: [`001_gwen_init.sql`](../supabase/migrations/001_gwen_init.sql), [`002_gwen_modo_claro.sql`](../supabase/migrations/002_gwen_modo_claro.sql), [`003_gwen_wellness.sql`](../supabase/migrations/003_gwen_wellness.sql)
 
 ---
 
@@ -22,6 +22,8 @@ erDiagram
   CATEGORIES |o--o{ PROJECTS : "agrupa"
   PROJECTS ||--o{ SESSIONS : "acumula"
   SESSIONS |o--o{ BREAKS : "é pausada por"
+  AUTH_USERS ||--o{ WELLNESS_EVENTS : "responde"
+  SESSIONS |o--o{ WELLNESS_EVENTS : "durante"
 
   AUTH_USERS {
     uuid id PK
@@ -34,6 +36,7 @@ erDiagram
     text theme "noir | custom"
     text style "moderno | terminal"
     jsonb custom_colors "tema do usuário, com light opcional"
+    jsonb wellness "configuração do modo saúde"
     text git_bash_path
   }
   CATEGORIES {
@@ -62,11 +65,19 @@ erDiagram
     timestamptz last_seen_at
     int paused_seconds
   }
+  WELLNESS_EVENTS {
+    uuid id PK
+    uuid user_id FK
+    uuid session_id FK
+    text kind "agua | alongamento | olhos"
+    text action "feito | adiado | dispensado"
+    timestamptz created_at
+  }
   BREAKS {
     uuid id PK
     uuid user_id FK
     uuid session_id FK "nulo = pausa avulsa"
-    text kind "cafe | refeicao | leitura | respiro | outro"
+    text kind "cafe | refeicao | leitura | respiro | alongamento | outro"
     timestamptz started_at
     timestamptz ended_at "nulo = ativa"
   }
@@ -100,6 +111,8 @@ erDiagram
 **`gwen.sessions`**: um intervalo de trabalho num projeto.
 
 **`gwen.breaks`**: uma pausa, ligada à sessão ativa no momento (ou avulsa).
+
+**`gwen.wellness_events`**: cada resposta a um lembrete do modo saúde (`kind`: agua, alongamento, olhos; `action`: feito, adiado, dispensado), com a sessão em que aconteceu. Os contadores dos intervalos não ficam aqui: ficam no `localStorage` da máquina (ver [`ADR-008`](decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md)).
 
 ### $ invariantes
 

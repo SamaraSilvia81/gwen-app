@@ -139,3 +139,21 @@ export const breakRepo = {
     );
   },
 };
+
+/* ─── MODO SAÚDE ─── */
+export const wellnessRepo = {
+  async since(from) {
+    return unwrap(
+      await supabase
+        .from('wellness_events')
+        .select('*')
+        .gte('created_at', from.toISOString())
+        .order('created_at', { ascending: false }),
+    );
+  },
+  async log(kind, action, sessionId = null) {
+    return unwrap(
+      await supabase.from('wellness_events').insert({ kind, action, session_id: sessionId }).select().single(),
+    );
+  },
+};

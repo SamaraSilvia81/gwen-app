@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowCounterClockwise, Check, ClipboardText, Copy, Desktop, Moon, Sun } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { MIN_INTERVAL, REMINDERS, ensureNotificationPermission, notify, resolveWellness } from '../lib/wellness';
 import {
   COLOR_TOKENS, MODES, NOIR, STYLES, THEMES, applyAppearance, effectiveMode, exportTheme, isHex, parseTheme, resolveColors,
 } from '../lib/themes';
@@ -26,6 +27,17 @@ export default function Settings() {
   const palette = editing || effectiveMode(mode);
   const [hexDraft, setHexDraft] = useState({});
   const [saving, setSaving] = useState(false);
+  const [wellness, setWellness] = useState(() => resolveWellness(profile?.wellness));
+  const dirtyWellness = JSON.stringify(wellness) !== JSON.stringify(resolveWellness(profile?.wellness));
+  const setReminder = (kind, patch) =>
+    setWellness((w) => ({ ...w, reminders: { ...w.reminders, [kind]: { ...w.reminders[kind], ...patch } } }));
+
+  async function toggleWellness(on) {
+    setWellness((w) => ({ ...w, enabled: on }));
+    if (on && !(await ensureNotificationPermission())) {
+      toast('Sem permissão de notificação: os lembretes vão aparecer só dentro da G.W.E.N.', 'error');
+    }
+  }
 
   const paletteColors = resolveColors('custom', custom, palette);
 
@@ -291,6 +303,89 @@ export default function Settings() {
           </div>
         </Section>
 
+        {/* MODO SAÚDE */}
+        <Section
+          title="Modo saúde"
+          description="Lembretes de água, alongamento e descanso dos olhos. Contam tempo de trabalho, não relógio: param nas pausas e com o app fechado."
+        >
+          <label className="card p-4 flex items-center gap-4 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              className="w-4 h-4 accent-[var(--c-phosphor)]"
+              checked={wellness.enabled}
+              onChange={(e) => toggleWellness(e.target.checked)}
+            />
+            <span className="flex-1">
+              <span className="block font-display font-semibold">Ativar modo saúde</span>
+              <span className="block text-[12px] text-muted mt-0.5">Desligado, a G.W.E.N. não interrompe você com nada.</span>
+            </span>
+          </label>
+
+          {wellness.enabled && (
+            <div className="anim-rise">
+              <div className="flex flex-col gap-2 mb-4">
+                {Object.entries(REMINDERS).map(([kind, r]) => {
+                  const cfg = wellness.reminders[kind];
+                  const Icon = r.icon;
+                  return (
+                    <div key={kind} className={`card p-3.5 flex items-center gap-4 ${cfg.on ? '' : 'opacity-60'}`}>
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-[var(--c-phosphor)]"
+                        checked={cfg.on}
+                        onChange={(e) => setReminder(kind, { on: e.target.checked })}
+                        aria-label={`Lembrete de ${r.label}`}
+                      />
+                      <Icon size={18} className="text-phosphor" />
+                      <span className="flex-1">
+                        <span className="block font-medium">{r.label}</span>
+                        <span className="block text-[12px] text-muted">{r.body}</span>
+                      </span>
+                      <span className="flex items-center gap-2 text-[12px] text-muted whitespace-nowrap">
+                        a cada
+                        <input
+                          type="number"
+                          min={MIN_INTERVAL}
+                          step="5"
+                          className="input w-20 mono text-[12px]"
+                          value={cfg.every}
+                          onChange={(e) => setReminder(kind, { every: Math.max(MIN_INTERVAL, Number(e.target.value) || MIN_INTERVAL) })}
+                          disabled={!cfg.on}
+                        />
+                        min
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <label className="flex items-center gap-2.5 text-[13px] cursor-pointer mb-1">
+                <input
+                  type="checkbox"
+                  className="accent-[var(--c-phosphor)]"
+                  checked={wellness.onlyInSession}
+                  onChange={(e) => setWellness((w) => ({ ...w, onlyInSession: e.target.checked }))}
+                />
+                Contar só durante sessões (com o app aberto sem sessão, os lembretes ficam parados)
+              </label>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4">
+            {wellness.enabled && (
+              <button className="btn btn-ghost" onClick={() => notify(REMINDERS.agua.title, 'Assim vai chegar a notificação no Windows.')}>
+                <Label>Testar notificação</Label>
+              </button>
+            )}
+            <button
+              className="btn btn-primary"
+              disabled={saving || !dirtyWellness}
+              onClick={() => save({ wellness }, wellness.enabled ? 'Modo saúde salvo.' : 'Modo saúde desligado.')}
+            >
+              <Label>Salvar modo saúde</Label>
+            </button>
+          </div>
+        </Section>
+
         {/* SISTEMA */}
         <Section title="Sistema" description="Onde a G.W.E.N. encontra os programas do seu computador.">
           <div className="flex gap-2 items-end">
@@ -322,7 +417,7 @@ export default function Settings() {
           <div className="card p-4 flex items-center gap-4">
             <Logo size={40} charge={1} />
             <div className="flex-1">
-              <p className="font-display font-semibold">G.W.E.N. <span className="mono text-[11px] text-muted font-normal">v0.2.0</span></p>
+              <p className="font-display font-semibold">G.W.E.N. <span className="mono text-[11px] text-muted font-normal">v0.3.0</span></p>
               <p className="text-[12px] text-muted mt-0.5">Gestão de Wellness, Eficiência e Navegação</p>
             </div>
             <div className="text-right">
