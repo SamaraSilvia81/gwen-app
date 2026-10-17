@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="1024" height="1024">
+  <rect width="64" height="64" rx="14" fill="#0B0B0B"/>
+  <!-- corpo do G: meio círculo + barras retas -->
+  <path d="M32 19 A13 13 0 0 0 32 45" fill="none" stroke="#972fff" stroke-width="10"/>
+  <rect x="32" y="14" width="18" height="10" fill="#972fff"/>
+  <rect x="32" y="40" width="18" height="10" fill="#972fff"/>
+  <rect x="40" y="30" width="10" height="20" fill="#972fff"/>
+  <!-- barra de energia: trilho + carga -->
+  <rect x="30" y="30" width="20" height="8" fill="#972fff"/>
+  <rect x="30" y="30" width="13" height="8" fill="#ff22d6"/>
+</svg>
