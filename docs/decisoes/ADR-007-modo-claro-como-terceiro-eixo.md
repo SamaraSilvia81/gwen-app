@@ -16,7 +16,7 @@
 | Decisão de | Samara Silvia |
 | Redigido por | Samara Silvia |
 | Complementa | [`ADR-004`](ADR-004-identidade-noir-e-temas-por-tokens.md) |
-| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen-app/commits/main/docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) |
 
 **Sumário**
 

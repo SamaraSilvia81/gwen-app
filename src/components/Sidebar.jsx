@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Check, FolderSimple, GearSix, PencilSimple, Plus, SignOut, SquaresFour, Trash, X } from '@phosphor-icons/react';
+import { Check, FolderSimple, GearSix, PencilSimple, Plus, SquaresFour, Trash, X } from '@phosphor-icons/react';
 import { Wordmark } from './Logo';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
+import Avatar from './Avatar';
 import { formatDuration } from '../lib/time';
 
 export default function Sidebar({ view, onNavigate, filter, onFilter, stats }) {
-  const { profile, signOut } = useAuth();
+  const { profile } = useProfile();
   const { categories, projects, createCategory, renameCategory, deleteCategory } = useWorkspace();
   const toast = useToast();
   const [adding, setAdding] = useState(false);
@@ -173,13 +174,9 @@ export default function Sidebar({ view, onNavigate, filter, onFilter, stats }) {
           <span className="font-medium">Configurações</span>
         </button>
         <div className="flex items-center gap-2 h-10 px-2.5">
-          <span className="w-6 h-6 rounded-full bg-[var(--c-phosphor-20)] text-phosphor grid place-items-center text-[11px] font-bold font-display">
-            {(profile?.display_name || '?').slice(0, 1).toUpperCase()}
-          </span>
+          <Avatar profile={profile} size={24} />
           <span className="flex-1 truncate text-[13px]">{profile?.display_name || 'Você'}</span>
-          <button className="btn btn-quiet btn-icon btn-sm" onClick={signOut} title="Sair" aria-label="Sair">
-            <SignOut size={14} />
-          </button>
+<span className="mono text-[10px] text-muted" title="Seus dados ficam neste computador">local</span>
         </div>
       </div>
     </aside>

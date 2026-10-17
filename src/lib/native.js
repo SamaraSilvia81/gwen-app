@@ -51,3 +51,43 @@ export function normalizeUrl(url) {
   if (!u) return '';
   return /^[a-z]+:\/\//i.test(u) || u.startsWith('mailto:') ? u : `https://${u}`;
 }
+
+/** Pasta de dados do app (onde fica o banco local) */
+export async function dataDir() {
+  if (!isTauri) return '';
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('data_dir');
+}
+
+/** Salva um JSON onde a pessoa escolher. Devolve true se salvou. */
+export async function saveJsonFile(defaultName, contents) {
+  if (!isTauri) {
+    const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: defaultName });
+    a.click();
+    URL.revokeObjectURL(url);
+    return true;
+  }
+  const { save } = await import('@tauri-apps/plugin-dialog');
+  const path = await save({ defaultPath: defaultName, filters: [{ name: 'Backup da G.W.E.N.', extensions: ['json'] }] });
+  if (!path) return false;
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('write_text_file', { path, contents });
+  return true;
+}
+
+/** Abre um JSON escolhido pela pessoa. Devolve o texto ou null. */
+export async function openJsonFile() {
+  if (!isTauri) {
+    return new Promise((resolve) => {
+      const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.json,application/json' });
+      input.onchange = () => (input.files[0] ? input.files[0].text().then(resolve) : resolve(null));
+      input.click();
+    });
+  }
+  const { open } = await import('@tauri-apps/plugin-dialog');
+  const path = await open({ multiple: false, filters: [{ name: 'Backup da G.W.E.N.', extensions: ['json'] }] });
+  if (typeof path !== 'string') return null;
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('read_text_file', { path });
+}

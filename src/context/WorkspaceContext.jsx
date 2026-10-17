@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { breakRepo, categoryRepo, projectRepo, sessionRepo } from '../data/repository';
-import { useAuth } from './AuthContext';
+import { useProfile } from './ProfileContext';
 import { useToast } from './ToastContext';
 import { openFolder, openLink, normalizeUrl } from '../lib/native';
 import { secondsBetween, startOfWeek } from '../lib/time';
@@ -12,7 +12,7 @@ const HEARTBEAT_MS = 60_000;
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ children }) {
-  const { user, profile } = useAuth();
+  const { user, profile } = useProfile();
   const toast = useToast();
 
   const [categories, setCategories] = useState([]);

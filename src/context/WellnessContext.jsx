@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from './AuthContext';
+import { useProfile } from './ProfileContext';
 import { useWorkspace } from './WorkspaceContext';
 import { wellnessRepo } from '../data/repository';
 import { REMINDERS, SNOOZE_MIN, loadCounters, notify, resolveWellness, saveCounters } from '../lib/wellness';
@@ -12,7 +12,7 @@ const MAX_STEP_S = 60;
 const WellnessContext = createContext(null);
 
 export function WellnessProvider({ children }) {
-  const { profile } = useAuth();
+  const { profile } = useProfile();
   const { activeSession, activeBreak, startBreak } = useWorkspace();
   const config = useMemo(() => resolveWellness(profile?.wellness), [profile?.wellness]);
 

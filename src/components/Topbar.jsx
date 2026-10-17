@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CaretDown, Moon, Pause, Stop, Sun } from '@phosphor-icons/react';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
 import { formatClock, formatHour, sessionSeconds } from '../lib/time';
 import { BREAK_KINDS } from '../lib/breaks';
@@ -17,7 +17,7 @@ function greeting(date) {
 }
 
 export default function Topbar({ title }) {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile } = useProfile();
   const { activeSession, activeBreak, projects, endSession, startBreak } = useWorkspace();
   const toast = useToast();
   const now = useNow(1000);

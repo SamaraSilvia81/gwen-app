@@ -13,10 +13,10 @@
 | Data | sábado, 17/10/2026 |
 | Tipo | Arquitetura |
 | Status | Vigente |
-| Versão do app | 0.3.0 |
+| Versão do app | 0.4.0 |
 | Redigido por | Samara Silvia |
-| Referências | [`DAT-001`](DAT-001-modelo-de-dados.md) · [`ADR-001`](decisoes/ADR-001-tauri-em-vez-de-electron.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-005`](decisoes/ADR-005-context-api-na-v1.md) · [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md) · [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) |
-| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/ARQ-001-visao-geral.md) |
+| Referências | [`DAT-001`](DAT-001-modelo-de-dados.md) · [`ADR-001`](decisoes/ADR-001-tauri-em-vez-de-electron.md) · [`ADR-002`](decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md) · [`ADR-005`](decisoes/ADR-005-context-api-na-v1.md) · [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md) · [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) · [`ADR-009`](decisoes/ADR-009-atualizacoes-sem-perder-dados.md) · [`ADR-010`](decisoes/ADR-010-dados-locais-primeiro.md) |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen-app/commits/main/docs/ARQ-001-visao-geral.md) |
 
 **Sumário**
 
@@ -25,7 +25,7 @@
 3. [Fluxo do "Codar agora"](#-fluxo-do-codar-agora)
 4. [Ciclo de vida do tempo](#-ciclo-de-vida-do-tempo)
 5. [Temas](#-temas)
-6. [Login](#-login)
+6. [Dados locais e nuvem](#-dados-locais-e-nuvem)
 7. [Segurança](#-segurança)
 8. [Atualizações](#-atualizações)
 9. [O que fica para depois](#-o-que-fica-para-depois)
@@ -34,7 +34,7 @@
 
 ### $ em uma frase
 
-A G.W.E.N. é um app **Tauri** com interface em **React**. O lado nativo (Rust) só abre programas no Windows. Os dados vivem no **Supabase**, num schema próprio, e toda leitura e escrita passa por uma única camada de repositório.
+A G.W.E.N. é um app **Tauri** com interface em **React**. O lado nativo (Rust) só abre programas no Windows. Os dados ficam **no computador**, num SQLite, e toda leitura e escrita passa por uma única camada de repositório. O Supabase só aparece para importar dados de versões antigas.
 
 ### $ camadas
 
@@ -43,11 +43,11 @@ flowchart TB
   subgraph Desktop["App desktop (Tauri)"]
     direction TB
     subgraph UI["Interface · React"]
-      P["pages/<br/>Login · Dashboard · Settings"]
+      P["pages/<br/>Onboarding · Dashboard · Settings"]
       C["components/<br/>Sidebar · Topbar · ProjectCard<br/>ProjectForm · PauseOverlay"]
     end
     subgraph Estado["Estado · Context API"]
-      A["AuthContext<br/>usuário, perfil, aparência"]
+      A["ProfileContext<br/>perfil local, aparência"]
       W["WorkspaceContext<br/>categorias, projetos,<br/>sessões, pausas"]
       H["WellnessContext<br/>lembretes do modo saúde"]
     end
@@ -55,11 +55,14 @@ flowchart TB
       T["themes · time · stats"]
       N["native.js<br/>ponte com o Rust"]
     end
-    R["data/repository.js<br/>única porta para o banco"]
-    RS["src-tauri/lib.rs<br/>open_folder · path_exists"]
+    R["data/repository.js<br/>única porta para os dados"]
+    ST["data/store.js<br/>SQLite ou localStorage"]
+    PT["data/portability.js<br/>backup e importação"]
+    RS["src-tauri/lib.rs<br/>pastas, backup do banco, arquivos"]
+    DB[("gwen.db<br/>SQLite")]
   end
 
-  SB[("Supabase<br/>Auth + Postgres<br/>schema gwen + RLS")]
+  SB[("Supabase<br/>só importação única")]
   OS["Windows<br/>VS Code · Explorer · Git Bash"]
   WEB["Navegador padrão<br/>GitHub · Jira · Confluence"]
 
@@ -68,7 +71,9 @@ flowchart TB
   H --> W
   A & W & H --> R
   W --> N
-  R --> SB
+  R --> ST --> DB
+  PT --> ST
+  PT -.-> SB
   N --> RS --> OS
   N -- "plugin opener" --> WEB
 ```
@@ -77,11 +82,13 @@ flowchart TB
 |---|---|---|
 | `pages/` e `components/` | Renderizar e capturar intenção do usuário | Falar com o banco ou com o sistema |
 | `context/` | Estado da sessão de uso e regras de negócio (iniciar sessão, pausar, corrigir sessão esquecida, lembretes de saúde) | Montar queries |
-| `data/repository.js` | Todas as queries do Supabase | Regras de negócio |
+| `data/repository.js` | Ler e gravar cada entidade, com a integridade que antes era do banco (uma sessão ativa, apagar sessões junto com o projeto) | Regras de uso (pausar, corrigir sessão) |
+| `data/store.js` | Cinco operações genéricas sobre o SQLite (app) ou o `localStorage` (navegador) | Saber o que é um projeto |
+| `data/portability.js` | Backup em JSON e importação única da nuvem, sempre só acrescentando | Apagar dados |
 | `lib/native.js` | Chamar comandos Rust e plugins do Tauri, com fallback no navegador | Saber o que é um projeto |
-| `src-tauri/src/lib.rs` | Abrir pastas em programas do Windows | Rede, banco, links |
+| `src-tauri/src/lib.rs` | Abrir pastas em programas do Windows, migrações e cópia do banco a cada versão, ler e gravar o JSON de backup | Rede, links |
 
-A regra que mais importa: **componente não importa `supabase` direto**. Se um dia o backend mudar, ou entrar um cache local, só o `repository.js` muda.
+A regra que mais importa: **componente não fala com o banco**. Foi o que permitiu trocar o Supabase pelo SQLite na 0.4 sem mexer em contexto nenhum, e é o que vai permitir ligar a sincronização depois.
 
 ### $ fluxo do "Codar agora"
 
@@ -93,7 +100,7 @@ sequenceDiagram
   participant Nat as native.js
   participant Rust as lib.rs
   participant Repo as repository.js
-  participant DB as Supabase
+  participant DB as gwen.db
 
   S->>Card: clica em Codar agora
   Card->>WS: launchProject(projeto)
@@ -107,7 +114,7 @@ sequenceDiagram
   end
   WS->>Repo: encerra sessão ativa (se houver)
   WS->>Repo: sessionRepo.start(projeto)
-  Repo->>DB: insert em gwen.sessions
+  Repo->>DB: insert em sessions
   WS->>Repo: touchOpened + status para "andamento"
   WS-->>Card: toast com sucesso ou com o que falhou
 ```
@@ -137,7 +144,7 @@ Enquanto o app está aberto com uma sessão ativa, o `WorkspaceContext` atualiza
 
 ```mermaid
 flowchart LR
-  Perfil["gwen.profiles<br/>mode · theme · style · custom_colors"] --> Apply["applyAppearance()"]
+  Perfil["profiles (local)<br/>mode · theme · style · custom_colors"] --> Apply["applyAppearance()"]
   Local["localStorage<br/>gwen.appearance"] --> Apply
   Apply --> Vars["--c-* no html"]
   Apply --> DS["data-mode e data-style no html"]
@@ -146,23 +153,23 @@ flowchart LR
   CSS --> TW["Tailwind @theme<br/>bg-surface, text-bone..."]
 ```
 
-- A aparência salva no `localStorage` é aplicada antes do login, para o tema não piscar.
+- A aparência salva no `localStorage` é aplicada antes de o banco abrir, para o tema não piscar.
 - `applyAppearance()` escreve os tokens `--c-*` no `<html>`. Os derivados (`--c-phosphor-12`, `--c-void-veil`...) são `color-mix` no CSS e recalculam sozinhos.
 - O modo (escuro, claro ou sistema) escolhe qual paleta da cor é usada e vira `data-mode`. No modo sistema, a troca de tema do Windows é aplicada na hora.
 - O estilo (Moderno ou Terminal) é o atributo `data-style`, que troca fonte, raio, blur e o formato dos botões.
-- A classe `.noir` força a identidade do sistema numa área específica (painel do login), qualquer que seja o tema.
+- A classe `.noir` força a identidade do sistema numa área específica (painel da primeira abertura), qualquer que seja o tema.
 
 Motivação em [`ADR-004`](decisoes/ADR-004-identidade-noir-e-temas-por-tokens.md) e [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md).
 
-### $ login
+### $ dados locais e nuvem
 
-E-mail e senha vão direto ao Supabase Auth. O login com Google abre no navegador do sistema e volta para o app pelo deep link `gwen://auth/callback`, com PKCE. O fluxo completo está em [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md).
+Não há login. A primeira abertura pede só o nome e cria o perfil local. Tudo fica em `gwen.db`, na pasta de dados do app, e a cada versão nova o Rust copia o banco para `backups/` antes das migrações. A nuvem aparece só em **Configurações > Dados > Importar da nuvem** (quando o app tem as variáveis do Supabase): entra na conta antiga com Google (deep link `gwen://auth/callback`, ver [`ADR-006`](decisoes/ADR-006-login-google-por-deep-link.md)) ou e-mail, copia tudo e sai. Motivação em [`ADR-010`](decisoes/ADR-010-dados-locais-primeiro.md).
 
 ### $ segurança
 
-- **RLS em todas as tabelas:** cada linha tem `user_id` (ou `id`, no perfil) e só o dono lê e escreve. A anon key no app é pública por natureza; a proteção está no banco.
-- **Permissões do Tauri mínimas:** a janela só tem `core:default`, `opener:default`, `dialog:default`, `deep-link:default`, `notification:default`, `updater:default` e `process:allow-restart` (`src-tauri/capabilities/default.json`). Não há acesso livre a shell no frontend: abrir programas passa por dois comandos Rust com ações fixas (`vscode`, `explorer`, `gitbash`).
-- **O caminho é validado no Rust** antes de qualquer execução (`Path::exists`).
+- **Dados do usuário, pasta do usuário:** o banco fica na pasta de dados da conta do Windows. Não há outras pessoas no mesmo banco, então não há RLS local; na nuvem (importação), o RLS do Supabase continua valendo.
+- **Permissões do Tauri mínimas:** a janela só tem `core:default`, `opener:default`, `dialog:default`, `deep-link:default`, `notification:default`, `updater:default`, `process:allow-restart`, `sql:default` e `sql:allow-execute` (`src-tauri/capabilities/default.json`). Não há acesso livre a shell no frontend: abrir programas passa por dois comandos Rust com ações fixas (`vscode`, `explorer`, `gitbash`).
+- **O caminho é validado no Rust** antes de qualquer execução (`Path::exists`). Ler e gravar arquivo só aceita `.json` escolhido pelo seletor do sistema.
 
 ### $ atualizações
 
@@ -174,7 +181,7 @@ A G.W.E.N. procura versão nova nas Releases do GitHub ao abrir e a cada 6 horas
 |---|---|---|
 | Detecção da janela ativa | Exige polling em Rust e regras por programa | novo comando em `lib.rs` + tabela de uso por app |
 | Widget flutuante | Segunda janela Tauri, sempre no topo | `tauri.conf.json` + rota própria |
-| Cache local / offline | V1 depende de internet | implementação alternativa do `repository.js` |
+| Sincronização entre computadores | Primeiro o local precisa estar sólido; exige modelo de conflito | `portability.js` vira sync, com o mesmo `store` |
 
 ---
 

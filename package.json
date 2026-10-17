@@ -2,7 +2,7 @@
   "name": "gwen",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação",
   "scripts": {
@@ -25,6 +25,7 @@
     "@tauri-apps/plugin-notification": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2.2.6",
     "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-sql": "^2.6.0",
     "@tauri-apps/plugin-updater": "^2.14.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

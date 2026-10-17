@@ -11,14 +11,14 @@
 ![Status](https://img.shields.io/badge/status-beta-972FFF?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.3.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.4.0-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
 ![React](https://img.shields.io/badge/React%2019-171717?style=flat-square&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-171717?style=flat-square&logo=vite&logoColor=A78BFA)
 ![Tailwind](https://img.shields.io/badge/Tailwind%204-171717?style=flat-square&logo=tailwindcss&logoColor=06B6D4)
-![Supabase](https://img.shields.io/badge/Supabase-171717?style=flat-square&logo=supabase&logoColor=3ECF8E)
+![SQLite](https://img.shields.io/badge/SQLite-171717?style=flat-square&logo=sqlite&logoColor=74C0FC)
 ![Rust](https://img.shields.io/badge/Rust-171717?style=flat-square&logo=rust&logoColor=E8E4DE)
 
 [Sobre](#-sobre-o-projeto) · [Funcionalidades](#-funcionalidades) · [Como rodar](#-como-rodar) · [Como usar](#-como-usar) · [Temas](#-temas) · [Estrutura](#-estrutura) · [Documentação](#-documentação) · [Licença](#-licença)
@@ -45,7 +45,7 @@ A ideia nasceu de um post sobre hubs de desenvolvimento e foi adaptada para um f
 
 | Recurso | O que faz |
 |---|---|
-| **Login** | Google ou e-mail e senha. Projetos, tempos e aparência ficam na nuvem. |
+| **Seus dados, no seu computador** | Sem conta e sem internet. Tudo num banco local, com backup em JSON e cópia automática a cada versão. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
 | **Projetos** | Status, descrição, várias pastas e vários links por projeto. |
 | **Codar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
@@ -90,14 +90,18 @@ code --version   # necessário para o Codar agora abrir o VS Code
 | Comando `code` | No VS Code: `Ctrl+Shift+P` > *Shell Command: Install 'code' command in PATH* |
 | WebView2 | Já vem no Windows 10 e 11 |
 
-#### 2. Banco de dados (Supabase)
+#### 2. Dados
 
-As tabelas ficam num schema próprio, o `gwen`. Então dá para usar **um projeto Supabase que você já tem** para outro app, sem criar um novo e sem conflito de nomes.
+**Não precisa configurar nada.** Os dados ficam num banco SQLite (`gwen.db`) na pasta de dados do app, criado na primeira abertura. Sem `.env`, sem conta, sem internet.
 
-1. Abra o projeto no [supabase.com](https://supabase.com) (um existente ou um novo).
-2. Em **SQL Editor > New query**, rode os arquivos de [`supabase/migrations/`](supabase/migrations/) **em ordem** (`001`, `002`, `003`). Cole, clique em **Run**, repita. Eles podem ser rodados de novo sem estragar nada.
-3. Em **Project Settings > Data API > Exposed schemas**, adicione `gwen` e salve. Sem isso a API responde que o schema não existe.
-4. Copie `.env.example` para `.env` e preencha com os dados de **Project Settings > API**:
+<details>
+<summary><b>Opcional: importar dados da nuvem (quem usou as versões até a 0.3)</b></summary>
+
+<br>
+
+As versões até a 0.3 gravavam no Supabase. Para trazer esses dados uma vez:
+
+1. Copie `.env.example` para `.env` e preencha com o mesmo projeto que você usava (**Project Settings > API**):
 
    ```env
    VITE_SUPABASE_URL=https://xxxx.supabase.co
@@ -105,18 +109,12 @@ As tabelas ficam num schema próprio, o `gwen`. Então dá para usar **um projet
    VITE_SUPABASE_SCHEMA=gwen
    ```
 
-5. **Login com Google:** em **Authentication > URL Configuration > Redirect URLs**, adicione:
+2. Para entrar com Google, confira em **Authentication > URL Configuration > Redirect URLs** se estão `gwen://auth/callback` e `http://localhost:1420/`.
+3. Abra a G.W.E.N. e use **Começar e importar da nuvem** na primeira tela, ou **Configurações > Dados > Importar da nuvem**. Ela entra na conta, copia tudo e sai. Nada é apagado, nem aqui nem na nuvem.
 
-   ```text
-   gwen://auth/callback
-   http://localhost:1420/
-   ```
+O esquema da nuvem continua em [`supabase/migrations/`](supabase/migrations/), com tabelas no schema `gwen` ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)). Sem essas variáveis, a opção de importar simplesmente não aparece.
 
-   O provedor Google precisa estar ativo em **Authentication > Sign In / Providers > Google**. Se o projeto já é usado por outro app com Google (como o Sparky), isso já está feito.
-
-6. *Opcional:* em **Authentication > Sign In / Providers > Email**, desligue **Confirm email** para a conta entrar direto depois do cadastro. Se o projeto for compartilhado, isso vale para os outros apps dele também.
-
-> O login (`auth.users`) é do projeto inteiro: a mesma conta funciona em todos os apps que usam aquele projeto. Os dados da G.W.E.N. ficam isolados no schema `gwen`, com RLS.
+</details>
 
 #### 3. Rodando em desenvolvimento
 
@@ -133,7 +131,7 @@ A primeira execução compila o Rust e leva alguns minutos. As próximas são r�
 | `yarn dev` | Só a interface, **no navegador** (`localhost:1420`). Pastas não abrem, só aparecem no console |
 | `yarn app:build` | Gera o **instalador** do Windows |
 
-> `yarn dev` é para trabalhar na interface. Para usar a G.W.E.N. de verdade (abrir VS Code, Git Bash, login com Google voltando para o app), use `yarn app` ou instale.
+> `yarn dev` é para trabalhar na interface: lá os dados ficam no armazenamento do navegador, separados do app. Para usar a G.W.E.N. de verdade (banco local, abrir VS Code e Git Bash), use `yarn app` ou instale.
 
 #### 4. Instalando como aplicativo
 
@@ -144,10 +142,10 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.3.0_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.4.0_x64-setup.exe
 ```
 
-Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. O instalador também registra o endereço `gwen://`, usado pelo login com Google. Para atualizar, gere o instalador da versão nova e instale por cima.
+Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
 
 > O Windows pode avisar que o app é de um "editor desconhecido", porque o instalador não tem assinatura digital. Clique em **Mais informações > Executar assim mesmo**.
 
@@ -164,15 +162,15 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 > ⚠️ **Guarde o arquivo `gwen.key` e a senha num gerenciador de senhas, fora do repositório.** Se essa chave for perdida, quem já instalou não recebe mais atualizações automáticas e precisa reinstalar à mão. Não execute o comando de novo depois de publicar versões: uma chave nova invalida a anterior.
 
 1. Copie a chave **pública** que o comando mostra (ou o conteúdo de `gwen.key.pub`) para `plugins.updater.pubkey` em `src-tauri/tauri.conf.json`.
-2. No GitHub, em **Settings > Secrets and variables > Actions**, crie: `TAURI_SIGNING_PRIVATE_KEY` (conteúdo do `gwen.key`), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_SUPABASE_SCHEMA`.
+2. No GitHub, em **Settings > Secrets and variables > Actions**, crie `TAURI_SIGNING_PRIVATE_KEY` (conteúdo do `gwen.key`) e `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. As variáveis do Supabase são opcionais: sem elas, a versão publicada não mostra a importação da nuvem, que é o certo para quem nunca usou as versões antigas.
 
 **A cada versão:**
 
 1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, e o `CHANGELOG.md`.
 2. Crie e envie a tag:
    ```bash
-   git tag v0.3.0
-   git push origin v0.3.0
+   git tag v0.4.0
+   git push origin v0.4.0
    ```
 3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
 
@@ -243,7 +241,7 @@ A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpap
 }
 ```
 
-No Personalizado, o logo usa o acento principal no corpo e o secundário na carga. No Noir, é branco com a carga em cinza. O painel do login mantém o wallpaper e o logo Noir em qualquer tema, porque é a cara do sistema.
+No Personalizado, o logo usa o acento principal no corpo e o secundário na carga. No Noir, é branco com a carga em cinza. O painel da primeira abertura mantém o wallpaper e o logo Noir em qualquer tema, porque é a cara do sistema.
 
 Os derivados dos tokens (`--c-phosphor-12`, `--c-void-veil`...) usam `color-mix`, então acompanham qualquer tema sem configuração extra.
 
@@ -254,9 +252,9 @@ gwen/
 ├── src/
 │   ├── components/      sidebar, topbar, cards, formulário, pausa, logo
 │   ├── context/         auth, workspace (dados e sessões), toasts
-│   ├── data/            repository.js: toda conversa com o Supabase
+│   ├── data/            repository, store (SQLite/localStorage), backup e importação
 │   ├── lib/             temas, tempo, estatísticas, ponte com o Rust
-│   ├── pages/           login, dashboard, configurações
+│   ├── pages/           primeira abertura, dashboard, configurações
 │   └── styles/          tokens e estilos Moderno/Terminal
 ├── src-tauri/
 │   ├── src/lib.rs       comandos nativos: abrir VS Code, Explorer, Git Bash
@@ -278,14 +276,14 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - Caminhos de pasta são por máquina. Em outro computador, a pasta pode não existir (o app avisa).
 - O instalador não tem assinatura digital, então o Windows avisa na primeira instalação.
 - Uma sessão por vez.
-- Precisa de internet para salvar e carregar dados.
+- Ainda sem sincronização: os dados de um computador não aparecem no outro (dá para levar com o backup em JSON).
 
 ### $ roadmap
 
 - [x] **V0.1** · launcher, categorias, sessões, modo pausa, temas
 - [x] **V0.2** · login com Google, modo claro e escuro
 - [x] **V0.3** · modo saúde: água, alongamento, olhos
-- [ ] **V0.4** · dados locais (SQLite), nuvem opcional
+- [x] **V0.4** · dados locais (SQLite), sem login, backup e importação da nuvem
 - [ ] **V0.5** · mapeamento de comportamento: foco, programas abertos e áudio, por categoria
 - [ ] Widget flutuante · histórico por mês e ano · check-in de humor
 
@@ -304,6 +302,7 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 | [`ADR-007`](docs/decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência |
 | [`ADR-008`](docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho |
 | [`ADR-009`](docs/decisoes/ADR-009-atualizacoes-sem-perder-dados.md) | Atualizações sem perder dados |
+| [`ADR-010`](docs/decisoes/ADR-010-dados-locais-primeiro.md) | Dados locais primeiro |
 
 O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
 

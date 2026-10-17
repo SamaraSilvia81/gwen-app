@@ -6,9 +6,24 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ## [Não lançado]
 
 ### Planejado
-- Dados locais (SQLite) com nuvem opcional
+- Sincronização entre computadores (opcional)
 - Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
 - Widget flutuante "sempre no topo"
+
+## [0.4.0] - 2026-10-17
+
+### Alterado
+- **Dados locais:** tudo fica num banco SQLite no computador, sem conta e sem internet ([`ADR-010`](docs/decisoes/ADR-010-dados-locais-primeiro.md))
+- **Sem login:** a primeira abertura pede só o nome
+- O Supabase deixa de ser obrigatório; o `.env` só é necessário para a importação da nuvem
+
+### Adicionado
+- Importação única da nuvem (Google ou e-mail), que só acrescenta o que ainda não existe
+- Exportar e importar backup completo em JSON, e botão para abrir a pasta de dados
+- Cópia automática do banco a cada versão nova, antes das migrações (guarda as 5 mais recentes)
+
+### Removido
+- Tela de login e saída da conta
 
 ## [0.3.0] - 2026-10-17
 

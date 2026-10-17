@@ -4,9 +4,9 @@
 # Segredos necessários (Settings > Secrets and variables > Actions):
 #   TAURI_SIGNING_PRIVATE_KEY           conteúdo do arquivo .key gerado por `yarn tauri signer generate`
 #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  a senha escolhida na geração
-#   VITE_SUPABASE_URL                   URL do projeto Supabase
-#   VITE_SUPABASE_ANON_KEY              anon key do projeto
-#   VITE_SUPABASE_SCHEMA                gwen
+#
+# Opcionais (só para a importação da nuvem; sem eles, o botão não aparece):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_SCHEMA
 
 name: release
 

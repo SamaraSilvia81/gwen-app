@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowCounterClockwise, Check, ClipboardText, Copy, Desktop, Moon, Sun } from '@phosphor-icons/react';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
+import { useWorkspace } from '../context/WorkspaceContext';
+import { cloudImportDoneAt, exportAll, importBackup, describeAdded } from '../data/portability';
+import { isSupabaseConfigured } from '../lib/cloudAuth';
+import { openFolder, saveJsonFile, openJsonFile, dataDir } from '../lib/native';
+import CloudImport from '../components/CloudImport';
+import { formatDay } from '../lib/time';
+import { Database, DownloadSimple, FolderOpen, UploadSimple, CloudArrowDown } from '@phosphor-icons/react';
 import { currentVersion, findUpdate, installUpdate } from '../lib/updater';
 import { isTauri } from '../lib/native';
 import { MIN_INTERVAL, REMINDERS, ensureNotificationPermission, notify, resolveWellness } from '../lib/wellness';
@@ -12,9 +19,11 @@ import {
 const MODE_ICON = { escuro: Moon, claro: Sun, sistema: Desktop };
 import Logo from '../components/Logo';
 import { Label } from '../components/Modal';
+import { AvatarPicker } from '../components/Avatar';
 
 export default function Settings() {
-  const { profile, user, updateProfile } = useAuth();
+  const { profile, updateProfile, reload } = useProfile();
+  const { refresh } = useWorkspace();
   const toast = useToast();
 
   const [name, setName] = useState(profile?.display_name || '');
@@ -50,6 +59,38 @@ export default function Settings() {
     } catch (err) {
       toast(`Não consegui atualizar: ${err?.message || err}`, 'error');
       setUpdateState('available');
+    }
+  }
+
+  // ─── dados ───
+  const [dataPath, setDataPath] = useState('');
+  const [importedAt, setImportedAt] = useState(null);
+  const [cloudOpen, setCloudOpen] = useState(false);
+  useEffect(() => {
+    dataDir().then(setDataPath).catch(() => {});
+    cloudImportDoneAt().then(setImportedAt).catch(() => {});
+  }, []);
+
+  async function handleExport() {
+    try {
+      const json = await exportAll(version);
+      const stamp = new Date().toISOString().slice(0, 10);
+      const saved = await saveJsonFile(`gwen-backup-${stamp}.json`, json);
+      if (saved) toast('Backup salvo.');
+    } catch (err) {
+      toast(`Não consegui salvar o backup: ${err?.message || err}`, 'error');
+    }
+  }
+
+  async function handleImportBackup() {
+    try {
+      const text = await openJsonFile();
+      if (!text) return;
+      const added = await importBackup(text);
+      await Promise.all([refresh(), reload()]);
+      toast(`Backup importado: ${describeAdded(added)}.`);
+    } catch (err) {
+      toast(err?.message || String(err), 'error');
     }
   }
 
@@ -154,7 +195,15 @@ export default function Settings() {
         </header>
 
         {/* PERFIL */}
-        <Section title="Perfil" description={user?.email}>
+        <Section title="Perfil" description="Seu perfil fica neste computador, sem conta.">
+          <div className="mb-5">
+            <AvatarPicker
+              avatar={profile?.avatar}
+              name={profile?.display_name}
+              disabled={saving}
+              onChange={(a) => save({ avatar: a }, a ? 'Foto atualizada.' : 'Foto removida.')}
+            />
+          </div>
           <div className="flex gap-2 items-end">
             <label className="field flex-1">
               <span className="field-label">Nome</span>
@@ -412,6 +461,46 @@ export default function Settings() {
           </div>
         </Section>
 
+        {/* DADOS */}
+        <Section title="Dados" description="Tudo fica neste computador. Atualizar ou desinstalar a G.W.E.N. não apaga nada.">
+          <div className="card p-4 flex items-center gap-4 mb-3">
+            <Database size={20} className="text-phosphor shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">Pasta de dados</p>
+              <p className="mono text-[11px] text-muted truncate" title={dataPath}>{dataPath || 'no navegador, os dados ficam no armazenamento do próprio navegador'}</p>
+            </div>
+            {dataPath && (
+              <button className="btn btn-ghost btn-sm" onClick={() => openFolder('explorer', dataPath)}>
+                <FolderOpen size={13} />
+                <Label>Abrir</Label>
+              </button>
+            )}
+          </div>
+          <p className="text-[12px] text-muted mb-4">
+            A cada versão nova, a G.W.E.N. guarda uma cópia do banco na pasta <span className="mono text-bone">backups</span> antes de abrir.
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button className="btn btn-ghost" onClick={handleExport}>
+              <DownloadSimple size={14} />
+              <Label>Exportar backup (JSON)</Label>
+            </button>
+            <button className="btn btn-ghost" onClick={handleImportBackup}>
+              <UploadSimple size={14} />
+              <Label>Importar backup</Label>
+            </button>
+            {isSupabaseConfigured && (
+              <button className="btn btn-ghost" onClick={() => setCloudOpen(true)}>
+                <CloudArrowDown size={14} />
+                <Label>Importar da nuvem</Label>
+              </button>
+            )}
+          </div>
+          {isSupabaseConfigured && importedAt && (
+            <p className="text-[12px] text-muted mt-3">Última importação da nuvem: {formatDay(importedAt)}</p>
+          )}
+          <p className="text-[12px] text-muted mt-3">Importar nunca apaga nada: só entra o que ainda não existe aqui.</p>
+        </Section>
+
         {/* SISTEMA */}
         <Section title="Sistema" description="Onde a G.W.E.N. encontra os programas do seu computador.">
           <div className="flex gap-2 items-end">
@@ -470,6 +559,15 @@ export default function Settings() {
           </div>
         </Section>
       </div>
+      {cloudOpen && (
+        <CloudImport
+          onClose={() => setCloudOpen(false)}
+          onImported={async () => {
+            await Promise.all([refresh(), reload()]);
+            setImportedAt(new Date().toISOString());
+          }}
+        />
+      )}
     </div>
   );
 }

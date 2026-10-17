@@ -15,7 +15,7 @@
 | Status | Aceita |
 | Decisão de | Samara Silvia |
 | Redigido por | Samara Silvia |
-| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen/commits/main/docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) |
+| Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen-app/commits/main/docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) |
 
 **Sumário**
 

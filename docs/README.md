@@ -5,7 +5,7 @@
 
 # Documentação da G.W.E.N.
 
-![status](https://img.shields.io/badge/status-vigente-0A0A0B) ![documentos](https://img.shields.io/badge/documentos-11-3A3A3F) ![versão](https://img.shields.io/badge/versão%20do%20app-0.3.0-5E5E66)
+![status](https://img.shields.io/badge/status-vigente-0A0A0B) ![documentos](https://img.shields.io/badge/documentos-12-3A3A3F) ![versão](https://img.shields.io/badge/versão%20do%20app-0.4.0-5E5E66)
 
 | Campo | Valor |
 |---|---|
@@ -37,6 +37,7 @@
 | [`ADR-007`](decisoes/ADR-007-modo-claro-como-terceiro-eixo.md) | Modo claro como terceiro eixo da aparência | Decisão | Aceita |
 | [`ADR-008`](decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho | Decisão | Aceita |
 | [`ADR-009`](decisoes/ADR-009-atualizacoes-sem-perder-dados.md) | Atualizações sem perder dados | Decisão | Aceita |
+| [`ADR-010`](decisoes/ADR-010-dados-locais-primeiro.md) | Dados locais primeiro | Decisão | Aceita |
 
 ### $ como os documentos se organizam
 

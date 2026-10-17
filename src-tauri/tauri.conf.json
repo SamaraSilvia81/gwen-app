@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "GWEN",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "identifier": "sh.devs-sam.gwen",
   "build": {
     "beforeDevCommand": "yarn dev",
@@ -46,7 +46,7 @@
     "updater": {
       "pubkey": "COLE_AQUI_A_CHAVE_PUBLICA_GERADA_COM_tauri_signer_generate",
       "endpoints": [
-        "https://github.com/SamaraSilvia81/gwen/releases/latest/download/latest.json"
+        "https://github.com/SamaraSilvia81/gwen-app/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

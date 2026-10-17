@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowSquareOut, Code, FolderOpen, Lightning, PencilSimple, Stop, TerminalWindow } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
-import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
 import { openFolder, openLink, normalizeUrl } from '../lib/native';
 import { formatDuration } from '../lib/time';
@@ -12,7 +12,7 @@ const ACTION_ICON = { vscode: Code, explorer: FolderOpen, gitbash: TerminalWindo
 
 export default function ProjectCard({ project, time, categoryName, onEdit }) {
   const { activeSession, launchProject, endSession } = useWorkspace();
-  const { profile } = useAuth();
+  const { profile } = useProfile();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const isActive = activeSession?.project_id === project.id;

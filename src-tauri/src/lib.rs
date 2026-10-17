@@ -4,10 +4,12 @@
 //! abrir pastas no VS Code, no Explorer e no Git Bash.
 //! Links (Jira, Confluence, GitHub...) são abertos pelo plugin `opener` no frontend.
 
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(desktop)]
-use tauri::Manager;
+use tauri::Manager as _;
+
 use std::process::Command;
 
 #[cfg(target_os = "windows")]
@@ -89,6 +91,86 @@ fn open_git_bash(path: &str, _custom: Option<String>) -> std::io::Result<std::pr
         .spawn()
 }
 
+/* ─── DADOS LOCAIS ─── */
+
+/// Nome do banco. O plugin sql resolve `sqlite:gwen.db` dentro da pasta de
+/// configuração do app (%APPDATA%\sh.devs-sam.gwen no Windows).
+const DB_FILE: &str = "gwen.db";
+const BACKUPS_KEPT: usize = 5;
+
+/// Migrações do banco local. Só acrescentam; nunca reescreva uma já publicada (ADR-009).
+fn migrations() -> Vec<tauri_plugin_sql::Migration> {
+    vec![
+        tauri_plugin_sql::Migration {
+            version: 1,
+            description: "esquema inicial local",
+            sql: include_str!("../migrations/001_local.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 2,
+            description: "foto do perfil",
+            sql: include_str!("../migrations/002_avatar.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+    ]
+}
+
+/// Antes de uma versão nova abrir o banco (e rodar migrações), guarda uma cópia.
+/// Roda no setup, antes de o frontend carregar o banco.
+fn backup_on_version_change(dir: &Path, version: &str) -> std::io::Result<()> {
+    fs::create_dir_all(dir)?;
+    let db = dir.join(DB_FILE);
+    let marker = dir.join("last_version");
+    let last = fs::read_to_string(&marker).unwrap_or_default();
+    let last = last.trim();
+
+    if db.exists() && !last.is_empty() && last != version {
+        let backups = dir.join("backups");
+        fs::create_dir_all(&backups)?;
+        let ts = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        fs::copy(&db, backups.join(format!("gwen-{last}-{ts}.db")))?;
+
+        // mantém só as cópias mais recentes
+        let mut files: Vec<PathBuf> = fs::read_dir(&backups)?
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().map(|x| x == "db").unwrap_or(false))
+            .collect();
+        files.sort();
+        while files.len() > BACKUPS_KEPT {
+            let _ = fs::remove_file(files.remove(0));
+        }
+    }
+    fs::write(&marker, version)
+}
+
+/// Caminho da pasta de dados, para o botão "Abrir pasta de dados".
+#[tauri::command]
+fn data_dir(app: tauri::AppHandle) -> Result<String, String> {
+    app.path().app_config_dir().map(|p| p.display().to_string()).map_err(|e| e.to_string())
+}
+
+/// Exportar/importar dados: só arquivos .json escolhidos pelo seletor do sistema.
+fn ensure_json(path: &str) -> Result<(), String> {
+    if path.to_lowercase().ends_with(".json") {
+        Ok(())
+    } else {
+        Err("Só arquivos .json".into())
+    }
+}
+
+#[tauri::command]
+fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    ensure_json(&path)?;
+    fs::write(&path, contents).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    ensure_json(&path)?;
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -115,7 +197,18 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:gwen.db", migrations())
+                .build(),
+        )
         .setup(|_app| {
+            if let Ok(dir) = _app.path().app_config_dir() {
+                let version = _app.package_info().version.to_string();
+                if let Err(e) = backup_on_version_change(&dir, &version) {
+                    eprintln!("[gwen] backup do banco falhou: {e}");
+                }
+            }
             // No Windows e no Linux o esquema gwen:// também é registrado em tempo de
             // execução, então o login com Google funciona até no `yarn app` (modo dev).
             #[cfg(any(windows, target_os = "linux"))]
@@ -125,7 +218,13 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![path_exists, open_folder])
+        .invoke_handler(tauri::generate_handler![
+            path_exists,
+            open_folder,
+            data_dir,
+            write_text_file,
+            read_text_file
+        ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");
 }
