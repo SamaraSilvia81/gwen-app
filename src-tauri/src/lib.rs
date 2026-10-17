@@ -45,11 +45,31 @@ fn open_folder(action: String, path: String, git_bash_path: Option<String>) -> R
     result.map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Procura o executável do VS Code nas pastas de instalação comuns.
+#[cfg(target_os = "windows")]
+fn find_vscode_exe() -> Option<std::path::PathBuf> {
+    let mut candidates = Vec::new();
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        candidates.push(Path::new(&local).join(r"Programs\Microsoft VS Code\Code.exe"));
+    }
+    for var in ["ProgramFiles", "ProgramFiles(x86)"] {
+        if let Ok(dir) = std::env::var(var) {
+            candidates.push(Path::new(&dir).join(r"Microsoft VS Code\Code.exe"));
+        }
+    }
+    candidates.into_iter().find(|p| p.exists())
+}
+
 #[cfg(target_os = "windows")]
 fn open_vscode(path: &str) -> std::io::Result<std::process::Child> {
-    // `code` no Windows é um .cmd, por isso passa pelo cmd
+    // Chama o Code.exe direto: assim o caminho chega inteiro, mesmo com espaços.
+    if let Some(exe) = find_vscode_exe() {
+        return Command::new(exe).arg(path).spawn();
+    }
+    // Sem o executável nos lugares comuns, usa o `code` do PATH (um .cmd).
+    // O caminho vai entre aspas montadas à mão, porque o cmd quebra nos espaços.
     Command::new("cmd")
-        .args(["/C", "code", path])
+        .raw_arg(format!("/C code \"{path}\""))
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
 }
