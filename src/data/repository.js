@@ -148,9 +148,33 @@ export const sessionRepo = {
   async heartbeat(id) {
     await store.update('sessions', id, { last_seen_at: nowIso() });
   },
-  async end(id, endedAt = new Date()) {
-    await store.update('sessions', id, { ended_at: new Date(endedAt).toISOString() });
+  async end(id, endedAt = new Date(), note = undefined) {
+    const patch = { ended_at: new Date(endedAt).toISOString() };
+    // '' = apagou a nota de propósito (diferente de null, que é "não respondeu")
+    if (note !== undefined) patch.note = (note || '').trim();
+    await store.update('sessions', id, patch);
     return getSession(id);
+  },
+  /** "Onde parei": a nota mais recente de cada projeto (Map project_id -> { note, at, front }).
+   *  Sessões encerradas sem responder (note null) não apagam a nota anterior; nota vazia ('') apaga. */
+  async latestNotes() {
+    const seen = new Set();
+    const out = new Map();
+    const answered = (await store.all('sessions')).filter((s) => s.ended_at && s.note != null).sort(byDesc('ended_at'));
+    for (const s of answered) {
+      if (seen.has(s.project_id)) continue;
+      seen.add(s.project_id);
+      if (s.note) out.set(s.project_id, { note: s.note, at: s.ended_at, front: s.front || null });
+    }
+    return out;
+  },
+  /** Sessões entre duas datas (relatório) */
+  async between(from, to) {
+    const a = from.toISOString();
+    const b = to.toISOString();
+    return (await store.all('sessions'))
+      .filter((s) => s.started_at < b && (!s.ended_at || s.ended_at >= a))
+      .sort(byDesc('started_at'));
   },
   async addPaused(id, seconds) {
     const s = await getSession(id);

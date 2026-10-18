@@ -7,6 +7,8 @@
  *   primeira ação, para versões anteriores do app seguirem lendo.
  * - pastas e links podem ter uma `front` (frente). Sem frente, o item vale
  *   para todas. As frentes do projeto são as que aparecem nos itens.
+ * - uma pasta pode ter um `command` (ex.: yarn dev), rodado num terminal
+ *   novo dentro dela no Começar agora (0.6).
  */
 
 export const folderActions = (f) => (f?.actions?.length ? f.actions : [f?.action || 'vscode']);
@@ -33,6 +35,7 @@ export function cleanFolder(f) {
     action: actions[0],
     on_launch: !!f.on_launch,
     front: f.front?.trim() || '',
+    command: f.command?.trim() || '',
   };
 }
 

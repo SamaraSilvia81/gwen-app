@@ -10,6 +10,18 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
 - Widget flutuante "sempre no topo"
 
+## [0.6.0] - 2026-10-17
+
+### Adicionado
+- **Bandeja do Windows:** ícone perto do relógio com o tempo da sessão no tooltip. Clique direito lista os projetos (e as frentes) para começar direto, sem abrir a janela, e encerra a sessão. Fechar a janela esconde na bandeja; dá para desligar em Configurações, Sistema
+- **Ctrl + K:** paleta para começar um projeto digitando parte do nome. Também pelo botão de raio na barra superior
+- **Onde parei:** ao encerrar uma sessão, a G.W.E.N. pergunta o próximo passo. A nota aparece no card, na paleta e volta no próximo Começar agora
+- **Projetos parados:** aviso no card quando um projeto em andamento fica 30 dias sem abrir nem commitar
+- **Descrição pelo README:** ao escolher a pasta, a descrição vazia é preenchida com o primeiro parágrafo do README (prefere a seção "Sobre"). Botão "Ler do README" para projetos que já existem
+- **Comando por pasta:** um comando opcional (ex.: `yarn dev`) roda num PowerShell novo, dentro da pasta, no Começar agora
+- **Relatório:** tempo por categoria, projeto e frente na semana, no mês, no mês passado ou nos últimos 30 dias, com exportação em CSV (uma linha por sessão, abre direto no Excel)
+- Rascunho de projeto novo aparece como card no painel, com Continuar e Descartar
+
 ## [0.5.0] - 2026-10-17
 
 ### Adicionado

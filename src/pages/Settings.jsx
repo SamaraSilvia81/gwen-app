@@ -6,6 +6,7 @@ import { useWorkspace } from '../context/WorkspaceContext';
 import { cloudImportDoneAt, exportAll, importBackup, describeAdded } from '../data/portability';
 import { isSupabaseConfigured } from '../lib/cloudAuth';
 import { openFolder, saveJsonFile, openJsonFile, dataDir, autostartEnabled, setAutostart } from '../lib/native';
+import { closeToTrayEnabled, setCloseToTray } from '../lib/useTray';
 import CloudImport from '../components/CloudImport';
 import CloudAccountSection from '../components/CloudAccountSection';
 import { isAccountMode } from '../lib/cloudConfig';
@@ -551,6 +552,7 @@ export default function Settings() {
         {/* SISTEMA */}
         <Section title="Sistema" description="Como a G.W.E.N. se encaixa no seu computador.">
           <AutostartToggle />
+          <TrayToggle />
           <div className="flex gap-2 items-end">
             <label className="field flex-1">
               <span className="field-label">Caminho do Git Bash</span>
@@ -617,6 +619,30 @@ export default function Settings() {
         />
       )}
     </div>
+  );
+}
+
+/** Fechar a janela esconde na bandeja (padrão) ou sai de vez */
+function TrayToggle() {
+  const toast = useToast();
+  const [on, setOn] = useState(closeToTrayEnabled);
+  async function toggle() {
+    const next = !on;
+    await setCloseToTray(next).catch(() => {});
+    setOn(next);
+    toast(next ? 'Fechar a janela deixa a G.W.E.N. na bandeja.' : 'Fechar a janela sai da G.W.E.N.');
+  }
+  return (
+    <label className={`card p-4 flex items-center gap-4 mb-4 ${isTauri ? 'cursor-pointer' : 'opacity-60'}`}>
+      <input type="checkbox" className="w-4 h-4 accent-[var(--c-phosphor)]" checked={on} disabled={!isTauri} onChange={toggle} />
+      <span className="flex-1">
+        <span className="block font-display font-semibold">Fechar para a bandeja</span>
+        <span className="block text-[12px] text-muted mt-0.5">
+          O X esconde a janela e a G.W.E.N. segue perto do relógio, com o timer e a lista de projetos. Para sair de vez:
+          clique direito no ícone, Sair.
+        </span>
+      </span>
+    </label>
   );
 }
 

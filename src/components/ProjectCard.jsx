@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowSquareOut, CaretDown, Code, FolderOpen, GitBranch, Lightning, PencilSimple, Stop, TerminalWindow,
+  ArrowBendDownRight, ArrowSquareOut, CaretDown, Code, FolderOpen, GitBranch, Hourglass, Lightning, PencilSimple, Stop,
+  TerminalWindow,
 } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useProfile } from '../context/ProfileContext';
@@ -11,6 +12,9 @@ import { STATUS } from '../lib/stats';
 import { folderActions, projectFronts } from '../lib/projectModel';
 import { timeAgo, useGitStatus } from '../lib/useGitStatus';
 import { Label } from './Modal';
+
+/** Em andamento, sem Começar agora nem commit há mais que isso = parado */
+const STALE_DAYS = 30;
 
 const ACTION_ICON = { vscode: Code, explorer: FolderOpen, gitbash: TerminalWindow };
 const ACTION_NAME = { vscode: 'VS Code', explorer: 'Explorer', gitbash: 'Git Bash' };
@@ -39,7 +43,7 @@ function GitLine({ repo, showLabel }) {
 }
 
 export default function ProjectCard({ project, time, frontTimes, categoryName, onEdit }) {
-  const { activeSession, launchProject, endSession } = useWorkspace();
+  const { activeSession, launchProject, requestEnd, notes } = useWorkspace();
   const { profile } = useProfile();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -79,10 +83,25 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
     run(() => launchProject(project, front));
   }
 
+  const where = notes?.get(project.id);
+
+  // projeto parado: em andamento e sem atividade (abertura ou commit) há STALE_DAYS
+  const lastActivity = Math.max(
+    ...[project.last_opened_at, project.created_at, ...repos.map((r) => r.info.last_commit_at)]
+      .filter(Boolean)
+      .map((d) => new Date(d).getTime()),
+  );
+  const idleDays = Math.floor((Date.now() - lastActivity) / 86_400_000);
+  const stale = project.status === 'andamento' && !isActive && Number.isFinite(idleDays) && idleDays >= STALE_DAYS;
+
   const frontTime = (front) => frontTimes?.get(`${project.id}::${front.toLowerCase()}`) || 0;
 
   return (
-    <article className={`card flex flex-col p-4 gap-3.5 ${isActive ? 'is-active' : ''}`}>
+    <article
+      className={`card flex flex-col p-4 gap-3.5 cursor-pointer hover:border-[var(--c-phosphor-40)] transition-colors ${isActive ? 'is-active' : ''}`}
+      // clicar em qualquer parte do card abre o projeto; botões e menus continuam com a própria ação
+      onClick={(e) => !e.target.closest('button, a, input, [role="menu"]') && onEdit()}
+    >
       <header className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -92,6 +111,12 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
             </span>
             {categoryName && <span className="mono text-[11px] text-muted truncate">{categoryName}</span>}
             {isActive && activeSession.front && <span className="mono text-[11px] text-phosphor truncate">{activeSession.front}</span>}
+            {stale && (
+              <span className="chip text-phosphor" title="Em andamento, mas sem abrir nem commitar há um tempo. Retomar, pausar ou concluir?">
+                <Hourglass size={11} />
+                parado há {idleDays} dias
+              </span>
+            )}
           </div>
           <h3 className="font-display text-[16px] font-semibold leading-tight truncate" title={project.name}>
             {project.name}
@@ -104,6 +129,19 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
 
       {project.description && <p className="text-[13px] text-muted leading-relaxed line-clamp-2">{project.description}</p>}
 
+      {where && (
+        <p
+          className="flex items-start gap-2 text-[12.5px] leading-snug px-2.5 py-2 rounded-ui-sm bg-[var(--c-phosphor-8)]"
+          title={`Anotado ${timeAgo(where.at)}${where.front ? ` · ${where.front}` : ''}`}
+        >
+          <ArrowBendDownRight size={13} className="text-phosphor shrink-0 mt-[2px]" />
+          <span className="line-clamp-2">
+            <span className="text-muted">onde parei: </span>
+            {where.note}
+          </span>
+        </p>
+      )}
+
       {(folders.length > 0 || links.length > 0) && (
         <div className="flex flex-wrap gap-1.5">
           {folders.map((f, i) => {
@@ -112,7 +150,7 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
               <button
                 key={`f${i}`}
                 className="btn btn-ghost btn-sm"
-                title={`${f.path}\n${actions.map((a) => ACTION_NAME[a]).join(' + ')}${f.front ? `\nFrente: ${f.front}` : ''}`}
+                title={`${f.path}\n${actions.map((a) => ACTION_NAME[a]).join(' + ')}${f.command ? `\nComando: ${f.command}` : ''}${f.front ? `\nFrente: ${f.front}` : ''}`}
                 disabled={busy}
                 onClick={() => run(() => openFolderAll(f))}
               >
@@ -152,7 +190,7 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
           {time > 0 ? `${formatDuration(time)} esta semana` : 'sem tempo esta semana'}
         </span>
         {isActive ? (
-          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => run(() => endSession())}>
+          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={requestEnd}>
             <Stop size={12} weight="fill" />
             <Label>Encerrar</Label>
           </button>

@@ -126,9 +126,10 @@ erDiagram
 | `last_opened_at` | Atualizado a cada Começar agora. Ordena a lista dentro de cada status |
 | `folders[].path` | Caminho absoluto **da máquina onde foi cadastrado**. Em outro computador pode não existir |
 | `folders[].actions` | Com o que a pasta abre (0.5). Projetos da 0.4 só têm `action`; quem lê usa `actions` e cai em `[action]`. `action` continua gravado com a primeira ação, para versões antigas seguirem lendo |
+| `folders[].command` | Comando opcional (0.6), rodado num terminal novo dentro da pasta no Começar agora |
 | `front` | Frente do item (0.5), opcional. Vazio = vale para todas. As frentes do projeto são as que aparecem nos itens, sem tabela própria. Regras em `src/lib/projectModel.js` |
 
-**`sessions`**: um intervalo de trabalho num projeto. Desde a 0.5, `front` guarda a frente aberta no Começar agora (nulo quando o projeto foi aberto inteiro), para somar o tempo por frente.
+**`sessions`**: um intervalo de trabalho num projeto. Desde a 0.5, `front` guarda a frente aberta no Começar agora (nulo quando o projeto foi aberto inteiro), para somar o tempo por frente. Desde a 0.6, `note` guarda o "onde parei" respondido ao encerrar: `null` = não respondeu (a nota anterior continua valendo), texto vazio = apagou a nota.
 
 **`breaks`**: uma pausa, ligada à sessão ativa no momento (ou avulsa).
 

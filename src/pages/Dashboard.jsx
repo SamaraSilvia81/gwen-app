@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { MagnifyingGlass, Plus } from '@phosphor-icons/react';
+import { MagnifyingGlass, NotePencil, Plus } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useWellness } from '../context/WellnessContext';
 import { REMINDERS } from '../lib/wellness';
@@ -8,6 +8,7 @@ import ProjectForm from '../components/ProjectForm';
 import { Label } from '../components/Modal';
 import { formatDuration } from '../lib/time';
 import { STATUS } from '../lib/stats';
+import { hasContent, readDraft, writeDraft } from '../lib/projectDraft';
 
 const STATUS_FILTERS = [['todos', 'Todos'], ...Object.entries(STATUS).map(([id, s]) => [id, s.label])];
 const STATUS_ORDER = { andamento: 0, pausado: 1, ideia: 2, concluido: 3 };
@@ -17,6 +18,22 @@ export default function Dashboard({ filter, stats }) {
   const [status, setStatus] = useState('todos');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null); // null | 'new' | project
+  const [draftTick, setDraftTick] = useState(0);
+  // relê o rascunho sempre que o formulário fecha
+  const draft = useMemo(() => {
+    const d = readDraft();
+    return hasContent(d) ? d : null;
+  }, [editing, draftTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const draftCard = draft && !editing && (
+    <DraftCard
+      draft={draft}
+      onContinue={() => setEditing('new')}
+      onDiscard={() => {
+        writeDraft(null);
+        setDraftTick((t) => t + 1);
+      }}
+    />
+  );
 
   const categoryName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const filterLabel =
@@ -98,6 +115,7 @@ export default function Dashboard({ filter, stats }) {
           <p className="mono text-muted">carregando projetos<span className="blink">_</span></p>
         ) : visible.length ? (
           <section className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+            {draftCard}
             {visible.map((p) => (
               <ProjectCard
                 key={p.id}
@@ -110,7 +128,10 @@ export default function Dashboard({ filter, stats }) {
             ))}
           </section>
         ) : (
-          <EmptyState hasAny={projects.length > 0} onCreate={() => setEditing('new')} />
+          <>
+            {draftCard && <section className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 mb-3">{draftCard}</section>}
+            <EmptyState hasAny={projects.length > 0} onCreate={() => setEditing('new')} />
+          </>
         )}
       </div>
 
@@ -122,6 +143,38 @@ export default function Dashboard({ filter, stats }) {
         />
       )}
     </div>
+  );
+}
+
+/** Projeto novo que ficou sem salvar: aparece como card tracejado no começo da lista */
+function DraftCard({ draft, onContinue, onDiscard }) {
+  const folders = (draft.folders || []).filter((f) => f.path?.trim()).length;
+  const links = (draft.links || []).filter((l) => l.url?.trim()).length;
+  const bits = [folders && `${folders} ${folders === 1 ? 'pasta' : 'pastas'}`, links && `${links} ${links === 1 ? 'link' : 'links'}`].filter(Boolean);
+  return (
+    <article className="card border-dashed flex flex-col p-4 gap-3.5">
+      <div>
+        <span className="chip mb-1.5">
+          <NotePencil size={11} />
+          Rascunho
+        </span>
+        <h3 className="font-display text-[16px] font-semibold leading-tight truncate mt-1.5">{draft.name?.trim() || 'Projeto sem nome'}</h3>
+      </div>
+      <p className="text-[13px] text-muted leading-relaxed line-clamp-2">
+        {draft.description?.trim() || 'Você começou a criar este projeto e saiu sem salvar.'}
+      </p>
+      <footer className="flex items-center justify-between gap-3 mt-auto pt-3 border-t border-rule">
+        <span className="mono text-[11px] text-muted">{bits.join(' · ') || 'sem pastas ainda'}</span>
+        <div className="flex gap-1.5">
+          <button className="btn btn-quiet btn-sm" onClick={onDiscard}>
+            <Label>Descartar</Label>
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={onContinue}>
+            <Label>Continuar</Label>
+          </button>
+        </div>
+      </footer>
+    </article>
   );
 }
 

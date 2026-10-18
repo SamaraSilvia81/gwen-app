@@ -1,34 +1,16 @@
 import { useEffect, useState } from 'react';
-import { FolderOpen, LinkSimple, Plus, Trash } from '@phosphor-icons/react';
+import { BookOpenText, FolderOpen, LinkSimple, Plus, Trash } from '@phosphor-icons/react';
 import Modal, { Label } from './Modal';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
-import { FOLDER_ACTIONS, gitInfo, pickFolder, remoteToWebUrl, repoHostLabel } from '../lib/native';
+import { FOLDER_ACTIONS, gitInfo, isTauri, pickFolder, readReadme, remoteToWebUrl, repoHostLabel } from '../lib/native';
+import { summarizeReadme } from '../lib/readme';
 import { STATUS } from '../lib/stats';
 import { folderActions, projectFronts } from '../lib/projectModel';
+import { hasContent, readDraft, writeDraft } from '../lib/projectDraft';
 
-const emptyFolder = () => ({ label: '', path: '', actions: ['vscode'], on_launch: true, front: '' });
+const emptyFolder = () => ({ label: '', path: '', actions: ['vscode'], on_launch: true, front: '', command: '' });
 const emptyLink = () => ({ label: '', url: '', on_launch: false, front: '' });
-
-/* Rascunho do projeto novo: fechar sem salvar não perde o que foi preenchido */
-const DRAFT_KEY = 'gwen:rascunho-projeto';
-function readDraft() {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-  } catch {
-    return null;
-  }
-}
-function writeDraft(d) {
-  try {
-    if (d) localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
-    else localStorage.removeItem(DRAFT_KEY);
-  } catch {
-    /* sem armazenamento, sem rascunho */
-  }
-}
-const hasContent = (d) =>
-  !!(d.name.trim() || d.description.trim() || d.folders.some((f) => f.path.trim()) || d.links.some((l) => l.url.trim()));
 
 const normalize = (url) => String(url || '').trim().replace(/^https?:\/\//, '').replace(/\.git$|\/$/g, '').toLowerCase();
 
@@ -45,7 +27,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
       status: project?.status || 'ideia',
       category_id: project?.category_id || (defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : ''),
       folders: project?.folders?.length
-        ? project.folders.map((f) => ({ ...f, actions: folderActions(f), front: f.front || '' }))
+        ? project.folders.map((f) => ({ ...f, actions: folderActions(f), front: f.front || '', command: f.command || '' }))
         : [emptyFolder()],
       links: (project?.links || []).map((l) => ({ ...l, front: l.front || '' })),
     };
@@ -98,13 +80,30 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
     const info = await gitInfo(path).catch(() => null);
     const repoUrl = remoteToWebUrl(info?.remote_url);
     const addLink = repoUrl && !draft.links.some((l) => normalize(l.url) === normalize(repoUrl));
+    const summary = draft.description.trim() ? '' : summarizeReadme(await readReadme(path).catch(() => null));
     setDraft((d) => ({
       ...d,
+      description: d.description.trim() || summary || d.description,
       name: d.name.trim() ? d.name : baseName(path),
       folders: d.folders.map((x, idx) => (idx === i ? { ...x, path, label: x.label || baseName(path) } : x)),
       links: addLink ? [...d.links, { label: repoHostLabel(repoUrl), url: repoUrl, on_launch: false, front: f.front || '' }] : d.links,
     }));
     if (addLink) toast(`Link do repositório adicionado: ${repoUrl.replace('https://', '')}`);
+    if (summary) toast('Descrição preenchida com o README.');
+  }
+
+  /** Botão "Ler do README": procura o README nas pastas do projeto, na ordem */
+  async function fillFromReadme() {
+    for (const f of draft.folders) {
+      if (!f.path.trim()) continue;
+      const summary = summarizeReadme(await readReadme(f.path.trim()).catch(() => null));
+      if (summary) {
+        set({ description: summary });
+        toast(`Descrição lida do README de ${f.label || baseName(f.path)}.`);
+        return;
+      }
+    }
+    toast('Não achei um README com texto nas pastas do projeto.', 'error');
   }
 
   async function handleSave(e) {
@@ -203,7 +202,15 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
         </div>
 
         <label className="field">
-          <span className="field-label">Descrição</span>
+          <span className="flex items-center justify-between">
+            <span className="field-label">Descrição</span>
+            {isTauri && draft.folders.some((f) => f.path.trim()) && (
+              <button type="button" className="btn btn-quiet btn-sm -my-1" onClick={fillFromReadme} title="Usar o primeiro parágrafo do README da pasta">
+                <BookOpenText size={13} />
+                <Label>Ler do README</Label>
+              </button>
+            )}
+          </span>
           <textarea
             className="input"
             rows={2}
@@ -283,6 +290,14 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
                       abrir no Começar agora
                     </label>
                   </div>
+                  <input
+                    className="input mono text-[12px]"
+                    value={f.command}
+                    onChange={(e) => setFolder(i, { command: e.target.value })}
+                    placeholder="Comando ao começar (opcional), ex.: yarn dev"
+                    aria-label="Comando ao começar"
+                    title="Roda num PowerShell novo, dentro desta pasta, quando o Começar agora abrir a pasta"
+                  />
                 </div>
               );
             })}

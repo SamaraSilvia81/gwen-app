@@ -133,3 +133,37 @@ export async function setAutostart(on) {
   const { enable, disable } = await import('@tauri-apps/plugin-autostart');
   await (on ? enable() : disable());
 }
+
+/** Texto do README da pasta, ou null */
+export async function readReadme(path) {
+  if (!isTauri || !path) return null;
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('read_readme', { path });
+}
+
+/** Roda um comando num terminal novo, dentro da pasta (ex.: yarn dev) */
+export async function runCommand(path, command, title) {
+  if (!isTauri) {
+    console.info(`[gwen] (navegador) rodaria em ${path}: ${command}`);
+    return;
+  }
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('run_command', { path, command, title: title || null });
+}
+
+/** Salva um CSV onde a pessoa escolher (relatório). Devolve true se salvou. */
+export async function saveCsvFile(defaultName, contents) {
+  if (!isTauri) {
+    const url = URL.createObjectURL(new Blob([contents], { type: 'text/csv;charset=utf-8' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: defaultName });
+    a.click();
+    URL.revokeObjectURL(url);
+    return true;
+  }
+  const { save } = await import('@tauri-apps/plugin-dialog');
+  const path = await save({ defaultPath: defaultName, filters: [{ name: 'Planilha (CSV)', extensions: ['csv'] }] });
+  if (!path) return false;
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('write_text_file', { path, contents });
+  return true;
+}

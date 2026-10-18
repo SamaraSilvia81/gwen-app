@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, FolderSimple, GearSix, PencilSimple, Plus, SquaresFour, Trash, X } from '@phosphor-icons/react';
+import { Check, FolderSimple, GearSix, PencilSimple, Plus, SquaresFour, Trash, X, ChartBar } from '@phosphor-icons/react';
 import { Wordmark } from './Logo';
 import { useProfile } from '../context/ProfileContext';
 import { useWorkspace } from '../context/WorkspaceContext';
@@ -165,6 +165,15 @@ export default function Sidebar({ view, onNavigate, filter, onFilter, stats }) {
       </nav>
 
       <div className="border-t border-rule p-2.5 flex flex-col gap-0.5">
+        <button
+          onClick={() => onNavigate('relatorio')}
+          className={`w-full flex items-center gap-2.5 h-9 px-2.5 rounded-ui-sm transition-colors ${
+            view === 'relatorio' ? 'bg-[var(--c-phosphor-12)] text-bone' : 'text-muted hover:text-bone hover:bg-[var(--c-phosphor-8)]'
+          }`}
+        >
+          <ChartBar size={16} weight={view === 'relatorio' ? 'fill' : 'regular'} className={view === 'relatorio' ? 'text-phosphor' : ''} />
+          <span className="font-medium">Relatório</span>
+        </button>
         <button
           onClick={() => onNavigate('config')}
           className={`w-full flex items-center gap-2.5 h-9 px-2.5 rounded-ui-sm transition-colors ${

@@ -2,7 +2,7 @@
   "name": "gwen",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação",
   "scripts": {

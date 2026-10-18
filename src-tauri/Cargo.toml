@@ -1,6 +1,6 @@
 [package]
 name = "gwen"
-version = "0.5.0"
+version = "0.6.0"
 description = "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação"
 authors = ["Samara Silvia Sabino (@devs_sam)"]
 edition = "2021"
@@ -15,7 +15,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"

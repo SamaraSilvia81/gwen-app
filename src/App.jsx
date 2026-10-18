@@ -4,14 +4,18 @@ import { WorkspaceProvider, useNow, useWorkspace } from './context/WorkspaceCont
 import { ToastProvider, useToast } from './context/ToastContext';
 import { WellnessProvider } from './context/WellnessContext';
 import { computeStats } from './lib/stats';
+import { useTray } from './lib/useTray';
 import Onboarding, { OPEN_IMPORT_FLAG } from './pages/Onboarding';
 import CloudImport from './components/CloudImport';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import Report from './pages/Report';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import PauseOverlay from './components/PauseOverlay';
 import StaleSessionModal from './components/StaleSessionModal';
+import EndSessionModal from './components/EndSessionModal';
+import QuickLaunch from './components/QuickLaunch';
 import ReminderStack from './components/ReminderStack';
 import UpdateBar from './components/UpdateBar';
 import Logo from './components/Logo';
@@ -50,7 +54,7 @@ function Gate() {
 function Shell() {
   const [view, setView] = useState('projetos');
   const [filter, setFilter] = useState('all');
-  const { sessions, projects, activeBreak, refresh } = useWorkspace();
+  const { sessions, projects, activeBreak, activeSession, launchProject, requestEnd, refresh } = useWorkspace();
   const { profile, updateProfile, reload } = useProfile();
   const toast = useToast();
   // acabou de entrar na conta: confirma e, se faltar, traz nome e foto da conta Google
@@ -92,20 +96,23 @@ function Shell() {
     () => computeStats({ sessions, projects, now, activeBreak }),
     [sessions, projects, now, activeBreak],
   );
+  useTray({ projects, activeSession, activeBreak, now, launchProject, requestEnd, toast });
 
   return (
     <div className="h-full flex">
       <Sidebar view={view} onNavigate={setView} filter={filter} onFilter={setFilter} stats={stats} />
       <main className="flex-1 min-w-0 flex flex-col">
-        <Topbar title={view === 'config' ? 'Configurações' : null} />
+        <Topbar title={view === 'config' ? 'Configurações' : view === 'relatorio' ? 'Relatório' : null} />
         <UpdateBar />
         <div className="flex-1 min-h-0">
-          {view === 'config' ? <Settings /> : <Dashboard filter={filter} stats={stats} />}
+          {view === 'config' ? <Settings /> : view === 'relatorio' ? <Report /> : <Dashboard filter={filter} stats={stats} />}
         </div>
       </main>
       <ReminderStack />
       <PauseOverlay />
       <StaleSessionModal />
+      <EndSessionModalHost />
+      <QuickLaunch />
       {importing && (
         <CloudImport
           onClose={() => setImporting(false)}
@@ -198,4 +205,11 @@ function DataError({ message }) {
       </div>
     </div>
   );
+}
+
+/** Remonta o modal a cada pedido, para o texto começar com a nota atual do projeto */
+function EndSessionModalHost() {
+  const { endingSession, activeSession } = useWorkspace();
+  if (!endingSession || !activeSession) return null;
+  return <EndSessionModal key={activeSession.id} />;
 }

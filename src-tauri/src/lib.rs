@@ -108,6 +108,58 @@ fn git_info(path: String) -> Option<GitInfo> {
     Some(info)
 }
 
+/// Roda o comando da pasta (ex.: `yarn dev`) num terminal novo, já dentro dela.
+/// No Windows é um PowerShell que continua aberto; o caminho vai como pasta de
+/// trabalho, então espaços e `&` no caminho não atrapalham.
+#[tauri::command]
+fn run_command(path: String, command: String, title: Option<String>) -> Result<(), String> {
+    if !Path::new(&path).is_dir() {
+        return Err(format!("Pasta não encontrada: {path}"));
+    }
+    let command = command.trim();
+    if command.is_empty() {
+        return Ok(());
+    }
+    spawn_terminal(&path, command, title.as_deref().unwrap_or("G.W.E.N.")).map(|_| ()).map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "windows")]
+fn spawn_terminal(path: &str, command: &str, title: &str) -> std::io::Result<std::process::Child> {
+    const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+    let title = title.replace('\'', "''");
+    Command::new("powershell")
+        .args(["-NoLogo", "-NoExit", "-Command"])
+        .arg(format!("$Host.UI.RawUI.WindowTitle = '{title}'; {command}"))
+        .current_dir(path)
+        .creation_flags(CREATE_NEW_CONSOLE)
+        .spawn()
+}
+
+#[cfg(target_os = "linux")]
+fn spawn_terminal(path: &str, command: &str, _title: &str) -> std::io::Result<std::process::Child> {
+    Command::new("x-terminal-emulator")
+        .args(["-e", "sh", "-c"])
+        .arg(format!("{command}; exec \"${{SHELL:-sh}}\""))
+        .current_dir(path)
+        .spawn()
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+fn spawn_terminal(_path: &str, _command: &str, _title: &str) -> std::io::Result<std::process::Child> {
+    Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "comandos ainda não funcionam neste sistema"))
+}
+
+/// Lê o README da pasta (até 64 KB), para sugerir a descrição do projeto.
+#[tauri::command(async)]
+fn read_readme(path: String) -> Option<String> {
+    const NAMES: [&str; 6] = ["README.md", "readme.md", "Readme.md", "README.MD", "README", "README.txt"];
+    let dir = Path::new(&path);
+    let file = NAMES.iter().map(|n| dir.join(n)).find(|p| p.is_file())?;
+    let bytes = fs::read(file).ok()?;
+    let slice = &bytes[..bytes.len().min(64 * 1024)];
+    Some(String::from_utf8_lossy(slice).into_owned())
+}
+
 /// Procura o executável do VS Code nas pastas de instalação comuns.
 #[cfg(target_os = "windows")]
 fn find_vscode_exe() -> Option<std::path::PathBuf> {
@@ -240,11 +292,13 @@ fn data_dir(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 /// Exportar/importar dados: só arquivos .json escolhidos pelo seletor do sistema.
+/// O frontend só lê e grava backups (.json) e relatórios (.csv), nada além disso.
 fn ensure_json(path: &str) -> Result<(), String> {
-    if path.to_lowercase().ends_with(".json") {
+    let p = path.to_lowercase();
+    if p.ends_with(".json") || p.ends_with(".csv") {
         Ok(())
     } else {
-        Err("Só arquivos .json".into())
+        Err("Só arquivos .json ou .csv".into())
     }
 }
 
@@ -260,6 +314,111 @@ fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+/* ─── BANDEJA ─────────────────────────────────────────────────────────────
+ * Ícone perto do relógio: clique abre a janela; o menu lista projetos para
+ * começar direto, sem abrir a janela. O frontend manda a lista e o texto do
+ * tooltip (update_tray) e recebe os cliques como eventos "tray://...".
+ */
+#[cfg(desktop)]
+mod tray {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    use tauri::{AppHandle, Emitter, Manager, Runtime};
+
+    pub const ID: &str = "gwen";
+
+    /// Fechar a janela esconde na bandeja em vez de sair (configurável)
+    pub struct CloseToTray(pub AtomicBool);
+
+    #[derive(serde::Deserialize)]
+    pub struct Item {
+        /// "id-do-projeto" ou "id-do-projeto::Frente"
+        pub key: String,
+        pub label: String,
+    }
+
+    pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
+        if let Some(w) = app.get_webview_window("main") {
+            let _ = w.unminimize();
+            let _ = w.show();
+            let _ = w.set_focus();
+        }
+    }
+
+    pub fn build_menu<R: Runtime>(app: &AppHandle<R>, items: &[Item], active: Option<&str>) -> tauri::Result<Menu<R>> {
+        let menu = Menu::new(app)?;
+        menu.append(&MenuItem::with_id(app, "open", "Abrir G.W.E.N.", true, None::<&str>)?)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        if let Some(label) = active {
+            menu.append(&MenuItem::with_id(app, "active", format!("Agora: {label}"), false, None::<&str>)?)?;
+            menu.append(&MenuItem::with_id(app, "end", "Encerrar sessão...", true, None::<&str>)?)?;
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+        }
+        let start = Submenu::with_id(app, "start", "Começar agora", !items.is_empty())?;
+        for item in items {
+            start.append(&MenuItem::with_id(app, format!("launch:{}", item.key), &item.label, true, None::<&str>)?)?;
+        }
+        menu.append(&start)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        menu.append(&MenuItem::with_id(app, "quit", "Sair da G.W.E.N.", true, None::<&str>)?)?;
+        Ok(menu)
+    }
+
+    pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+        let menu = build_menu(app, &[], None)?;
+        let mut builder = TrayIconBuilder::with_id(ID)
+            .tooltip("G.W.E.N.")
+            .menu(&menu)
+            .show_menu_on_left_click(false)
+            .on_menu_event(|app, event| {
+                let id = event.id().as_ref();
+                match id {
+                    "open" => show_main(app),
+                    "quit" => app.exit(0),
+                    "end" => {
+                        // o "onde parei?" precisa da janela
+                        show_main(app);
+                        let _ = app.emit("tray://end", ());
+                    }
+                    _ => {
+                        if let Some(key) = id.strip_prefix("launch:") {
+                            let _ = app.emit("tray://launch", key.to_string());
+                        }
+                    }
+                }
+            })
+            .on_tray_icon_event(|tray, event| {
+                if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                    show_main(tray.app_handle());
+                }
+            });
+        if let Some(icon) = app.default_window_icon() {
+            builder = builder.icon(icon.clone());
+        }
+        builder.build(app)?;
+        Ok(())
+    }
+
+    #[tauri::command]
+    pub fn update_tray(app: AppHandle, items: Vec<Item>, active: Option<String>, tooltip: String) -> Result<(), String> {
+        let tray = app.tray_by_id(ID).ok_or("bandeja indisponível")?;
+        let menu = build_menu(&app, &items, active.as_deref()).map_err(|e| e.to_string())?;
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+        tray.set_tooltip(Some(tooltip)).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    #[tauri::command]
+    pub fn set_close_to_tray(state: tauri::State<'_, CloseToTray>, on: bool) {
+        state.0.store(on, Ordering::Relaxed);
+    }
+
+    pub fn should_hide<R: Runtime>(app: &AppHandle<R>) -> bool {
+        app.try_state::<CloseToTray>().map(|s| s.0.load(Ordering::Relaxed)).unwrap_or(false)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -270,11 +429,7 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            tray::show_main(app);
         }));
         builder = builder
             .plugin(tauri_plugin_updater::Builder::new().build())
@@ -296,6 +451,11 @@ pub fn run() {
                 .build(),
         )
         .setup(|_app| {
+            #[cfg(desktop)]
+            {
+                _app.manage(tray::CloseToTray(std::sync::atomic::AtomicBool::new(true)));
+                tray::create(_app.handle())?;
+            }
             if let Ok(dir) = _app.path().app_config_dir() {
                 let version = _app.package_info().version.to_string();
                 if let Err(e) = backup_on_version_change(&dir, &version) {
@@ -311,13 +471,29 @@ pub fn run() {
             }
             Ok(())
         })
+        .on_window_event(|_window, _event| {
+            // fechar a janela principal só esconde (a G.W.E.N. segue na bandeja)
+            #[cfg(desktop)]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                if _window.label() == "main" && tray::should_hide(_window.app_handle()) {
+                    api.prevent_close();
+                    let _ = _window.hide();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
+            #[cfg(desktop)]
+            tray::update_tray,
+            #[cfg(desktop)]
+            tray::set_close_to_tray,
             path_exists,
             open_folder,
             data_dir,
             write_text_file,
             read_text_file,
-            git_info
+            git_info,
+            read_readme,
+            run_command
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");

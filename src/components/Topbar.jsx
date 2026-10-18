@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { CaretDown, Moon, Pause, Stop, Sun } from '@phosphor-icons/react';
+import { CaretDown, Lightning, Moon, Pause, Stop, Sun } from '@phosphor-icons/react';
+import { openQuickLaunch } from './QuickLaunch';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
@@ -18,7 +19,7 @@ function greeting(date) {
 
 export default function Topbar({ title }) {
   const { profile, updateProfile } = useProfile();
-  const { activeSession, activeBreak, projects, endSession, startBreak } = useWorkspace();
+  const { activeSession, activeBreak, projects, requestEnd, startBreak } = useWorkspace();
   const toast = useToast();
   const now = useNow(1000);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,13 +53,8 @@ export default function Topbar({ title }) {
     }
   }
 
-  async function handleEnd() {
-    try {
-      await endSession();
-      toast('Sessão encerrada. Bom trabalho.');
-    } catch (err) {
-      toast(err.message, 'error');
-    }
+  function handleEnd() {
+    requestEnd();
   }
 
   return (
@@ -87,6 +83,10 @@ export default function Topbar({ title }) {
         ) : (
           <span className="mono text-[12px] text-muted hidden md:inline">nenhuma sessão ativa</span>
         )}
+
+        <button className="btn btn-ghost btn-icon" onClick={openQuickLaunch} title="Começar um projeto (Ctrl + K)" aria-label="Começar um projeto">
+          <Lightning size={15} />
+        </button>
 
         {/* nas Configurações o modo é escolhido lá dentro, com prévia */}
         {!title && (

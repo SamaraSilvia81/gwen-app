@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { breakRepo, categoryRepo, projectRepo, sessionRepo } from '../data/repository';
 import { useProfile } from './ProfileContext';
 import { useToast } from './ToastContext';
-import { openFolder, openLink, normalizeUrl } from '../lib/native';
+import { openFolder, openLink, normalizeUrl, runCommand } from '../lib/native';
 import { secondsBetween, startOfWeek } from '../lib/time';
 import { folderActions, inFront } from '../lib/projectModel';
 
@@ -22,17 +22,21 @@ export function WorkspaceProvider({ children }) {
   const [activeSession, setActiveSession] = useState(null);
   const [activeBreak, setActiveBreak] = useState(null);
   const [staleSession, setStaleSession] = useState(null);
+  const [notes, setNotes] = useState(() => new Map()); // "onde parei" por projeto
+  const [endingSession, setEndingSession] = useState(false); // pergunta do "onde parei" aberta
   const [loading, setLoading] = useState(true);
   const checkedStale = useRef(false);
 
   const refresh = useCallback(async () => {
-    const [cats, projs, week, current, brk] = await Promise.all([
+    const [cats, projs, week, current, brk, lastNotes] = await Promise.all([
       categoryRepo.list(),
       projectRepo.list(),
       sessionRepo.since(startOfWeek()),
       sessionRepo.active(),
       breakRepo.active(),
+      sessionRepo.latestNotes().catch(() => new Map()),
     ]);
+    setNotes(lastNotes);
     setCategories(cats);
     setProjects(projs);
     setSessions(week);
@@ -128,14 +132,28 @@ export function WorkspaceProvider({ children }) {
   }, [activeBreak, activeSession, endBreak]);
 
   /* ─── SESSÕES ─── */
-  const endSession = useCallback(async (endedAt = new Date()) => {
+  const endSession = useCallback(async (endedAt = new Date(), note = undefined) => {
     if (!activeSession) return;
     if (activeBreak?.session_id === activeSession.id) await endBreak(endedAt);
-    const ended = await sessionRepo.end(activeSession.id, endedAt);
+    const ended = await sessionRepo.end(activeSession.id, endedAt, note);
     replaceSession(ended);
     setActiveSession(null);
+    if (note !== undefined) {
+      setNotes((m) => {
+        const next = new Map(m);
+        if (ended.note) next.set(ended.project_id, { note: ended.note, at: ended.ended_at, front: ended.front || null });
+        else next.delete(ended.project_id);
+        return next;
+      });
+    }
     return ended;
   }, [activeSession, activeBreak, endBreak]);
+
+  /** Encerrar pela interface: abre a pergunta "onde parei?" antes */
+  const requestEnd = useCallback(() => {
+    if (activeSession) setEndingSession(true);
+  }, [activeSession]);
+  const cancelEnd = useCallback(() => setEndingSession(false), []);
 
   const startSession = useCallback(async (projectId, front = null) => {
     if (activeSession?.project_id === projectId && (activeSession.front || null) === (front || null)) return activeSession;
@@ -160,6 +178,13 @@ export function WorkspaceProvider({ children }) {
           errors.push(`${folder.label || folder.path}: ${err?.message || err}`);
         }
       }
+      if (folder.command?.trim()) {
+        try {
+          await runCommand(folder.path, folder.command, `${project.name} · ${folder.label || 'comando'}`);
+        } catch (err) {
+          errors.push(`${folder.command}: ${err?.message || err}`);
+        }
+      }
     }
     for (const link of project.links || []) {
       if (!link.on_launch || !inFront(link, front)) continue;
@@ -179,9 +204,11 @@ export function WorkspaceProvider({ children }) {
     }
     setProjects((list) => [updated, ...list.filter((p) => p.id !== updated.id)]);
 
+    const where = notes.get(project.id);
     if (errors.length) toast(`Sessão iniciada, mas falhou ao abrir: ${errors.join(' · ')}`, 'error');
+    else if (where) toast(`Onde você parou: ${where.note}`);
     else toast(`Sessão de ${project.name}${front ? ` · ${front}` : ''} iniciada.`);
-  }, [profile, startSession, toast]);
+  }, [profile, startSession, toast, notes]);
 
   /* ─── SESSÃO ESQUECIDA ─── */
   const resolveStale = useCallback(async (choice, minutes) => {
@@ -220,6 +247,10 @@ export function WorkspaceProvider({ children }) {
       activeSession,
       activeBreak,
       staleSession,
+      notes,
+      endingSession,
+      requestEnd,
+      cancelEnd,
       refresh,
       createCategory,
       renameCategory,
@@ -233,7 +264,8 @@ export function WorkspaceProvider({ children }) {
       endBreak,
       resolveStale,
     }),
-    [loading, categories, projects, sessions, activeSession, activeBreak, staleSession, refresh, createCategory,
+    [loading, categories, projects, sessions, activeSession, activeBreak, staleSession, notes, endingSession, requestEnd,
+      cancelEnd, refresh, createCategory,
       renameCategory, deleteCategory, saveProject, deleteProject, launchProject, startSession, endSession,
       startBreak, endBreak, resolveStale],
   );
