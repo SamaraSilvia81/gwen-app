@@ -26,6 +26,32 @@ const check = ({ error }) => {
   if (error) throw new Error(error.message);
 };
 
+/**
+ * Colunas novas que dependem de uma migração da nuvem. Se a migração não foi
+ * rodada, o Supabase recusa o registro inteiro ("Could not find the 'front'
+ * column..."). Em vez de perder a sessão, grava sem a coluna e avisa qual
+ * migração falta (o App mostra o aviso uma vez).
+ */
+export const OPTIONAL_COLUMNS = {
+  front: '005_gwen_frentes.sql',
+  pinned: '006_gwen_fixados.sql',
+};
+export const MISSING_MIGRATION_EVENT = 'gwen:migracao-faltando';
+const missingColumn = (error) => error?.message?.match(/Could not find the '(\w+)' column/)?.[1] || null;
+
+async function withoutMissingColumns(payload, run) {
+  let body = { ...payload };
+  for (let tries = 0; tries < 3; tries++) {
+    const res = await run(body);
+    const col = missingColumn(res.error);
+    if (!col || !(col in body) || !OPTIONAL_COLUMNS[col]) return res;
+    const { [col]: _dropped, ...rest } = body;
+    body = rest;
+    window.dispatchEvent(new CustomEvent(MISSING_MIGRATION_EVENT, { detail: { column: col, file: OPTIONAL_COLUMNS[col] } }));
+  }
+  return run(body);
+}
+
 export const cloudStore = {
   async all(table) {
     const uid = await userId();
@@ -44,13 +70,16 @@ export const cloudStore = {
   async insert(table, row) {
     const uid = await userId();
     const payload = table === 'profiles' ? { ...row, id: uid } : row;
-    check(await supabase.from(table).insert(payload));
+    check(await withoutMissingColumns(payload, (body) => supabase.from(table).insert(body)));
     return { ...row };
   },
 
   async update(table, id, patch) {
     const uid = await userId();
-    check(await supabase.from(table).update(patch).eq('id', remoteId(table, id, uid)));
+    const res = await withoutMissingColumns(patch, (body) =>
+      Object.keys(body).length ? supabase.from(table).update(body).eq('id', remoteId(table, id, uid)) : { error: null },
+    );
+    check(res);
   },
 
   async remove(table, id) {

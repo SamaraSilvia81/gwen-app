@@ -28,6 +28,7 @@ import Logo from './components/Logo';
 import AccountGate from './components/AccountGate';
 import { isAccountMode, setAccountMode, WELCOME_KEY } from './lib/cloudConfig';
 import { fileToAvatar } from './lib/avatar';
+import { MISSING_MIGRATION_EVENT } from './data/cloudStore';
 
 export default function App() {
   return (
@@ -82,6 +83,18 @@ function Shell() {
   useEffect(() => {
     if (!narrow) setDrawer(false);
   }, [narrow]);
+
+  // nuvem sem uma migração nova: o dado foi salvo sem a coluna; avisa uma vez por coluna
+  useEffect(() => {
+    const warned = new Set();
+    const on = ({ detail }) => {
+      if (warned.has(detail.column)) return;
+      warned.add(detail.column);
+      toast(`Sua nuvem está sem uma migração: rode supabase/migrations/${detail.file} no SQL Editor. Até lá, isso fica sem ser salvo.`, 'error');
+    };
+    window.addEventListener(MISSING_MIGRATION_EVENT, on);
+    return () => window.removeEventListener(MISSING_MIGRATION_EVENT, on);
+  }, [toast]);
 
   // Ctrl + B abre e fecha o painel, como no VS Code
   useEffect(() => {
