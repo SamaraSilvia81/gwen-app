@@ -11,7 +11,7 @@
 ![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.4.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.6.0-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
@@ -48,10 +48,15 @@ A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs 
 | **Seus dados, no seu computador** | Sem conta e sem internet. Tudo num banco local, com backup em JSON e cópia automática a cada versão. Você escolhe o nome e, se quiser, uma foto. |
 | **Conta na nuvem** | Opcional e avançado: conecte o seu próprio Supabase e entre com Google ou e-mail para guardar os dados na nuvem em vez do computador. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
-| **Projetos** | Status, descrição, várias pastas e vários links por projeto. |
-| **Começar agora** | Abre as pastas e links marcados como "abrir junto" e inicia a sessão de tempo. |
-| **Pastas com ação** | Cada pasta abre no VS Code, no Explorer ou no Git Bash. |
-| **Sessões de tempo** | Tempo por projeto, categoria, dia e semana. Projetos concluídos no ano. |
+| **Projetos** | Status, descrição, várias pastas e vários links por projeto. A descrição pode vir do README da pasta, e o link do repositório entra sozinho. Clicar no card abre o projeto. |
+| **Começar agora** | Abre as pastas e links marcados, roda os comandos (ex.: `yarn dev`) e inicia a sessão de tempo. |
+| **Pastas com ações** | A mesma pasta abre no VS Code, no Explorer e no Git Bash, juntos ou separados. |
+| **Frentes** | Partes de um projeto (ex.: Landing e Plataforma). O Começar agora pergunta qual abrir, e o tempo é somado por frente. |
+| **Status do Git** | Branch, alterações sem commit, commits sem push e data do último commit, direto no card. |
+| **Onde parei** | Ao encerrar, a G.W.E.N. pergunta o próximo passo e mostra a nota no card e no próximo Começar agora. Projetos parados há 30 dias ganham um aviso. |
+| **Bandeja e Ctrl + K** | Comece um projeto pelo ícone perto do relógio, sem abrir a janela, ou digitando o nome com Ctrl + K. Abre junto com o Windows, se quiser. |
+| **Sessões de tempo** | Tempo por projeto, frente, categoria, dia e semana. Projetos concluídos no ano. |
+| **Relatório** | Semana, mês, mês passado ou últimos 30 dias, por categoria, projeto e frente, com exportação em CSV. |
 | **Modo pausa** | Café, refeição, leitura, respiro. A tela escurece e a barra de energia enche. |
 | **Modo saúde** | Opcional: lembretes de água, alongamento e olhos que contam tempo de trabalho, com pausa de alongamento guiada. |
 | **Sessão esquecida** | Se o app fechar com uma sessão rodando, ele pergunta quanto tempo foi de verdade. |
@@ -79,7 +84,8 @@ node -v          # 20 ou mais
 yarn -v
 rustc --version
 cargo --version
-code --version   # necessário para abrir pastas no VS Code
+git --version    # para o status do Git nos cards
+code --version   # opcional: a G.W.E.N. acha o VS Code instalado sozinha
 ```
 
 | Se faltar | Como resolver |
@@ -88,7 +94,8 @@ code --version   # necessário para abrir pastas no VS Code
 | Yarn | `npm install -g yarn` |
 | Rust | Instale pelo [rustup.rs](https://rustup.rs) com as opções padrão |
 | Build Tools | No instalador do Visual Studio Build Tools, marque **Desenvolvimento para desktop com C++** |
-| Comando `code` | No VS Code: `Ctrl+Shift+P` > *Shell Command: Install 'code' command in PATH* |
+| Git | Instale pelo [git-scm.com](https://git-scm.com) (já traz o Git Bash) |
+| Comando `code` | Só se o VS Code não estiver na pasta padrão: `Ctrl+Shift+P` > *Shell Command: Install 'code' command in PATH* |
 | WebView2 | Já vem no Windows 10 e 11 |
 
 #### 2. Dados
@@ -102,7 +109,7 @@ code --version   # necessário para abrir pastas no VS Code
 
 O modo local é o padrão e não precisa de nada. Quem preferir os dados na nuvem, em vez do computador, pode ligar o **modo conta** com um projeto Supabase próprio:
 
-1. No SQL Editor do projeto, rode em ordem as migrações de [`supabase/migrations/`](supabase/migrations/) (001 a 004). Em **Project Settings > Data API**, adicione o schema `gwen` aos expostos ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)).
+1. No SQL Editor do projeto, rode em ordem as migrações de [`supabase/migrations/`](supabase/migrations/) (001 a 005). Em **Project Settings > Data API**, adicione o schema `gwen` aos expostos ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)).
 2. Em **Authentication > URL Configuration > Redirect URLs**, confira se estão `gwen://auth/callback` e, em desenvolvimento, `http://localhost:1420/`.
 3. Se mais ninguém precisa criar conta nesse projeto, desligue **Allow new users to sign up** em Authentication. Assim só as contas que já existem conseguem entrar.
 4. Na G.W.E.N., abra **Configurações > Conta na nuvem**, cole a URL e a chave anon (**Project Settings > API**) e use **Entrar na conta**, com Google ou e-mail.
@@ -139,10 +146,10 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.4.0_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.6.0_x64-setup.exe
 ```
 
-Rode o `.exe` e instale. A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
+Rode o `.exe` e instale (para atualizar, instale a versão nova por cima). A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
 
 > O Windows pode avisar que o app é de um "editor desconhecido", porque o instalador não tem assinatura digital. Clique em **Mais informações > Executar assim mesmo**.
 
@@ -166,8 +173,8 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, e o `CHANGELOG.md`.
 2. Crie e envie a tag:
    ```bash
-   git tag v0.4.0
-   git push origin v0.4.0
+   git tag v0.6.0
+   git push origin v0.6.0
    ```
 3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
 
@@ -176,11 +183,15 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto. Dá para trocar depois em **Configurações > Perfil**.
 
 1. **Crie categorias** no `+` da lateral. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria".
-2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows. Escolha a ação de cada pasta e marque **abrir junto** no que deve abrir com o *Começar agora*. A mesma pasta pode entrar duas vezes, uma no VS Code e outra no Git Bash.
-3. **Começar agora** abre tudo e inicia a sessão. O timer aparece na barra superior. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*.
-4. **Pausa** fica na barra superior. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
+2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows: o nome, a descrição (pelo README) e o link do repositório já vêm preenchidos. Marque com o que cada pasta abre (VS Code, Explorer, Git Bash), se ela entra no *Começar agora* e, se quiser, um comando para rodar (ex.: `yarn dev`). Fechar sem salvar guarda um rascunho, que aparece como card no painel.
+3. **Frentes** (opcional): dê a mesma frente a pastas e links que andam juntos, como *Landing* e *Plataforma*. Itens sem frente valem para todas.
+4. **Começar agora** abre tudo e inicia a sessão. Com frentes, ele pergunta qual abrir. O timer aparece na barra superior e no ícone da bandeja. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*. Atalhos: **Ctrl + K** (digite o nome e Enter) ou clique direito no ícone da bandeja.
+5. **Encerrar** pergunta onde você parou. A nota fica no card até a próxima sessão.
+6. **Pausa** fica na barra superior. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
+7. **Modo saúde** (Configurações > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
 
-5. **Modo saúde** (Configurações > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
+8. **Relatório**, na lateral: escolha o período e veja para onde foi o tempo. *Exportar CSV* gera uma linha por sessão, que abre direto no Excel.
+9. **Sistema** (Configurações > Sistema): abrir junto com o Windows e fechar para a bandeja. Com a bandeja ligada, o X só esconde a janela; para sair de vez, clique direito no ícone e *Sair*.
 
 <div align="center">
   <img src="_assets/prints/modo-saude.png" alt="Lembretes do modo saúde" width="100%">
@@ -249,14 +260,14 @@ Os derivados dos tokens (`--c-phosphor-12`, `--c-void-veil`...) usam `color-mix`
 ```text
 gwen/
 ├── src/
-│   ├── components/      sidebar, topbar, cards, formulário, pausa, logo, avatar, conta na nuvem
+│   ├── components/      sidebar, topbar, cards, formulário, pausa, Ctrl + K, onde parei, logo, conta na nuvem
 │   ├── context/         perfil, workspace (dados e sessões), saúde, toasts
 │   ├── data/            repository, store (SQLite ou nuvem), backup e importação
-│   ├── lib/             temas, tempo, estatísticas, conexão com a nuvem, ponte com o Rust
-│   ├── pages/           primeira abertura, dashboard, configurações
+│   ├── lib/             temas, tempo, relatório, Git, README, bandeja, frentes, ponte com o Rust
+│   ├── pages/           primeira abertura, dashboard, relatório, configurações
 │   └── styles/          tokens e estilos Moderno/Terminal
 ├── src-tauri/
-│   ├── src/lib.rs       comandos nativos: abrir VS Code, Explorer, Git Bash; migrações do banco local
+│   ├── src/lib.rs       comandos nativos: VS Code, Explorer, Git Bash, comandos, Git, README, bandeja; migrações
 │   ├── migrations/      esquema do SQLite local
 │   ├── app-icon.svg     fonte do ícone (yarn tauri icon src-tauri/app-icon.svg)
 │   └── tauri.conf.json
@@ -276,6 +287,8 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - Caminhos de pasta são por máquina. Em outro computador, a pasta pode não existir (o app avisa).
 - O instalador não tem assinatura digital, então o Windows avisa na primeira instalação.
 - Uma sessão por vez.
+- O status do Git precisa do Git instalado e só aparece em pastas que são repositórios.
+- A bandeja, os comandos e o abrir com o Windows foram feitos e testados para Windows.
 - No modo local, os dados de um computador não aparecem no outro (dá para levar com o backup em JSON).
 - O modo conta guarda tudo na nuvem, então exige internet, e cada leitura baixa a tabela inteira. Com históricos muito grandes, fica mais lento.
 
@@ -285,8 +298,13 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - [x] **V0.2** · login com Google, modo claro e escuro
 - [x] **V0.3** · modo saúde: água, alongamento, olhos
 - [x] **V0.4** · dados locais (SQLite), foto do perfil, conta na nuvem opcional, backup e importação
-- [ ] **V0.5** · mapeamento de comportamento: foco, programas abertos e áudio, por categoria
-- [ ] Widget flutuante · histórico por mês e ano · check-in de humor · sincronização entre computadores (plano pago)
+- [x] **V0.5** · status do Git, frentes, várias ações por pasta, link do repositório automático, rascunho, abrir com o Windows, abertura animada
+- [x] **V0.6** · bandeja, Ctrl + K, onde parei, projetos parados, descrição pelo README, comandos por pasta, relatório com CSV
+- [ ] **V0.7** · mapeamento de comportamento: janela em foco, programas abertos e áudio, por categoria
+- [ ] **V0.8** · finanças: modelo do projeto, receitas e valor real por hora
+- [ ] **V0.9** · caderno: playbook de padrões, modelos (README, ADR) e editor que salva no repositório
+- [ ] **V0.10** · ideias: captura, descrição e "virar projeto"
+- [ ] **V1.0** · assistente local que conversa sobre os seus dados e revisa contra o seu playbook
 
 ### $ documentação
 
