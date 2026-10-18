@@ -18,6 +18,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Painel de projetos em árvore:** coleções inteligentes (Fixados, Recentes, Em andamento, Parados) e as categorias como pastas que abrem e fecham, com os projetos dentro e o botão de começar sempre visível. Filtro por nome no topo
 - **Fixar projeto:** alfinete no card. Fixados aparecem primeiro na lista e na coleção Fixados
 - **Vista em lista** na tela de projetos, além da grade
+- **Configurações por seções**, no padrão do CuraData: ao entrar em Ajustes, o painel lateral vira a navegação das seções (Perfil, Aparência, Interface, Modo saúde, Dados, Conta na nuvem, Sistema, Sobre), com Voltar e um grupo "Em breve". Clicar rola até a seção e a seção visível fica marcada. No topo, uma capa com o wallpaper, a foto e o nome. Em janela estreita, as seções viram abas no topo
 - **Escala da interface:** padrão 90%. `Ctrl +`, `Ctrl -` e `Ctrl 0` em qualquer tela, também `Ctrl` + roda do mouse. Opção em Configurações, Interface
 - **Bolha ao minimizar:** minimizou, aparece uma bolha redonda sempre no topo com o logo, o tempo da sessão e um anel com o andamento da hora. Arraste para mover (a posição fica salva); clique para voltar. Dá para desligar em Configurações, Interface
 

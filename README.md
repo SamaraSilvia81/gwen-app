@@ -209,8 +209,9 @@ Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto.
 9. **Alertas de saúde** aparecem no cartão *Saúde* do Início, com a fonte de cada um. A lista completa de referências fica no fim do Perfil.
 10. **Perfil:** números do ano, mapa de atividade de 12 ou 6 meses e as grades de hábitos. Passe o mouse num quadradinho para ver o dia.
 11. **Relatório**, no trilho: escolha o período e veja para onde foi o tempo. *Exportar CSV* gera uma linha por sessão, que abre direto no Excel.
-12. **Interface** (Ajustes > Interface): escala da tela (também com **Ctrl +**, **Ctrl -** e **Ctrl 0**) e a bolha ao minimizar.
-13. **Sistema** (Ajustes > Sistema): abrir junto com o Windows e fechar para a bandeja. Com a bandeja ligada, o X só esconde a janela; para sair de vez, clique direito no ícone e *Sair*.
+12. **Ajustes**: o painel lateral vira a lista de seções (Perfil, Aparência, Interface, Modo saúde, Dados, Conta na nuvem, Sistema, Sobre). Clique para ir direto a uma delas; *Voltar* leva à tela de antes. Em janela estreita, as seções aparecem como abas no topo.
+13. **Interface** (Ajustes > Interface): escala da tela (também com **Ctrl +**, **Ctrl -** e **Ctrl 0**) e a bolha ao minimizar.
+14. **Sistema** (Ajustes > Sistema): abrir junto com o Windows e fechar para a bandeja. Com a bandeja ligada, o X só esconde a janela; para sair de vez, clique direito no ícone e *Sair*.
 
 <div align="center">
   <img src="_assets/prints/modo-saude.png" alt="Lembretes do modo saúde" width="100%">

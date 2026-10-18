@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import Report from './pages/Report';
 import Sidebar from './components/Sidebar';
 import Rail from './components/Rail';
+import SettingsNav from './components/SettingsNav';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import { useBubble } from './lib/bubble';
@@ -70,6 +71,10 @@ function Shell() {
   const [view, setView] = useState('inicio');
   const [filter, setFilter] = useState('all');
   const [focusId, setFocusId] = useState(null);
+  // Configurações: seção marcada, pedido de rolagem e a tela para onde o Voltar leva
+  const [cfgSection, setCfgSection] = useState('perfil');
+  const [cfgJump, setCfgJump] = useState(0);
+  const [backTo, setBackTo] = useState('inicio');
   const narrow = useMediaQuery(NARROW_QUERY);
   // painel fixo: preferência guardada; em janela estreita vira gaveta e começa fechado
   const [docked, setDocked] = useStoredState('gwen.painel', true);
@@ -109,8 +114,23 @@ function Shell() {
   }, [togglePanel]);
 
   const navigate = useCallback((next) => {
-    setView(next);
+    setView((prev) => {
+      if (next === 'config' && prev !== 'config') {
+        setBackTo(prev);
+        setCfgSection('perfil');
+      }
+      return next;
+    });
     if (next !== 'projetos') setFocusId(null);
+  }, []);
+  const goSection = useCallback((id) => {
+    setCfgSection(id);
+    setCfgJump((n) => n + 1);
+  }, []);
+  // a rolagem da página marca a seção; nas abas (janela estreita) também pula até ela
+  const spySection = useCallback((id, jump = false) => {
+    setCfgSection(id);
+    if (jump) setCfgJump((n) => n + 1);
   }, []);
   const openProject = useCallback((p) => {
     setFilter(p.category_id || 'none');
@@ -165,7 +185,7 @@ function Shell() {
   useBubble({ projects, activeSession, activeBreak });
 
   let page;
-  if (view === 'config') page = <Settings />;
+  if (view === 'config') page = <Settings section={cfgSection} jump={cfgJump} onSpy={spySection} narrow={narrow} />;
   else if (view === 'relatorio') page = <Report />;
   else if (view === 'perfil') page = <Profile onNavigate={navigate} />;
   else if (view === 'inicio') page = <Home stats={stats} onNavigate={navigate} onOpenProject={openProject} />;
@@ -174,7 +194,10 @@ function Shell() {
   return (
     <div className="h-full flex">
       <Rail view={view} onNavigate={navigate} panelOpen={panelOpen} onTogglePanel={togglePanel} />
-      {panelOpen && (
+      {/* em Ajustes, a navegação das seções toma o lugar do painel de projetos (como no CuraData) */}
+      {view === 'config' && !narrow ? (
+        <SettingsNav section={cfgSection} onSection={goSection} onBack={() => navigate(backTo)} />
+      ) : panelOpen && (
         <>
           {narrow && <div className="panel-scrim anim-fade" onMouseDown={() => setDrawer(false)} />}
           <Sidebar

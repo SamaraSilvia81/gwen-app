@@ -355,6 +355,38 @@ select option { background: var(--c-surface); color: var(--c-bone); }
   color: inherit; opacity: 0.75; border: 1px solid currentColor; text-transform: none;
 }
 
+/* ─── CONFIGURAÇÕES (0.7, padrão do CuraData) ─── */
+.settings-back {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; margin-left: -6px;
+  border: 0; background: transparent; color: var(--c-muted); border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 500; transition: background 0.15s, color 0.15s;
+}
+.settings-back:hover { background: var(--c-phosphor-8); color: var(--c-bone); }
+:root[data-style='terminal'] .settings-back { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase; }
+.panel-row.is-disabled { color: var(--c-muted); opacity: 0.55; cursor: default; }
+.panel-row.is-disabled:hover { background: transparent; color: var(--c-muted); }
+.settings-hero { position: relative; border: 1px solid var(--c-rule); border-radius: var(--radius); overflow: hidden; background: var(--c-surface); }
+.settings-hero-cover {
+  height: 112px;
+  background-image: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--c-surface) 55%, transparent) 70%, var(--c-surface) 100%), var(--wallpaper);
+  background-size: cover; background-position: center 40%;
+}
+:root[data-mode='claro'] .settings-hero-cover { background-image: linear-gradient(180deg, color-mix(in srgb, var(--c-surface) 40%, transparent) 0%, color-mix(in srgb, var(--c-surface) 80%, transparent) 70%, var(--c-surface) 100%), var(--wallpaper); }
+.settings-hero-body { display: flex; align-items: flex-end; gap: 16px; padding: 0 18px 16px; margin-top: -40px; position: relative; }
+.settings-hero .profile-avatar { background: var(--c-surface); }
+.settings-tabs {
+  position: sticky; top: 0; z-index: 15; display: flex; gap: 4px; overflow-x: auto; padding: 8px clamp(16px, 3.2vw, 36px);
+  background: var(--c-surface-glass); backdrop-filter: blur(var(--blur)); border-bottom: 1px solid var(--c-rule);
+}
+.settings-tabs button {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; flex-shrink: 0;
+  border: 0; border-radius: 999px; background: transparent; color: var(--c-muted); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.settings-tabs button:hover { color: var(--c-bone); background: var(--c-phosphor-8); }
+.settings-tabs button.is-active { color: var(--c-bone); background: var(--c-phosphor-12); }
+.settings-tabs button.is-active svg { color: var(--c-phosphor); }
+:root[data-style='terminal'] .settings-tabs button { border-radius: var(--radius-sm); font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+
 /* ─── PÁGINAS ─── */
 .page { max-width: 1180px; margin: 0 auto; padding: 24px clamp(16px, 3.2vw, 36px) 40px; }
 .page-narrow { max-width: 860px; }

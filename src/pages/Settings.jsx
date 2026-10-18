@@ -22,11 +22,13 @@ import {
 const MODE_ICON = { escuro: Moon, claro: Sun, sistema: Desktop };
 import Logo from '../components/Logo';
 import { Label } from '../components/Modal';
-import { AvatarPicker } from '../components/Avatar';
+import Avatar, { AvatarPicker } from '../components/Avatar';
+import { SETTINGS_SECTIONS, SettingsTabs } from '../components/SettingsNav';
+import wallpaper from '../assets/wallpaper.webp';
 import { DEFAULT_ZOOM, ZOOM_EVENT, ZOOM_STEPS, applyZoom, loadZoom, zoomLabel } from '../lib/zoom';
 import { bubbleEnabled, setBubbleEnabled } from '../lib/layout';
 
-export default function Settings() {
+export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow = false }) {
   const { profile, updateProfile, reload } = useProfile();
   const { refresh } = useWorkspace();
   const toast = useToast();
@@ -72,6 +74,31 @@ export default function Settings() {
   const [dataPath, setDataPath] = useState('');
   const [importedAt, setImportedAt] = useState(null);
   const [cloudOpen, setCloudOpen] = useState(false);
+
+  // navegação por seções (0.7): pular até a seção clicada e marcar a que está visível
+  const scroller = useRef(null);
+  const spyLock = useRef(0);
+  useEffect(() => {
+    if (!jump) return;
+    const el = document.getElementById(`cfg-${section}`);
+    if (!el) return;
+    spyLock.current = Date.now() + 700;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [jump]); // eslint-disable-line react-hooks/exhaustive-deps
+  function onScroll() {
+    if (!onSpy || Date.now() < spyLock.current) return;
+    const box = scroller.current;
+    if (!box) return;
+    const top = box.getBoundingClientRect().top + 96;
+    let current = SETTINGS_SECTIONS[0].id;
+    for (const { id } of SETTINGS_SECTIONS) {
+      const el = document.getElementById(`cfg-${id}`);
+      if (el && el.getBoundingClientRect().top <= top) current = id;
+    }
+    // no fim da página, a última seção ganha mesmo que seja curta
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 4) current = SETTINGS_SECTIONS.at(-1).id;
+    onSpy(current);
+  }
   useEffect(() => {
     dataDir().then(setDataPath).catch(() => {});
     cloudImportDoneAt().then(setImportedAt).catch(() => {});
@@ -211,15 +238,28 @@ export default function Settings() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto" ref={scroller} onScroll={onScroll}>
+      {narrow && <SettingsTabs section={section} onSection={(id) => onSpy?.(id, true)} />}
       <div className="page page-narrow flex flex-col gap-10">
-        <header className="anim-rise">
-          <p className="eyebrow mb-1">configurações</p>
-          <h1 className="page-title">Do seu jeito.</h1>
+        {/* capa no jeito do CuraData: wallpaper, foto e nome */}
+        <header className="settings-hero anim-rise" style={{ '--wallpaper': `url(${wallpaper})` }}>
+          <div className="settings-hero-cover" />
+          <div className="settings-hero-body">
+            <div className="profile-avatar">
+              <Avatar profile={profile} size={72} />
+            </div>
+            <div className="min-w-0 flex-1 pb-1">
+              <h1 className="page-title truncate">{profile?.display_name || 'Você'}</h1>
+              <p className="text-[12.5px] text-muted mt-1 flex items-center gap-2 flex-wrap">
+                <span className="chip">{account ? 'dados na nuvem' : 'dados neste computador'}</span>
+                {version && <span className="mono text-[11px]">G.W.E.N. v{version}</span>}
+              </p>
+            </div>
+          </div>
         </header>
 
         {/* PERFIL */}
-        <Section title="Perfil" description={account ? 'Seu perfil fica na nuvem, na sua conta.' : 'Seu perfil fica neste computador, sem conta.'}>
+        <Section id="perfil" title="Perfil" description={account ? 'Seu perfil fica na nuvem, na sua conta.' : 'Seu perfil fica neste computador, sem conta.'}>
           <div className="mb-5">
             <AvatarPicker
               avatar={profile?.avatar}
@@ -244,7 +284,7 @@ export default function Settings() {
         </Section>
 
         {/* APARÊNCIA */}
-        <Section title="Aparência" description="Modo, cor e estilo são independentes. As mudanças aparecem na hora; salve para manter.">
+        <Section id="aparencia" title="Aparência" description="Modo, cor e estilo são independentes. As mudanças aparecem na hora; salve para manter.">
           <p className="field-label mb-2.5">Modo</p>
           <div className="segmented mb-7">
             {Object.entries(MODES).map(([id, m]) => {
@@ -424,12 +464,13 @@ export default function Settings() {
         </Section>
 
         {/* INTERFACE */}
-        <Section title="Interface" description="Tamanho e comportamento das janelas. Vale para este computador.">
+        <Section id="interface" title="Interface" description="Tamanho e comportamento das janelas. Vale para este computador.">
           <InterfaceSettings />
         </Section>
 
         {/* MODO SAÚDE */}
         <Section
+          id="saude"
           title="Modo saúde"
           description="Lembretes de água, alongamento e descanso dos olhos. Contam tempo de trabalho, não relógio: param nas pausas e com o app fechado."
         >
@@ -512,7 +553,7 @@ export default function Settings() {
         </Section>
 
         {/* DADOS */}
-        <Section title="Dados" description={account ? 'Seus dados ficam na nuvem. O backup em JSON continua disponível.' : 'Tudo fica neste computador. Atualizar ou desinstalar a G.W.E.N. não apaga nada.'}>
+        <Section id="dados" title="Dados" description={account ? 'Seus dados ficam na nuvem. O backup em JSON continua disponível.' : 'Tudo fica neste computador. Atualizar ou desinstalar a G.W.E.N. não apaga nada.'}>
           <div className="card p-4 flex items-center gap-4 mb-3">
             <Database size={20} className="text-phosphor shrink-0" />
             <div className="flex-1 min-w-0">
@@ -552,12 +593,12 @@ export default function Settings() {
         </Section>
 
         {/* CONTA NA NUVEM */}
-        <Section title="Conta na nuvem" description="Opcional e avançado, para quem tem o próprio projeto Supabase. Não é preciso para usar a G.W.E.N.">
+        <Section id="nuvem" title="Conta na nuvem" description="Opcional e avançado, para quem tem o próprio projeto Supabase. Não é preciso para usar a G.W.E.N.">
           <CloudAccountSection />
         </Section>
 
         {/* SISTEMA */}
-        <Section title="Sistema" description="Como a G.W.E.N. se encaixa no seu computador.">
+        <Section id="sistema" title="Sistema" description="Como a G.W.E.N. se encaixa no seu computador.">
           <AutostartToggle />
           <TrayToggle />
           <div className="flex gap-2 items-end">
@@ -585,7 +626,7 @@ export default function Settings() {
         </Section>
 
         {/* SOBRE: autoria e licença (LICENSE, NOTICE.md) */}
-        <Section title="Sobre">
+        <Section id="sobre" title="Sobre">
           <div className="card p-4 flex items-center gap-4">
             <Logo size={40} charge={1} />
             <div className="flex-1">
@@ -748,9 +789,9 @@ function AutostartToggle() {
   );
 }
 
-function Section({ title, description, children }) {
+function Section({ id, title, description, children }) {
   return (
-    <section className="anim-rise">
+    <section id={id ? `cfg-${id}` : undefined} className="anim-rise scroll-mt-5">
       <div className="mb-4 pb-3 border-b border-rule">
         <h2 className="font-display text-lg font-semibold">{title}</h2>
         {description && <p className="text-[13px] text-muted mt-0.5">{description}</p>}
