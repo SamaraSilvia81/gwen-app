@@ -28,6 +28,13 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Estilo Terminal no jeito do Atelier.sh:** títulos e números em Bebas Neue, rótulos mono em caixa alta bem espaçados, filtros com borda, foco com brilho, `$` nas buscas, barras listradas e scanlines. Os botões deixam de usar `[ ]`
 - Os números de hoje e da semana saíram do topo da tela de projetos e foram para o Início
 
+### Corrigido
+- **Sessão que não aparecia (conta na nuvem):** projetos com frente começavam a sessão com a coluna `front`, e a nuvem sem a migração `005_gwen_frentes.sql` recusava o registro inteiro. A sessão anterior era encerrada e a nova não era criada. Agora a sessão é gravada mesmo assim (sem a frente) e um aviso diz qual migração rodar. Vale também para `pinned` (`006`)
+
+### Documentação
+- README atualizado para a 0.7: funcionalidades, como usar, temas, estrutura, roadmap e prints novos
+- [`ADR-011`](docs/decisoes/ADR-011-shell-em-trilho-e-saude-com-fonte.md) (navegação em trilho e alertas de saúde com fonte) e [`ADR-012`](docs/decisoes/ADR-012-codigo-proprietario.md) (código público, todos os direitos reservados)
+
 ### Migração
 - Local: `004_fixados.sql`, automática
 - Nuvem (conta no próprio Supabase): rode `supabase/migrations/006_gwen_fixados.sql` no SQL Editor. Sem ela, o app continua funcionando, mas fixar um projeto dá erro

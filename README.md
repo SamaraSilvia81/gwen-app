@@ -11,7 +11,7 @@
 ![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.6.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.7.0-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
@@ -38,7 +38,7 @@ A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs 
 > Projeto pessoal em uso diário. Cada versão nasce de uma necessidade real de quem usa.
 
 <div align="center">
-  <img src="_assets/prints/dashboard-noir.png" alt="Dashboard da G.W.E.N. no tema Noir" width="100%">
+  <img src="_assets/prints/inicio.png" alt="Início da G.W.E.N. no tema Noir" width="100%">
 </div>
 
 ### $ funcionalidades
@@ -47,8 +47,10 @@ A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs 
 |---|---|
 | **Seus dados, no seu computador** | Sem conta e sem internet. Tudo num banco local, com backup em JSON e cópia automática a cada versão. Você escolhe o nome e, se quiser, uma foto. |
 | **Conta na nuvem** | Opcional e avançado: conecte o seu próprio Supabase e entre com Google ou e-mail para guardar os dados na nuvem em vez do computador. |
+| **Início** | A capa do app: wallpaper, sessão atual com Pausa e Encerrar, onde você parou, barras da semana, projetos recentes e saúde do dia. |
+| **Painel de projetos** | Árvore no jeito do Postman: coleções inteligentes (Fixados, Recentes, Em andamento, Parados) e as categorias como pastas, com o botão de começar em cada projeto. Abre e fecha com Ctrl + B. |
 | **Categorias** | Agrupe por área (Mestrado, Freela, Pessoais...). Cada uma mostra o tempo da semana. |
-| **Projetos** | Status, descrição, várias pastas e vários links por projeto. A descrição pode vir do README da pasta, e o link do repositório entra sozinho. Clicar no card abre o projeto. |
+| **Projetos** | Status, descrição, várias pastas e vários links por projeto. A descrição pode vir do README da pasta, e o link do repositório entra sozinho. Vista em grade ou em lista, e alfinete para fixar no topo. |
 | **Começar agora** | Abre as pastas e links marcados, roda os comandos (ex.: `yarn dev`) e inicia a sessão de tempo. |
 | **Pastas com ações** | A mesma pasta abre no VS Code, no Explorer e no Git Bash, juntos ou separados. |
 | **Frentes** | Partes de um projeto (ex.: Landing e Plataforma). O Começar agora pergunta qual abrir, e o tempo é somado por frente. |
@@ -59,17 +61,29 @@ A ideia já existia: abrir tudo de um projeto com um clique. Um post sobre hubs 
 | **Relatório** | Semana, mês, mês passado ou últimos 30 dias, por categoria, projeto e frente, com exportação em CSV. |
 | **Modo pausa** | Café, refeição, leitura, respiro. A tela escurece e a barra de energia enche. |
 | **Modo saúde** | Opcional: lembretes de água, alongamento e olhos que contam tempo de trabalho, com pausa de alongamento guiada. |
+| **Alertas com fonte** | Semana acima de 44h ou de 55h, 90 minutos sem pausa, trabalho depois das 23h e 7 dias sem folga. Cada alerta mostra a pesquisa ou a norma em que se baseia. |
+| **Perfil e hábitos** | Números do ano, sequência de dias, mapa de atividade e grades de hábitos (trabalho, pausas, água, alongamento, olhos). |
+| **Bolha** | Minimizou, aparece uma bolha sempre no topo com o logo e o tempo da sessão. Arraste para mover, clique para voltar. |
+| **Escala** | Ctrl + e Ctrl - aumentam e diminuem a interface (padrão 90%), Ctrl 0 volta ao padrão. |
 | **Sessão esquecida** | Se o app fechar com uma sessão rodando, ele pergunta quanto tempo foi de verdade. |
 | **Aparência** | Modo claro, escuro ou do sistema. Noir ou Personalizado por HEX/JSON. Estilo Moderno ou Terminal. |
 
 <table>
 <tr>
-<td width="50%"><img src="_assets/prints/modo-pausa.png" alt="Modo pausa"></td>
-<td width="50%"><img src="_assets/prints/projeto-form.png" alt="Cadastro de projeto"></td>
+<td width="50%"><img src="_assets/prints/projetos-grade.png" alt="Projetos em grade com o painel em árvore"></td>
+<td width="50%"><img src="_assets/prints/projetos-lista.png" alt="Projetos em lista"></td>
 </tr>
 <tr>
+<td align="center"><sub>Projetos em grade, com o painel em árvore ao lado</sub></td>
+<td align="center"><sub>Vista em lista, no jeito do Linear</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="_assets/prints/perfil.png" alt="Perfil com mapa de atividade e hábitos"></td>
+<td width="50%"><img src="_assets/prints/modo-pausa.png" alt="Modo pausa"></td>
+</tr>
+<tr>
+<td align="center"><sub>Perfil: atividade do ano e hábitos</sub></td>
 <td align="center"><sub>Modo pausa: a barra enche, não conta para trás</sub></td>
-<td align="center"><sub>Cada pasta com a sua ação</sub></td>
 </tr>
 </table>
 
@@ -109,7 +123,7 @@ code --version   # opcional: a G.W.E.N. acha o VS Code instalado sozinha
 
 O modo local é o padrão e não precisa de nada. Quem preferir os dados na nuvem, em vez do computador, pode ligar o **modo conta** com um projeto Supabase próprio:
 
-1. No SQL Editor do projeto, rode em ordem as migrações de [`supabase/migrations/`](supabase/migrations/) (001 a 005). Em **Project Settings > Data API**, adicione o schema `gwen` aos expostos ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)).
+1. No SQL Editor do projeto, rode em ordem as migrações de [`supabase/migrations/`](supabase/migrations/) (001 a 006). Em **Project Settings > Data API**, adicione o schema `gwen` aos expostos ([`ADR-002`](docs/decisoes/ADR-002-schema-proprio-em-projeto-compartilhado.md)).
 2. Em **Authentication > URL Configuration > Redirect URLs**, confira se estão `gwen://auth/callback` e, em desenvolvimento, `http://localhost:1420/`.
 3. Se mais ninguém precisa criar conta nesse projeto, desligue **Allow new users to sign up** em Authentication. Assim só as contas que já existem conseguem entrar.
 4. Na G.W.E.N., abra **Configurações > Conta na nuvem**, cole a URL e a chave anon (**Project Settings > API**) e use **Entrar na conta**, com Google ou e-mail.
@@ -146,7 +160,7 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.6.0_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.7.0_x64-setup.exe
 ```
 
 Rode o `.exe` e instale (para atualizar, instale a versão nova por cima). A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
@@ -170,11 +184,11 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 
 **A cada versão:**
 
-1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, e o `CHANGELOG.md`.
+1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, o `CHANGELOG.md` e **este README** (badge da versão, funcionalidades, como usar, roadmap e prints).
 2. Crie e envie a tag:
    ```bash
-   git tag v0.6.0
-   git push origin v0.6.0
+   git tag v0.7.0
+   git push origin v0.7.0
    ```
 3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
 
@@ -182,16 +196,21 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 
 Na primeira abertura, diga como quer ser chamado e, se quiser, escolha uma foto. Dá para trocar depois em **Configurações > Perfil**.
 
-1. **Crie categorias** no `+` da lateral. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria".
+**Navegação:** o trilho de ícones à esquerda leva às áreas (Início, Projetos, Relatório, Perfil e Ajustes). Ao lado fica o painel de projetos, que abre e fecha pelo ícone *Painel* ou com **Ctrl + B**. Em janela estreita, ele abre por cima do conteúdo.
+
+1. **Crie categorias** no `+` do painel. Com uma categoria selecionada, aparecem os botões de renomear e excluir. Excluir não apaga os projetos: eles vão para "Sem categoria". A seta ao lado do nome abre e fecha a pasta.
 2. **Cadastre um projeto** em *Novo projeto*. O ícone de pasta abre o seletor do Windows: o nome, a descrição (pelo README) e o link do repositório já vêm preenchidos. Marque com o que cada pasta abre (VS Code, Explorer, Git Bash), se ela entra no *Começar agora* e, se quiser, um comando para rodar (ex.: `yarn dev`). Fechar sem salvar guarda um rascunho, que aparece como card no painel.
 3. **Frentes** (opcional): dê a mesma frente a pastas e links que andam juntos, como *Landing* e *Plataforma*. Itens sem frente valem para todas.
-4. **Começar agora** abre tudo e inicia a sessão. Com frentes, ele pergunta qual abrir. O timer aparece na barra superior e no ícone da bandeja. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*. Atalhos: **Ctrl + K** (digite o nome e Enter) ou clique direito no ícone da bandeja.
-5. **Encerrar** pergunta onde você parou. A nota fica no card até a próxima sessão.
-6. **Pausa** fica na barra superior. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
-7. **Modo saúde** (Configurações > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
-
-8. **Relatório**, na lateral: escolha o período e veja para onde foi o tempo. *Exportar CSV* gera uma linha por sessão, que abre direto no Excel.
-9. **Sistema** (Configurações > Sistema): abrir junto com o Windows e fechar para a bandeja. Com a bandeja ligada, o X só esconde a janela; para sair de vez, clique direito no ícone e *Sair*.
+4. **Começar agora** abre tudo e inicia a sessão. Com frentes, ele pergunta qual abrir. O timer aparece na barra superior, no Início e no ícone da bandeja. Começar outro projeto encerra o atual. Projetos em *ideia* ou *pausado* passam para *em andamento*. Atalhos: **Ctrl + K** (digite o nome e Enter), o raio ao lado de cada projeto no painel ou clique direito no ícone da bandeja.
+5. **Encerrar** pergunta onde você parou. A nota fica no card e no Início, com o botão *Continuar*.
+6. **Fixar:** o alfinete no card leva o projeto para o topo da lista e para a coleção *Fixados*. Na tela de projetos, alterne entre grade e lista.
+7. **Pausa** fica na barra superior e no Início. A barra enche até o tempo de recarga de cada tipo (café 10 min, refeição 45, leitura 25, respiro 5), mas chegar a 100% não encerra nada.
+8. **Modo saúde** (Ajustes > Modo saúde): ligue e escolha os intervalos. O lembrete aparece no canto da tela e fica até você responder: fazer, adiar 10 minutos ou dispensar. *Alongar agora* abre uma pausa guiada de 5 minutos. Se a G.W.E.N. estiver em segundo plano, chega também uma notificação do Windows.
+9. **Alertas de saúde** aparecem no cartão *Saúde* do Início, com a fonte de cada um. A lista completa de referências fica no fim do Perfil.
+10. **Perfil:** números do ano, mapa de atividade de 12 ou 6 meses e as grades de hábitos. Passe o mouse num quadradinho para ver o dia.
+11. **Relatório**, no trilho: escolha o período e veja para onde foi o tempo. *Exportar CSV* gera uma linha por sessão, que abre direto no Excel.
+12. **Interface** (Ajustes > Interface): escala da tela (também com **Ctrl +**, **Ctrl -** e **Ctrl 0**) e a bolha ao minimizar.
+13. **Sistema** (Ajustes > Sistema): abrir junto com o Windows e fechar para a bandeja. Com a bandeja ligada, o X só esconde a janela; para sair de vez, clique direito no ícone e *Sair*.
 
 <div align="center">
   <img src="_assets/prints/modo-saude.png" alt="Lembretes do modo saúde" width="100%">
@@ -210,11 +229,11 @@ A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpap
 | Cores | | Estilo | |
 |---|---|---|---|
 | **Noir** | identidade do sistema | **Moderno** | cantos arredondados, vidro na navegação e na pausa |
-| **Personalizado** | 9 tokens por HEX, com nome e paleta clara opcional | **Terminal** | tudo em mono, cantos retos, botões `[ assim ]` |
+| **Personalizado** | 9 tokens por HEX, com nome e paleta clara opcional | **Terminal** | no jeito do Atelier.sh: Bebas Neue nos títulos, mono no resto, rótulos em caixa alta, filtros com borda e scanlines |
 
 <table>
 <tr>
-<td width="50%"><img src="_assets/prints/dashboard-terminal.png" alt="Noir + Terminal"></td>
+<td width="50%"><img src="_assets/prints/inicio-terminal.png" alt="Noir + Terminal"></td>
 <td width="50%"><img src="_assets/prints/dashboard-personalizado.png" alt="Tema personalizado"></td>
 </tr>
 <tr>
@@ -222,11 +241,11 @@ A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpap
 <td align="center"><sub>Personalizado com uma identidade de usuário</sub></td>
 </tr>
 <tr>
-<td width="50%"><img src="_assets/prints/dashboard-noir-claro.png" alt="Noir claro"></td>
+<td width="50%"><img src="_assets/prints/perfil-claro.png" alt="Noir claro"></td>
 <td width="50%"><img src="_assets/prints/modo-pausa-claro.png" alt="Modo pausa no claro"></td>
 </tr>
 <tr>
-<td align="center"><sub>Noir no modo claro</sub></td>
+<td align="center"><sub>Perfil no Noir claro</sub></td>
 <td align="center"><sub>Modo pausa no claro</sub></td>
 </tr>
 </table>
@@ -253,30 +272,30 @@ A identidade da G.W.E.N. é **Noir**: preto, branco e cinzas, do logo ao wallpap
 
 No Personalizado, o logo usa o acento principal no corpo e o secundário na carga. No Noir, é branco com a carga em cinza. O painel da primeira abertura mantém o wallpaper e o logo Noir em qualquer tema, porque é a cara do sistema.
 
-Os derivados dos tokens (`--c-phosphor-12`, `--c-void-veil`...) usam `color-mix`, então acompanham qualquer tema sem configuração extra.
+Os derivados dos tokens (`--c-phosphor-12`, `--c-void-veil`...) usam `color-mix`, então acompanham qualquer tema sem configuração extra. Os mapas de calor usam o acento principal: no Noir ficam em cinzas, no Personalizado ganham a sua cor.
 
 ### $ estrutura
 
 ```text
 gwen/
 ├── src/
-│   ├── components/      sidebar, topbar, cards, formulário, pausa, Ctrl + K, onde parei, logo, conta na nuvem
+│   ├── components/      trilho, painel de projetos, topbar, cards, mapa de calor, formulário, pausa, Ctrl + K, onde parei, logo
 │   ├── context/         perfil, workspace (dados e sessões), saúde, toasts
 │   ├── data/            repository, store (SQLite ou nuvem), backup e importação
-│   ├── lib/             temas, tempo, relatório, Git, README, bandeja, frentes, ponte com o Rust
-│   ├── pages/           primeira abertura, dashboard, relatório, configurações
+│   ├── lib/             temas, tempo, escala, coleções, hábitos, alertas de saúde, bolha, relatório, Git, bandeja, ponte com o Rust
+│   ├── pages/           início, projetos, perfil, relatório, configurações, primeira abertura, bolha
 │   └── styles/          tokens e estilos Moderno/Terminal
 ├── src-tauri/
 │   ├── src/lib.rs       comandos nativos: VS Code, Explorer, Git Bash, comandos, Git, README, bandeja; migrações
 │   ├── migrations/      esquema do SQLite local
 │   ├── app-icon.svg     fonte do ícone (yarn tauri icon src-tauri/app-icon.svg)
-│   └── tauri.conf.json
+│   └── tauri.conf.json  janelas (principal e bolha), atualização e instalador
 ├── docs/                arquitetura, modelo de dados e decisões (ADR)
 ├── supabase/            migrações SQL com RLS, para a nuvem opcional
 ├── _assets/             banners, prints e gerador dos banners (com o wallpaper)
 ├── CHANGELOG.md
 ├── LICENSE              proprietária, todos os direitos reservados
-├── NOTICE.md            autoria e termos adicionais
+├── NOTICE.md            autoria e resumo da licença
 └── README.md
 ```
 
@@ -288,7 +307,8 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - O instalador não tem assinatura digital, então o Windows avisa na primeira instalação.
 - Uma sessão por vez.
 - O status do Git precisa do Git instalado e só aparece em pastas que são repositórios.
-- A bandeja, os comandos e o abrir com o Windows foram feitos e testados para Windows.
+- A bandeja, os comandos, a bolha e o abrir com o Windows foram feitos e testados para Windows.
+- Os alertas de saúde são lembretes com base em referências publicadas, não diagnóstico.
 - No modo local, os dados de um computador não aparecem no outro (dá para levar com o backup em JSON).
 - O modo conta guarda tudo na nuvem, então exige internet, e cada leitura baixa a tabela inteira. Com históricos muito grandes, fica mais lento.
 
@@ -300,10 +320,14 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - [x] **V0.4** · dados locais (SQLite), foto do perfil, conta na nuvem opcional, backup e importação
 - [x] **V0.5** · status do Git, frentes, várias ações por pasta, link do repositório automático, rascunho, abrir com o Windows, abertura animada
 - [x] **V0.6** · bandeja, Ctrl + K, onde parei, projetos parados, descrição pelo README, comandos por pasta, relatório com CSV
-- [ ] **V0.7** · mapeamento de comportamento: janela em foco, programas abertos e áudio, por categoria
-- [ ] **V0.8** · finanças: modelo do projeto, receitas e valor real por hora
-- [ ] **V0.9** · caderno: playbook de padrões, modelos (README, ADR) e editor que salva no repositório
-- [ ] **V0.10** · ideias: captura, descrição e "virar projeto"
+- [x] **V0.7** · nova navegação (trilho e painel em árvore), Início, Perfil com hábitos, alertas de saúde com fonte, escala da interface, bolha ao minimizar, estilo Terminal no jeito do Atelier.sh
+- [ ] **V0.8** · lançador universal (Windows Terminal, Discord, WhatsApp e outros apps), mapeamento de janelas e jogos, com alertas de tempo
+- [ ] **V0.9** · tarefas por projeto em lista e kanban, com Issues do GitHub
+- [ ] **V0.10** · calendário, com Google Calendar
+- [ ] **V0.11** · finanças: modelo do projeto, receitas e valor real por hora
+- [ ] **V0.12** · caderno: playbook de padrões, modelos (README, ADR) e editor que salva no repositório
+- [ ] **V0.13** · ideias: captura, descrição e "virar projeto"
+- [ ] **V0.14** · padrões de trabalho: ritmo, foco e histórico do Git
 - [ ] **V1.0** · assistente local que conversa sobre os seus dados e revisa contra o seu playbook
 
 ### $ documentação
@@ -322,6 +346,8 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 | [`ADR-008`](docs/decisoes/ADR-008-lembretes-por-tempo-de-trabalho.md) | Lembretes de saúde por tempo de trabalho |
 | [`ADR-009`](docs/decisoes/ADR-009-atualizacoes-sem-perder-dados.md) | Atualizações sem perder dados |
 | [`ADR-010`](docs/decisoes/ADR-010-dados-locais-primeiro.md) | Dados locais primeiro |
+| [`ADR-011`](docs/decisoes/ADR-011-shell-em-trilho-e-saude-com-fonte.md) | Shell em trilho e saúde com fonte |
+| [`ADR-012`](docs/decisoes/ADR-012-codigo-proprietario.md) | Código proprietário |
 
 O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -329,7 +355,7 @@ O histórico de versões está no [`CHANGELOG.md`](CHANGELOG.md).
 
 A G.W.E.N. é **software proprietário**. Copyright (c) 2026 Samara Silvia Sabino. Todos os direitos reservados. Os termos estão em [`LICENSE`](LICENSE) e o resumo em [`NOTICE.md`](NOTICE.md).
 
-- **Pode:** instalar e usar o instalador oficial recebido da autora, para uso pessoal.
+- **Pode:** ler o código aqui no GitHub e instalar o instalador oficial (Releases ou site), para uso pessoal.
 - **Não pode sem autorização:** copiar o código, modificar, criar versões derivadas, redistribuir (inclusive o instalador), vender ou usar o nome, o logo e a identidade visual.
 
 Qualquer outro uso precisa ser combinado antes com a autora ([@devs_sam](https://instagram.com/devs_sam)).

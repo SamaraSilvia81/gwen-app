@@ -39,6 +39,7 @@
 | [`ADR-009`](decisoes/ADR-009-atualizacoes-sem-perder-dados.md) | Atualizações sem perder dados | Decisão | Aceita |
 | [`ADR-010`](decisoes/ADR-010-dados-locais-primeiro.md) | Dados locais primeiro | Decisão | Aceita |
 | [`ADR-011`](decisoes/ADR-011-shell-em-trilho-e-saude-com-fonte.md) | Shell em trilho e saúde com fonte | Decisão | Aceita |
+| [`ADR-012`](decisoes/ADR-012-codigo-proprietario.md) | Código proprietário | Decisão | Aceita |
 
 ### $ como os documentos se organizam
 
