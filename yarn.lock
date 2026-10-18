@@ -327,6 +327,11 @@
   resolved "https://registry.yarnpkg.com/@fontsource-variable/space-grotesk/-/space-grotesk-5.3.0.tgz#f35f8915850afbefe92b0fe15b1db49928e55186"
   integrity sha512-2IxmvfB08i9vnGB3Ym/AXvhRE+8XOjWMXIyDum03c+tPwH0FUoMNQfGpU8NXPxjbws0Vvss3AH0Zqt4oJBBAdw==
 
+"@fontsource/bebas-neue@5.2.5":
+  version "5.2.5"
+  resolved "https://registry.yarnpkg.com/@fontsource/bebas-neue/-/bebas-neue-5.2.5.tgz#b9eadc26df45aa1b27d9ef22eb2b898544b3dba6"
+  integrity sha512-9hZCl9BpuwrIPRgprS17WRHMRyqprFKxNEDOl98en9XzikR8GGXpeiLaKf5HpNm1NKnVo/EowTjcgcgrvW3h0w==
+
 "@jridgewell/gen-mapping@^0.3.12", "@jridgewell/gen-mapping@^0.3.5":
   version "0.3.13"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz#6342a19f44347518c93e43b1ac69deb3c4656a1f"

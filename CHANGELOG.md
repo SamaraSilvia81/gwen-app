@@ -8,7 +8,30 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Planejado
 - Sincronização entre computadores (opcional)
 - Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
-- Widget flutuante "sempre no topo"
+
+## [0.7.0] - 2026-10-18
+
+### Adicionado
+- **Início:** a tela de abertura do app. Capa com o wallpaper, saudação, o que está rodando agora (com Pausa e Encerrar), **Onde parei** com Continuar, barras da semana, projetos recentes e o cartão de saúde
+- **Alertas de saúde com base em pesquisa:** semana acima de 44h (limite da Constituição) e de 55h (OMS/OIT, 2021), 90 minutos sem pausa (meta-análise de micropausas, 2022), trabalho depois das 23h em dois ou mais dias (consenso AASM/SRS sobre sono) e sete dias seguidos sem folga (pesquisa de recuperação de Sonnentag e Fritz). Cada alerta mostra a fonte ([`ADR-011`](docs/decisoes/ADR-011-shell-em-trilho-e-saude-com-fonte.md))
+- **Perfil:** capa, foto grande, números do ano (horas, sessões, dias ativos, sequência atual e maior sequência, concluídos), mapa de atividade de 12 ou 6 meses e grades de hábitos (trabalho, pausas, água, alongamento, olhos) com sequência de dias. No fim, a lista das referências usadas nos lembretes e alertas
+- **Painel de projetos em árvore:** coleções inteligentes (Fixados, Recentes, Em andamento, Parados) e as categorias como pastas que abrem e fecham, com os projetos dentro e o botão de começar sempre visível. Filtro por nome no topo
+- **Fixar projeto:** alfinete no card. Fixados aparecem primeiro na lista e na coleção Fixados
+- **Vista em lista** na tela de projetos, além da grade
+- **Escala da interface:** padrão 90%. `Ctrl +`, `Ctrl -` e `Ctrl 0` em qualquer tela, também `Ctrl` + roda do mouse. Opção em Configurações, Interface
+- **Bolha ao minimizar:** minimizou, aparece uma bolha redonda sempre no topo com o logo, o tempo da sessão e um anel com o andamento da hora. Arraste para mover (a posição fica salva); clique para voltar. Dá para desligar em Configurações, Interface
+
+### Alterado
+- **Navegação:** trilho de ícones à esquerda (Início, Projetos, Relatório, Perfil, Ajustes) e o painel de projetos ao lado, que abre e fecha pelo trilho ou com `Ctrl + B`. Em janela com menos de 1100px o painel vira gaveta
+- **Responsividade:** janela mínima de 720 × 520 (antes 960 × 620); topbar, cards, lista e relatório se reorganizam em telas estreitas
+- **Visual (estilo Moderno):** mais denso, no jeito do Linear (texto 13px, botões de 30px), cantos e seletor segmentado no jeito do iOS, títulos grandes por tela e o caminho da tela na topbar
+- **Estilo Terminal no jeito do Atelier.sh:** títulos e números em Bebas Neue, rótulos mono em caixa alta bem espaçados, filtros com borda, foco com brilho, `$` nas buscas, barras listradas e scanlines. Os botões deixam de usar `[ ]`
+- Os números de hoje e da semana saíram do topo da tela de projetos e foram para o Início
+
+### Migração
+- Local: `004_fixados.sql`, automática
+- Nuvem (conta no próprio Supabase): rode `supabase/migrations/006_gwen_fixados.sql` no SQL Editor. Sem ela, o app continua funcionando, mas fixar um projeto dá erro
+- Nova dependência: `@fontsource/bebas-neue`. Rode `yarn` antes do `yarn app`
 
 ## [0.6.0] - 2026-10-17
 

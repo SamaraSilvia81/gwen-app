@@ -104,6 +104,12 @@ export function WorkspaceProvider({ children }) {
     return saved;
   }, []);
 
+  const togglePin = useCallback(async (project) => {
+    const saved = await projectRepo.setPinned(project.id, !project.pinned);
+    setProjects((list) => list.map((p) => (p.id === saved.id ? saved : p)));
+    return saved;
+  }, []);
+
   const deleteProject = useCallback(async (id) => {
     await projectRepo.remove(id);
     setProjects((list) => list.filter((p) => p.id !== id));
@@ -256,6 +262,7 @@ export function WorkspaceProvider({ children }) {
       renameCategory,
       deleteCategory,
       saveProject,
+      togglePin,
       deleteProject,
       launchProject,
       startSession,
@@ -266,7 +273,7 @@ export function WorkspaceProvider({ children }) {
     }),
     [loading, categories, projects, sessions, activeSession, activeBreak, staleSession, notes, endingSession, requestEnd,
       cancelEnd, refresh, createCategory,
-      renameCategory, deleteCategory, saveProject, deleteProject, launchProject, startSession, endSession,
+      renameCategory, deleteCategory, saveProject, togglePin, deleteProject, launchProject, startSession, endSession,
       startBreak, endBreak, resolveStale],
   );
 

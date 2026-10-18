@@ -1,20 +1,23 @@
-import { useMemo, useState } from 'react';
-import { MagnifyingGlass, NotePencil, Plus } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowBendDownRight, Lightning, List, MagnifyingGlass, NotePencil, Plus, PushPin, SquaresFour, Stop } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
-import { useWellness } from '../context/WellnessContext';
-import { REMINDERS } from '../lib/wellness';
+import { useToast } from '../context/ToastContext';
 import ProjectCard from '../components/ProjectCard';
 import ProjectForm from '../components/ProjectForm';
 import { Label } from '../components/Modal';
 import { formatDuration } from '../lib/time';
 import { STATUS } from '../lib/stats';
 import { hasContent, readDraft, writeDraft } from '../lib/projectDraft';
+import { filterLabel as labelOf, matchFilter } from '../lib/collections';
+import { useStoredState } from '../lib/layout';
+import { projectFronts } from '../lib/projectModel';
 
 const STATUS_FILTERS = [['todos', 'Todos'], ...Object.entries(STATUS).map(([id, s]) => [id, s.label])];
 const STATUS_ORDER = { andamento: 0, pausado: 1, ideia: 2, concluido: 3 };
 
-export default function Dashboard({ filter, stats }) {
+export default function Dashboard({ filter, stats, focusId = null }) {
   const { projects, categories, loading } = useWorkspace();
+  const [layout, setLayout] = useStoredState('gwen.projetos.vista', 'grade'); // grade | lista
   const [status, setStatus] = useState('todos');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null); // null | 'new' | project
@@ -36,64 +39,65 @@ export default function Dashboard({ filter, stats }) {
   );
 
   const categoryName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
-  const filterLabel =
-    filter === 'all' ? 'Todos os projetos' : filter === 'none' ? 'Sem categoria' : categoryName.get(filter) || 'Projetos';
+  const filterLabel = labelOf(filter, categories);
+  const isCategory = filter !== 'all' && !String(filter).startsWith('smart:');
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const now = Date.now();
     return projects
-      .filter((p) => filter === 'all' || (p.category_id || 'none') === filter)
+      .filter((p) => matchFilter(p, filter, now))
       .filter((p) => status === 'todos' || p.status === status)
       .filter((p) => !q || p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
       .sort((a, b) => {
+        const pin = Number(!!b.pinned) - Number(!!a.pinned);
+        if (pin !== 0) return pin;
         const s = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
         if (s !== 0) return s;
         return new Date(b.last_opened_at || b.updated_at) - new Date(a.last_opened_at || a.updated_at);
       });
   }, [projects, filter, status, query]);
 
-  const categoryWeek = filter !== 'all' ? stats.byCategory.get(filter) || 0 : stats.weekTotal;
+  const weekHere = visible.reduce((sum, p) => sum + (stats.byProject.get(p.id)?.week || 0), 0);
 
-  const Stat = ({ label, value, hint }) => (
-    <div className="card px-4 py-3.5">
-      <p className="eyebrow mb-2">{label}</p>
-      <p className="font-display text-2xl font-semibold tabular">{value}</p>
-      {hint && <p className="text-[11px] text-muted mt-1">{hint}</p>}
-    </div>
-  );
+  // projeto escolhido no painel: rola até ele e destaca por um instante
+  useEffect(() => {
+    if (!focusId || loading) return;
+    const el = document.querySelector(`[data-project-id="${focusId}"]`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [focusId, loading, layout]);
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-[1200px] mx-auto px-8 py-7">
-        {/* números */}
-        <section className="grid grid-cols-4 max-[1100px]:grid-cols-2 gap-3 mb-3 anim-rise">
-          <Stat label="Hoje" value={formatDuration(stats.todayTotal, { short: true })} hint="em sessões" />
-          <Stat
-            label={filter === 'all' ? 'Esta semana' : `Semana · ${filterLabel}`}
-            value={formatDuration(categoryWeek, { short: true })}
-            hint="desde segunda"
-          />
-          <Stat label="Em andamento" value={stats.inProgress} hint="projetos ativos" />
-          <Stat label={`Concluídos em ${stats.year}`} value={stats.doneThisYear} hint="projetos finalizados" />
-        </section>
-
-        <WellnessStrip />
-
-        {/* cabeçalho da lista */}
-        <section className="flex items-end justify-between gap-4 mb-4 flex-wrap">
-          <div>
-            <p className="eyebrow mb-1">projetos</p>
-            <h1 className="font-display text-2xl font-bold">{filterLabel}</h1>
+      <div className="page">
+        {/* cabeçalho grande, no jeito do iOS */}
+        <section className="flex items-end justify-between gap-4 mb-5 flex-wrap anim-rise">
+          <div className="min-w-0">
+            <p className="eyebrow mb-1">{isCategory ? 'coleção' : 'projetos'}</p>
+            <h1 className="page-title truncate">{filterLabel}</h1>
+            <p className="text-[12.5px] text-muted mt-1 tabular">
+              {visible.length} {visible.length === 1 ? 'projeto' : 'projetos'}
+              {weekHere > 0 && ` · ${formatDuration(weekHere, { short: true })} esta semana`}
+              {stats.inProgress > 0 && filter === 'all' && ` · ${stats.inProgress} em andamento`}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
+            <div className="relative search">
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
-                className="input pl-8 w-[200px]"
+                className="input pl-8 w-[200px] max-[640px]:w-[150px]"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar projeto"
               />
+            </div>
+            <div className="segmented" role="group" aria-label="Como mostrar">
+              <button className={layout === 'grade' ? 'active' : ''} onClick={() => setLayout('grade')} title="Grade" aria-label="Grade">
+                <SquaresFour size={14} weight={layout === 'grade' ? 'fill' : 'regular'} />
+              </button>
+              <button className={layout === 'lista' ? 'active' : ''} onClick={() => setLayout('lista')} title="Lista" aria-label="Lista">
+                <List size={14} weight="bold" />
+              </button>
             </div>
             <button className="btn btn-accent" onClick={() => setEditing('new')}>
               <Plus size={14} weight="bold" />
@@ -102,7 +106,7 @@ export default function Dashboard({ filter, stats }) {
           </div>
         </section>
 
-        <div className="segmented mb-6">
+        <div className="segmented mb-6 max-w-full overflow-x-auto">
           {STATUS_FILTERS.map(([id, label]) => (
             <button key={id} className={status === id ? 'active' : ''} onClick={() => setStatus(id)}>
               {label}
@@ -113,8 +117,24 @@ export default function Dashboard({ filter, stats }) {
         {/* lista */}
         {loading ? (
           <p className="mono text-muted">carregando projetos<span className="blink">_</span></p>
+        ) : visible.length && layout === 'lista' ? (
+          <>
+            {draftCard && <section className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3 mb-3">{draftCard}</section>}
+            <section className="card list-card anim-rise">
+              {visible.map((p) => (
+                <ProjectListRow
+                  key={p.id}
+                  project={p}
+                  time={stats.byProject.get(p.id)?.week || 0}
+                  categoryName={!isCategory ? categoryName.get(p.category_id) : null}
+                  focused={focusId === p.id}
+                  onEdit={() => setEditing(p)}
+                />
+              ))}
+            </section>
+          </>
         ) : visible.length ? (
-          <section className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+          <section className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
             {draftCard}
             {visible.map((p) => (
               <ProjectCard
@@ -122,14 +142,15 @@ export default function Dashboard({ filter, stats }) {
                 project={p}
                 time={stats.byProject.get(p.id)?.week || 0}
                 frontTimes={stats.byFront}
-                categoryName={filter === 'all' ? categoryName.get(p.category_id) : null}
+                categoryName={!isCategory ? categoryName.get(p.category_id) : null}
+                focused={focusId === p.id}
                 onEdit={() => setEditing(p)}
               />
             ))}
           </section>
         ) : (
           <>
-            {draftCard && <section className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 mb-3">{draftCard}</section>}
+            {draftCard && <section className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3 mb-3">{draftCard}</section>}
             <EmptyState hasAny={projects.length > 0} onCreate={() => setEditing('new')} />
           </>
         )}
@@ -138,7 +159,7 @@ export default function Dashboard({ filter, stats }) {
       {editing && (
         <ProjectForm
           project={editing === 'new' ? null : editing}
-          defaultCategory={filter}
+          defaultCategory={isCategory ? filter : 'all'}
           onClose={() => setEditing(null)}
         />
       )}
@@ -200,39 +221,57 @@ function EmptyState({ hasAny, onCreate }) {
   );
 }
 
-/** Resumo do modo saúde: o que já foi feito hoje e quando vem o próximo lembrete */
-function WellnessStrip() {
-  const { config, counting, counters, todayCount } = useWellness();
-  if (!config.enabled) return <div className="mb-5" />;
+/** Linha da vista em lista (0.7), no jeito do Linear: tudo numa linha, ações sempre visíveis */
+function ProjectListRow({ project, time, categoryName, focused, onEdit }) {
+  const { activeSession, launchProject, requestEnd, notes } = useWorkspace();
+  const toast = useToast();
+  const running = activeSession?.project_id === project.id;
+  const where = notes?.get(project.id);
+  const fronts = projectFronts(project);
 
-  const active = Object.entries(config.reminders).filter(([, r]) => r.on);
-  const next = active
-    .map(([k, r]) => ({ k, left: Math.max(0, r.every * 60 - (counters[k] || 0)) }))
-    .sort((a, b) => a.left - b.left)[0];
+  async function launch() {
+    try {
+      await launchProject(project, fronts.length === 1 ? fronts[0] : null);
+    } catch (err) {
+      toast(err?.message || String(err), 'error');
+    }
+  }
 
   return (
-    <section className="card px-4 py-3 mb-8 flex items-center gap-5 flex-wrap anim-rise">
-      <span className="eyebrow">modo saúde · hoje</span>
-      {active.map(([k]) => {
-        const r = REMINDERS[k];
-        const Icon = r.icon;
-        return (
-          <span key={k} className="inline-flex items-center gap-1.5 text-[13px]">
-            <Icon size={15} className="text-phosphor" />
-            <span className="tabular font-medium">{todayCount[k] || 0}</span>
-            <span className="text-muted">{r.counted(todayCount[k] || 0)}</span>
-          </span>
-        );
-      })}
-      <span className="ml-auto mono text-[11px] text-muted">
-        {!counting
-          ? 'lembretes parados (sem sessão ativa)'
-          : next
-            ? next.left < 60
-              ? `${REMINDERS[next.k].label.toLowerCase()}: agora`
-              : `próximo: ${REMINDERS[next.k].label.toLowerCase()} em ${formatDuration(next.left, { short: true })}`
-            : ''}
+    <div
+      data-project-id={project.id}
+      className={`list-row ${running ? 'is-active' : ''} ${focused ? 'is-focused' : ''}`}
+      onClick={(e) => !e.target.closest('button') && onEdit()}
+    >
+      <span className={`status-dot status-${project.status} ${running ? 'anim-breathe' : ''}`} title={STATUS[project.status]?.label} />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 min-w-0">
+          {project.pinned ? <PushPin size={12} weight="fill" className="text-phosphor shrink-0" /> : null}
+          <span className="font-medium truncate">{project.name}</span>
+          {categoryName && <span className="mono text-[11px] text-muted truncate max-[700px]:hidden">{categoryName}</span>}
+        </p>
+        {where && (
+          <p className="text-[12px] text-muted truncate flex items-center gap-1.5 mt-0.5">
+            <ArrowBendDownRight size={11} className="text-phosphor shrink-0" />
+            {where.note}
+          </p>
+        )}
+      </div>
+      <span className="chip max-[640px]:hidden">{STATUS[project.status]?.label}</span>
+      <span className="mono text-[11px] text-muted tabular w-[64px] text-right max-[560px]:hidden">
+        {time > 0 ? formatDuration(time, { short: true }) : '-'}
       </span>
-    </section>
+      {running ? (
+        <button className="btn btn-ghost btn-sm" onClick={requestEnd}>
+          <Stop size={12} weight="fill" />
+          <Label>Encerrar</Label>
+        </button>
+      ) : (
+        <button className="btn btn-primary btn-sm" onClick={launch} disabled={project.status === 'concluido'} title={fronts.length > 1 ? 'Abre todas as frentes' : undefined}>
+          <Lightning size={12} weight="fill" />
+          <span className="max-[700px]:hidden"><Label>Começar</Label></span>
+        </button>
+      )}
+    </div>
   );
 }

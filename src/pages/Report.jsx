@@ -67,11 +67,11 @@ export default function Report() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-[1000px] mx-auto px-8 py-7">
+      <div className="page">
         <section className="flex items-end justify-between gap-4 mb-5 flex-wrap anim-rise">
           <div>
             <p className="eyebrow mb-1">relatório · {fmtRange}</p>
-            <h1 className="font-display text-2xl font-bold">Para onde foi o seu tempo</h1>
+            <h1 className="page-title">Para onde foi o seu tempo</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="segmented">
@@ -117,9 +117,9 @@ export default function Report() {
                   <ul className="flex flex-col gap-2.5">
                     {g.projects.map((e) => (
                       <li key={e.project.id}>
-                        <div className="grid grid-cols-[minmax(120px,220px)_1fr_auto] gap-3 items-center">
+                        <div className="grid grid-cols-[minmax(100px,220px)_1fr_auto] gap-3 items-center max-[560px]:grid-cols-[1fr_auto]">
                           <span className="text-[13.5px] truncate" title={e.project.name}>{e.project.name}</span>
-                          <span className="h-2 rounded-full bg-[var(--c-phosphor-8)] overflow-hidden">
+                          <span className="h-2 rounded-full bg-[var(--c-phosphor-8)] overflow-hidden max-[560px]:hidden">
                             <span className="block h-full rounded-full bg-phosphor" style={{ width: `${(e.seconds / maxProject) * 100}%` }} />
                           </span>
                           <span className="mono text-[12px] tabular text-right min-w-[110px]">

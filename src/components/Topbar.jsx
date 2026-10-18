@@ -8,8 +8,10 @@ import { formatClock, formatHour, sessionSeconds } from '../lib/time';
 import { BREAK_KINDS } from '../lib/breaks';
 import { effectiveMode } from '../lib/themes';
 import { Label } from './Modal';
+import { VIEWS } from './Rail';
+import { filterLabel } from '../lib/collections';
 
-function greeting(date) {
+export function greeting(date) {
   const h = date.getHours();
   if (h < 5) return 'Boa madrugada';
   if (h < 12) return 'Bom dia';
@@ -17,9 +19,10 @@ function greeting(date) {
   return 'Boa noite';
 }
 
-export default function Topbar({ title }) {
+/** Barra de cima (0.7): caminho da tela à esquerda, sessão e ações à direita. */
+export default function Topbar({ view = 'inicio', filter = 'all' }) {
   const { profile, updateProfile } = useProfile();
-  const { activeSession, activeBreak, projects, requestEnd, startBreak } = useWorkspace();
+  const { activeSession, activeBreak, projects, categories, requestEnd, startBreak } = useWorkspace();
   const toast = useToast();
   const now = useNow(1000);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,18 +61,24 @@ export default function Topbar({ title }) {
   }
 
   return (
-    <header className="glass h-[52px] shrink-0 flex items-center justify-between gap-4 px-6 border-b border-rule relative z-20">
-      <div className="min-w-0">
-        <p className="font-display font-semibold truncate">
-          {title || `${greeting(now)}, ${profile?.display_name || 'dev'}.`}
-        </p>
-      </div>
+    <header className="topbar glass">
+      <nav className="min-w-0 flex items-center gap-1.5 text-[13px]" aria-label="Você está em">
+        <span className="text-muted hidden sm:inline">G.W.E.N.</span>
+        <span className="text-muted hidden sm:inline">/</span>
+        <span className={`font-medium truncate ${view === 'projetos' ? 'text-muted' : 'text-bone'}`}>{VIEWS[view]?.title || VIEWS[view]?.label}</span>
+        {view === 'projetos' && (
+          <>
+            <span className="text-muted">/</span>
+            <span className="font-medium text-bone truncate">{filterLabel(filter, categories)}</span>
+          </>
+        )}
+      </nav>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 shrink-0">
         {activeSession ? (
-          <div className="flex items-center gap-3 h-9 pl-3 pr-1 rounded-ui-sm border border-[var(--c-phosphor-40)] bg-[var(--c-phosphor-8)]">
-            <span className="w-2 h-2 rounded-full bg-phosphor anim-breathe" />
-            <span className="text-[13px] font-medium max-w-[220px] truncate" title={project?.name}>
+          <div className="session-pill">
+            <span className="w-2 h-2 rounded-full bg-phosphor anim-breathe shrink-0" />
+            <span className="text-[13px] font-medium max-w-[200px] truncate max-[760px]:hidden" title={project?.name}>
               {project?.name || 'Projeto'}
               {activeSession.front && <span className="text-muted font-normal"> · {activeSession.front}</span>}
             </span>
@@ -81,7 +90,7 @@ export default function Topbar({ title }) {
             </button>
           </div>
         ) : (
-          <span className="mono text-[12px] text-muted hidden md:inline">nenhuma sessão ativa</span>
+          <span className="mono text-[11px] text-muted hidden lg:inline mr-1">nenhuma sessão ativa</span>
         )}
 
         <button className="btn btn-ghost btn-icon" onClick={openQuickLaunch} title="Começar um projeto (Ctrl + K)" aria-label="Começar um projeto">
@@ -89,7 +98,7 @@ export default function Topbar({ title }) {
         </button>
 
         {/* nas Configurações o modo é escolhido lá dentro, com prévia */}
-        {!title && (
+        {view !== 'config' && (
           <button
             className="btn btn-ghost btn-icon"
             onClick={toggleMode}
@@ -103,7 +112,7 @@ export default function Topbar({ title }) {
         <div className="relative" ref={menuRef}>
           <button className="btn btn-ghost" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen}>
             <Pause size={14} weight="bold" />
-            <Label>Pausa</Label>
+            <span className="max-[760px]:hidden"><Label>Pausa</Label></span>
             <CaretDown size={12} />
           </button>
           {menuOpen && (

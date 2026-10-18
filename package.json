@@ -2,7 +2,7 @@
   "name": "gwen",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "description": "G.W.E.N.: Gestão de Wellness, Eficiência e Navegação",
   "scripts": {
@@ -17,6 +17,7 @@
     "@fontsource-variable/inter": "^5.2.5",
     "@fontsource-variable/jetbrains-mono": "^5.2.5",
     "@fontsource-variable/space-grotesk": "^5.2.5",
+    "@fontsource/bebas-neue": "^5.2.5",
     "@phosphor-icons/react": "^2.1.7",
     "@supabase/supabase-js": "^2.49.4",
     "@tauri-apps/api": "^2.5.0",

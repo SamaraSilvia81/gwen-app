@@ -254,6 +254,12 @@ fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             sql: include_str!("../migrations/003_frentes.sql"),
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
+        tauri_plugin_sql::Migration {
+            version: 4,
+            description: "projetos fixados",
+            sql: include_str!("../migrations/004_fixados.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
     ]
 }
 

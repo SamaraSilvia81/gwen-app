@@ -23,6 +23,8 @@ const MODE_ICON = { escuro: Moon, claro: Sun, sistema: Desktop };
 import Logo from '../components/Logo';
 import { Label } from '../components/Modal';
 import { AvatarPicker } from '../components/Avatar';
+import { DEFAULT_ZOOM, ZOOM_EVENT, ZOOM_STEPS, applyZoom, loadZoom, zoomLabel } from '../lib/zoom';
+import { bubbleEnabled, setBubbleEnabled } from '../lib/layout';
 
 export default function Settings() {
   const { profile, updateProfile, reload } = useProfile();
@@ -210,10 +212,10 @@ export default function Settings() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-[860px] mx-auto px-8 py-7 flex flex-col gap-10">
+      <div className="page page-narrow flex flex-col gap-10">
         <header className="anim-rise">
           <p className="eyebrow mb-1">configurações</p>
-          <h1 className="font-display text-2xl font-bold">Do seu jeito.</h1>
+          <h1 className="page-title">Do seu jeito.</h1>
         </header>
 
         {/* PERFIL */}
@@ -421,6 +423,11 @@ export default function Settings() {
           </div>
         </Section>
 
+        {/* INTERFACE */}
+        <Section title="Interface" description="Tamanho e comportamento das janelas. Vale para este computador.">
+          <InterfaceSettings />
+        </Section>
+
         {/* MODO SAÚDE */}
         <Section
           title="Modo saúde"
@@ -619,6 +626,62 @@ export default function Settings() {
         />
       )}
     </div>
+  );
+}
+
+/** Escala da interface e bolha ao minimizar (0.7) */
+function InterfaceSettings() {
+  const toast = useToast();
+  const [zoom, setZoom] = useState(loadZoom);
+  const [bubble, setBubble] = useState(bubbleEnabled);
+
+  useEffect(() => {
+    const on = (e) => setZoom(e.detail);
+    window.addEventListener(ZOOM_EVENT, on);
+    return () => window.removeEventListener(ZOOM_EVENT, on);
+  }, []);
+
+  return (
+    <>
+      <p className="field-label mb-2.5">Escala</p>
+      <div className="segmented mb-2 max-w-full overflow-x-auto">
+        {ZOOM_STEPS.map((z) => (
+          <button key={z} className={zoom === z ? 'active' : ''} onClick={() => applyZoom(z).then(setZoom)}>
+            {zoomLabel(z)}
+            {z === DEFAULT_ZOOM && <span className="opacity-60"> · padrão</span>}
+          </button>
+        ))}
+      </div>
+      <p className="text-[12px] text-muted mb-6">
+        Atalhos em qualquer tela: <span className="kbd">Ctrl</span> <span className="kbd">+</span> aumenta,{' '}
+        <span className="kbd">Ctrl</span> <span className="kbd">-</span> diminui e <span className="kbd">Ctrl</span>{' '}
+        <span className="kbd">0</span> volta para {zoomLabel(DEFAULT_ZOOM)}. <span className="kbd">Ctrl</span>{' '}
+        <span className="kbd">B</span> abre e fecha o painel de projetos.
+      </p>
+
+      <label className={`card p-4 flex items-center gap-4 ${isTauri ? 'cursor-pointer' : 'opacity-60'}`}>
+        <input
+          type="checkbox"
+          className="w-4 h-4 accent-[var(--c-phosphor)]"
+          checked={bubble}
+          disabled={!isTauri}
+          onChange={() => {
+            const next = !bubble;
+            setBubbleEnabled(next);
+            setBubble(next);
+            toast(next ? 'A bolha aparece quando você minimizar a G.W.E.N.' : 'Minimizar não mostra mais a bolha.');
+          }}
+        />
+        <span className="flex-1">
+          <span className="block font-display font-semibold">Bolha ao minimizar</span>
+          <span className="block text-[12px] text-muted mt-0.5">
+            {isTauri
+              ? 'Minimizou, aparece uma bolha redonda com o logo e o tempo da sessão, sempre no topo. Arraste para mover; clique para voltar.'
+              : 'Disponível no app instalado.'}
+          </span>
+        </span>
+      </label>
+    </>
   );
 }
 

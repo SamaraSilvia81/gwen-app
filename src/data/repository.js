@@ -68,6 +68,8 @@ const cleanProject = (p) => ({
   category_id: p.category_id || null,
   folders: (p.folders || []).filter((f) => f.path?.trim()).map(cleanFolder),
   links: (p.links || []).filter((l) => l.url?.trim()).map(cleanLink),
+  // só grava quando vem no rascunho: a nuvem sem a migração 006 segue aceitando projetos
+  ...(p.pinned !== undefined && p.pinned !== null ? { pinned: !!p.pinned } : {}),
 });
 
 const getProject = async (id) => (await store.all('projects')).find((p) => p.id === id);
@@ -93,6 +95,11 @@ export const projectRepo = {
     if (row.status === 'concluido' && previousStatus !== 'concluido') row.completed_at = nowIso();
     if (row.status !== 'concluido') row.completed_at = null;
     await store.update('projects', id, row);
+    return getProject(id);
+  },
+  /** Fixar ou soltar do topo do painel (0.7) */
+  async setPinned(id, on) {
+    await store.update('projects', id, { pinned: !!on });
     return getProject(id);
   },
   async touchOpened(id) {
@@ -167,6 +174,11 @@ export const sessionRepo = {
       if (s.note) out.set(s.project_id, { note: s.note, at: s.ended_at, front: s.front || null });
     }
     return out;
+  },
+  /** Todas as sessões a partir de uma data (perfil e hábitos) */
+  async from(from) {
+    const iso = from.toISOString();
+    return (await store.all('sessions')).filter((s) => s.started_at >= iso || !s.ended_at).sort(byDesc('started_at'));
   },
   /** Sessões entre duas datas (relatório) */
   async between(from, to) {

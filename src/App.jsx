@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { WorkspaceProvider, useNow, useWorkspace } from './context/WorkspaceContext';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -11,6 +11,12 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Report from './pages/Report';
 import Sidebar from './components/Sidebar';
+import Rail from './components/Rail';
+import Home from './pages/Home';
+import Profile from './pages/Profile';
+import { useBubble } from './lib/bubble';
+import { NARROW_QUERY, useMediaQuery, useStoredState } from './lib/layout';
+import { useZoomHotkeys } from './lib/zoom';
 import Topbar from './components/Topbar';
 import PauseOverlay from './components/PauseOverlay';
 import StaleSessionModal from './components/StaleSessionModal';
@@ -26,6 +32,7 @@ import { fileToAvatar } from './lib/avatar';
 export default function App() {
   return (
     <ToastProvider>
+      <ZoomKeys />
       <AccountGate>
         <ProfileProvider>
           <Gate />
@@ -33,6 +40,13 @@ export default function App() {
       </AccountGate>
     </ToastProvider>
   );
+}
+
+/** Ctrl + / Ctrl - / Ctrl 0 valem em qualquer tela, até na abertura */
+function ZoomKeys() {
+  const toast = useToast();
+  useZoomHotkeys(toast);
+  return null;
 }
 
 function Gate() {
@@ -52,11 +66,49 @@ function Gate() {
 }
 
 function Shell() {
-  const [view, setView] = useState('projetos');
+  const [view, setView] = useState('inicio');
   const [filter, setFilter] = useState('all');
+  const [focusId, setFocusId] = useState(null);
+  const narrow = useMediaQuery(NARROW_QUERY);
+  // painel fixo: preferência guardada; em janela estreita vira gaveta e começa fechado
+  const [docked, setDocked] = useStoredState('gwen.painel', true);
+  const [drawer, setDrawer] = useState(false);
+  const panelOpen = narrow ? drawer : docked;
+  const togglePanel = useCallback(() => (narrow ? setDrawer((v) => !v) : setDocked((v) => !v)), [narrow, setDocked]);
   const { sessions, projects, activeBreak, activeSession, launchProject, requestEnd, refresh } = useWorkspace();
   const { profile, updateProfile, reload } = useProfile();
   const toast = useToast();
+
+  useEffect(() => {
+    if (!narrow) setDrawer(false);
+  }, [narrow]);
+
+  // Ctrl + B abre e fecha o painel, como no VS Code
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        togglePanel();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePanel]);
+
+  const navigate = useCallback((next) => {
+    setView(next);
+    if (next !== 'projetos') setFocusId(null);
+  }, []);
+  const openProject = useCallback((p) => {
+    setFilter(p.category_id || 'none');
+    setFocusId(p.id);
+    setView('projetos');
+  }, []);
+  const changeFilter = useCallback((f) => {
+    setFilter(f);
+    setFocusId(null);
+  }, []);
+
   // acabou de entrar na conta: confirma e, se faltar, traz nome e foto da conta Google
   useEffect(() => {
     const raw = sessionStorage.getItem(WELCOME_KEY);
@@ -97,16 +149,38 @@ function Shell() {
     [sessions, projects, now, activeBreak],
   );
   useTray({ projects, activeSession, activeBreak, now, launchProject, requestEnd, toast });
+  useBubble({ projects, activeSession, activeBreak });
+
+  let page;
+  if (view === 'config') page = <Settings />;
+  else if (view === 'relatorio') page = <Report />;
+  else if (view === 'perfil') page = <Profile onNavigate={navigate} />;
+  else if (view === 'inicio') page = <Home stats={stats} onNavigate={navigate} onOpenProject={openProject} />;
+  else page = <Dashboard filter={filter} stats={stats} focusId={focusId} />;
 
   return (
     <div className="h-full flex">
-      <Sidebar view={view} onNavigate={setView} filter={filter} onFilter={setFilter} stats={stats} />
+      <Rail view={view} onNavigate={navigate} panelOpen={panelOpen} onTogglePanel={togglePanel} />
+      {panelOpen && (
+        <>
+          {narrow && <div className="panel-scrim anim-fade" onMouseDown={() => setDrawer(false)} />}
+          <Sidebar
+            view={view}
+            filter={filter}
+            onFilter={changeFilter}
+            onNavigate={navigate}
+            onOpenProject={openProject}
+            focusId={focusId}
+            stats={stats}
+            overlay={narrow}
+            onClose={() => setDrawer(false)}
+          />
+        </>
+      )}
       <main className="flex-1 min-w-0 flex flex-col">
-        <Topbar title={view === 'config' ? 'Configurações' : view === 'relatorio' ? 'Relatório' : null} />
+        <Topbar view={view} filter={filter} />
         <UpdateBar />
-        <div className="flex-1 min-h-0">
-          {view === 'config' ? <Settings /> : view === 'relatorio' ? <Report /> : <Dashboard filter={filter} stats={stats} />}
-        </div>
+        <div className="flex-1 min-h-0">{page}</div>
       </main>
       <ReminderStack />
       <PauseOverlay />

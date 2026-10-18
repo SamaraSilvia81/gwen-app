@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowBendDownRight, ArrowSquareOut, CaretDown, Code, FolderOpen, GitBranch, Hourglass, Lightning, PencilSimple, Stop,
+  ArrowBendDownRight, ArrowSquareOut, CaretDown, Code, FolderOpen, GitBranch, Hourglass, Lightning, PencilSimple, PushPin, Stop,
   TerminalWindow,
 } from '@phosphor-icons/react';
 import { useWorkspace } from '../context/WorkspaceContext';
@@ -13,8 +13,7 @@ import { folderActions, projectFronts } from '../lib/projectModel';
 import { timeAgo, useGitStatus } from '../lib/useGitStatus';
 import { Label } from './Modal';
 
-/** Em andamento, sem Começar agora nem commit há mais que isso = parado */
-const STALE_DAYS = 30;
+import { STALE_DAYS } from '../lib/collections';
 
 const ACTION_ICON = { vscode: Code, explorer: FolderOpen, gitbash: TerminalWindow };
 const ACTION_NAME = { vscode: 'VS Code', explorer: 'Explorer', gitbash: 'Git Bash' };
@@ -42,8 +41,8 @@ function GitLine({ repo, showLabel }) {
   );
 }
 
-export default function ProjectCard({ project, time, frontTimes, categoryName, onEdit }) {
-  const { activeSession, launchProject, requestEnd, notes } = useWorkspace();
+export default function ProjectCard({ project, time, frontTimes, categoryName, onEdit, focused = false }) {
+  const { activeSession, launchProject, requestEnd, notes, togglePin } = useWorkspace();
   const { profile } = useProfile();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -98,7 +97,8 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
 
   return (
     <article
-      className={`card flex flex-col p-4 gap-3.5 cursor-pointer hover:border-[var(--c-phosphor-40)] transition-colors ${isActive ? 'is-active' : ''}`}
+      data-project-id={project.id}
+      className={`card project-card flex flex-col p-4 gap-3.5 cursor-pointer ${isActive ? 'is-active' : ''} ${focused ? 'is-focused' : ''}`}
       // clicar em qualquer parte do card abre o projeto; botões e menus continuam com a própria ação
       onClick={(e) => !e.target.closest('button, a, input, [role="menu"]') && onEdit()}
     >
@@ -122,9 +122,20 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
             {project.name}
           </h3>
         </div>
-        <button className="btn btn-quiet btn-icon btn-sm" onClick={onEdit} title="Editar projeto" aria-label="Editar projeto">
-          <PencilSimple size={14} />
-        </button>
+        <div className="flex -mr-1">
+          <button
+            className={`btn btn-quiet btn-icon btn-sm ${project.pinned ? 'text-phosphor' : ''}`}
+            onClick={() => run(() => togglePin(project))}
+            title={project.pinned ? 'Soltar do topo' : 'Fixar no painel'}
+            aria-label={project.pinned ? 'Soltar do topo' : 'Fixar no painel'}
+            aria-pressed={!!project.pinned}
+          >
+            <PushPin size={14} weight={project.pinned ? 'fill' : 'regular'} />
+          </button>
+          <button className="btn btn-quiet btn-icon btn-sm" onClick={onEdit} title="Editar projeto" aria-label="Editar projeto">
+            <PencilSimple size={14} />
+          </button>
+        </div>
       </header>
 
       {project.description && <p className="text-[13px] text-muted leading-relaxed line-clamp-2">{project.description}</p>}
