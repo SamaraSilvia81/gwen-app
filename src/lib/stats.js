@@ -1,4 +1,4 @@
-import { sessionSecondsSince, startOfToday, startOfWeek } from './time';
+import { sessionSecondsSince, startOfToday, startOfWeek, unionSeconds } from './time';
 
 /**
  * Agrega o tempo das sessões da semana por projeto e por categoria.
@@ -30,6 +30,13 @@ export function computeStats({ sessions, projects, now, activeBreak }) {
     }
     const cat = categoryOf.get(s.project_id) || 'none';
     byCategory.set(cat, (byCategory.get(cat) || 0) + w);
+  }
+
+  // hoje, semana e categorias em tempo de relógio: sessões em paralelo não somam a mesma hora duas vezes
+  todayTotal = unionSeconds(sessions, today, now, now, activeBreak);
+  weekTotal = unionSeconds(sessions, week, now, now, activeBreak);
+  for (const cat of new Set(byCategory.keys())) {
+    byCategory.set(cat, unionSeconds(sessions.filter((s) => (categoryOf.get(s.project_id) || 'none') === cat), week, now, now, activeBreak));
   }
 
   const year = now.getFullYear();

@@ -12,6 +12,10 @@ async function mergeRows(tables) {
   const added = {};
   for (const t of DATA_TABLES) {
     const incoming = tables[t] || [];
+    if (!incoming.length) {
+      added[t] = 0;
+      continue;
+    }
     const existing = new Set((await store.all(t)).map((r) => r.id));
     let n = 0;
     for (const row of incoming) {
@@ -25,7 +29,7 @@ async function mergeRows(tables) {
   return added;
 }
 
-const PROFILE_FIELDS = ['theme', 'style', 'mode', 'custom_colors', 'wellness', 'git_bash_path', 'avatar'];
+const PROFILE_FIELDS = ['theme', 'style', 'mode', 'custom_colors', 'wellness', 'git_bash_path', 'avatar', 'launcher'];
 
 async function mergeProfile(remote) {
   if (!remote) return;
@@ -39,7 +43,8 @@ async function mergeProfile(remote) {
 /* ─── BACKUP EM JSON ─── */
 export async function exportAll(appVersion) {
   const tables = {};
-  for (const t of TABLES) tables[t] = await store.all(t);
+  // tabela nova sem migração na nuvem (ex.: tasks antes da 008) sai vazia em vez de travar o backup
+  for (const t of TABLES) tables[t] = await store.all(t).catch(() => []);
   return JSON.stringify({ gwenBackup: 1, appVersion, exportedAt: nowIso(), tables }, null, 2);
 }
 
@@ -78,7 +83,7 @@ export async function importFromCloud(supabase, userId) {
 }
 
 export function describeAdded(added) {
-  const label = { categories: 'categorias', projects: 'projetos', sessions: 'sessões', breaks: 'pausas', wellness_events: 'registros do modo saúde' };
+  const label = { categories: 'categorias', projects: 'projetos', sessions: 'sessões', breaks: 'pausas', wellness_events: 'registros do modo saúde', tasks: 'tarefas' };
   const parts = Object.entries(added).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${label[t]}`);
   return parts.length ? parts.join(', ') : 'nada novo (tudo já estava aqui)';
 }

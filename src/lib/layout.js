@@ -46,3 +46,8 @@ export function useMediaQuery(query) {
 export const BUBBLE_KEY = 'gwen.bolha';
 export const bubbleEnabled = () => read(BUBBLE_KEY, true) !== false;
 export const setBubbleEnabled = (on) => write(BUBBLE_KEY, !!on);
+
+/** Sessões em paralelo (0.8): ligado, começar outro projeto não encerra os abertos */
+export const PARALLEL_KEY = 'gwen.sessoes.paralelas';
+export const parallelSessionsEnabled = () => read(PARALLEL_KEY, true) !== false;
+export const setParallelSessions = (on) => write(PARALLEL_KEY, !!on);

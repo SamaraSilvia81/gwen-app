@@ -45,12 +45,17 @@ async function placeBubble(bubble) {
 }
 
 /** Na janela principal: mostra a bolha ao minimizar e manda o estado da sessão */
-export function useBubble({ projects, activeSession, activeBreak }) {
+export function useBubble({ projects, activeSessions = [], activeBreak }) {
+  // a bolha mostra a sessão aberta há mais tempo; com várias, o rótulo diz quantas
+  const activeSession = activeSessions[activeSessions.length - 1] || null;
   const state = useRef(null);
   const project = activeSession && projects.find((p) => p.id === activeSession.project_id);
   state.current = {
     active: !!activeSession,
-    label: project ? `${project.name}${activeSession.front ? ` · ${activeSession.front}` : ''}` : null,
+    label: project
+      ? `${project.name}${activeSession.front ? ` · ${activeSession.front}` : ''}${activeSessions.length > 1 ? ` (+${activeSessions.length - 1} em paralelo)` : ''}`
+      : null,
+    count: activeSessions.length,
     paused: !!activeBreak,
     elapsed: activeSession ? Math.floor(sessionSeconds(activeSession, new Date(), activeBreak)) : 0,
     sentAt: Date.now(),
@@ -67,7 +72,7 @@ export function useBubble({ projects, activeSession, activeBreak }) {
       /* bolha fechada: tudo bem */
     }
   };
-  const key = `${activeSession?.id}|${activeBreak?.id}|${state.current.label}`;
+  const key = `${activeSessions.map((s) => s.id).join(',')}|${activeBreak?.id}|${state.current.label}`;
   useEffect(() => {
     send.current();
     const id = setInterval(() => send.current(), 15_000);

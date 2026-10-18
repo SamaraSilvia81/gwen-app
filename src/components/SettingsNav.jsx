@@ -1,5 +1,6 @@
 import {
-  CaretLeft, CloudArrowUp, Database, Desktop, Heartbeat, Info, Keyboard, PaintBrush, PlugsConnected, Sliders, UserCircle,
+  CalendarBlank, CaretLeft, CloudArrowUp, Database, Desktop, GameController, Heartbeat, Info, Keyboard, PaintBrush, PlugsConnected, Sliders,
+  SquaresFour, UserCircle,
 } from '@phosphor-icons/react';
 
 /**
@@ -11,6 +12,9 @@ export const SETTINGS_SECTIONS = [
   { id: 'perfil', label: 'Perfil', icon: UserCircle },
   { id: 'aparencia', label: 'Aparência', icon: PaintBrush },
   { id: 'interface', label: 'Interface', icon: Sliders },
+  { id: 'apps', label: 'Apps', icon: SquaresFour },
+  { id: 'atividade', label: 'Mapeamento', icon: GameController },
+  { id: 'integracoes', label: 'Integrações', icon: PlugsConnected },
   { id: 'saude', label: 'Modo saúde', icon: Heartbeat },
   { id: 'dados', label: 'Dados', icon: Database },
   { id: 'nuvem', label: 'Conta na nuvem', icon: CloudArrowUp },
@@ -19,7 +23,7 @@ export const SETTINGS_SECTIONS = [
 ];
 
 const SOON = [
-  { id: 'integracoes', label: 'Integrações', icon: PlugsConnected, hint: 'Google Calendar e GitHub' },
+  { id: 'calendario', label: 'Google Calendar', icon: CalendarBlank, hint: 'Calendário com a sua agenda do Google' },
   { id: 'atalhos', label: 'Atalhos', icon: Keyboard, hint: 'Ver e trocar os atalhos de teclado' },
 ];
 

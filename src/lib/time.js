@@ -52,10 +52,48 @@ export const secondsBetween = (a, b) => (new Date(b).getTime() - new Date(a).get
 export function sessionSeconds(session, now = new Date(), activeBreak = null) {
   const end = session.ended_at ? new Date(session.ended_at) : now;
   let total = secondsBetween(session.started_at, end) - (session.paused_seconds || 0);
-  if (!session.ended_at && activeBreak && activeBreak.session_id === session.id) {
-    total -= secondsBetween(activeBreak.started_at, now);
+  // desde a 0.8 uma pausa vale para todas as sessões abertas: desconta o trecho em comum
+  if (!session.ended_at && activeBreak && !activeBreak.ended_at) {
+    const from = Math.max(new Date(activeBreak.started_at).getTime(), new Date(session.started_at).getTime());
+    total -= Math.max(0, (new Date(now).getTime() - from) / 1000);
   }
   return Math.max(0, total);
+}
+
+/**
+ * Tempo de relógio de um conjunto de sessões entre `from` e `to` (0.8).
+ * Com sessões em paralelo, a mesma hora não conta duas vezes: soma a união dos
+ * intervalos e desconta as pausas na mesma proporção das sessões.
+ */
+export function unionSeconds(sessions, from, to, now = new Date(), activeBreak = null) {
+  const a = new Date(from).getTime();
+  const b = new Date(to).getTime();
+  const parts = [];
+  let span = 0;
+  let effective = 0;
+  for (const s of sessions) {
+    const start = new Date(s.started_at).getTime();
+    const end = s.ended_at ? new Date(s.ended_at).getTime() : new Date(now).getTime();
+    const lo = Math.max(start, a);
+    const hi = Math.min(end, b);
+    if (hi <= lo || end <= start) continue;
+    const part = (hi - lo) / 1000;
+    span += part;
+    effective += sessionSeconds(s, now, activeBreak) * (part / ((end - start) / 1000));
+    parts.push([lo, hi]);
+  }
+  if (!parts.length) return 0;
+  parts.sort((x, y) => x[0] - y[0]);
+  let union = 0;
+  let [curLo, curHi] = parts[0];
+  for (const [lo, hi] of parts.slice(1)) {
+    if (lo > curHi) {
+      union += curHi - curLo;
+      [curLo, curHi] = [lo, hi];
+    } else curHi = Math.max(curHi, hi);
+  }
+  union += curHi - curLo;
+  return (union / 1000) * (span > 0 ? effective / span : 0);
 }
 
 /** Parte da sessão que caiu depois de `from` (para somar só o tempo de hoje/semana) */

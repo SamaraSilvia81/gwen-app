@@ -70,6 +70,7 @@ const cleanProject = (p) => ({
   links: (p.links || []).filter((l) => l.url?.trim()).map(cleanLink),
   // só grava quando vem no rascunho: a nuvem sem a migração 006 segue aceitando projetos
   ...(p.pinned !== undefined && p.pinned !== null ? { pinned: !!p.pinned } : {}),
+  ...(Array.isArray(p.apps) ? { apps: p.apps } : {}),
 });
 
 const getProject = async (id) => (await store.all('projects')).find((p) => p.id === id);
@@ -123,7 +124,11 @@ const getSession = async (id) => (await store.all('sessions')).find((s) => s.id 
 
 export const sessionRepo = {
   async active() {
-    return (await store.all('sessions')).find((s) => !s.ended_at) || null;
+    return (await this.activeAll())[0] || null;
+  },
+  /** Todas as sessões abertas, da mais recente para a mais antiga (0.8: várias ao mesmo tempo) */
+  async activeAll() {
+    return (await store.all('sessions')).filter((s) => !s.ended_at).sort(byDesc('started_at'));
   },
   /** Sessões que começaram depois de `from` ou ainda estavam abertas nesse momento */
   async since(from) {
@@ -134,10 +139,13 @@ export const sessionRepo = {
   },
   /** `front`: frente aberta (opcional). Só vai no registro quando existe, para
    *  a nuvem sem a migração 005 continuar aceitando sessões sem frente. */
-  async start(projectId, front = null) {
-    // garante uma sessão ativa por vez (no Supabase era um índice único)
-    const current = await this.active();
-    if (current) await this.end(current.id);
+  async start(projectId, front = null, { exclusive = false } = {}) {
+    const open = await this.activeAll();
+    // a mesma frente do mesmo projeto já está rodando: reaproveita
+    const same = open.find((s) => s.project_id === projectId && (s.front || null) === (front || null));
+    if (same) return same;
+    // modo "uma de cada vez" (opção em Ajustes > Sistema): encerra as outras antes
+    if (exclusive) for (const s of open) await this.end(s.id);
     const now = nowIso();
     const row = {
       id: newId(),
@@ -150,7 +158,15 @@ export const sessionRepo = {
       created_at: now,
     };
     if (front) row.front = front;
-    return store.insert('sessions', row);
+    try {
+      return await store.insert('sessions', row);
+    } catch (err) {
+      // nuvem ainda com o índice de "uma sessão por vez"
+      if (/sessions_one_active|duplicate key/i.test(err?.message || '')) {
+        throw new Error('Sua nuvem ainda aceita uma sessão por vez. Rode supabase/migrations/007_gwen_v08.sql no SQL Editor para ter sessões em paralelo.');
+      }
+      throw err;
+    }
   },
   async heartbeat(id) {
     await store.update('sessions', id, { last_seen_at: nowIso() });
@@ -229,5 +245,84 @@ export const wellnessRepo = {
   },
   async log(kind, action, sessionId = null) {
     return store.insert('wellness_events', { id: newId(), kind, action, session_id: sessionId, created_at: nowIso() });
+  },
+};
+
+/* ─── TAREFAS (0.9) ─── */
+export const TASK_STATUS = {
+  todo: { label: 'A fazer' },
+  doing: { label: 'Fazendo' },
+  review: { label: 'Revisão' },
+  done: { label: 'Feito' },
+};
+export const TASK_PRIORITY = ['Sem prioridade', 'Baixa', 'Média', 'Alta', 'Urgente'];
+
+const cleanTask = (t) => {
+  const out = {};
+  if ('title' in t) out.title = String(t.title || '').trim() || 'Sem título';
+  if ('description' in t) out.description = t.description?.trim() || null;
+  if ('project_id' in t) out.project_id = t.project_id || null;
+  if ('status' in t) out.status = TASK_STATUS[t.status] ? t.status : 'todo';
+  if ('priority' in t) out.priority = Math.max(0, Math.min(4, Number(t.priority) || 0));
+  if ('labels' in t) out.labels = (t.labels || []).map((l) => String(l).trim()).filter(Boolean);
+  if ('due_date' in t) out.due_date = t.due_date || null;
+  if ('position' in t) out.position = Number(t.position) || 0;
+  if ('github' in t) out.github = t.github || null;
+  return out;
+};
+
+/** Nuvem sem a migração 008: mensagem que diz o que fazer */
+const tasksError = (err) => {
+  if (/tasks|relation|schema cache/i.test(err?.message || '')) {
+    return new Error('Sua nuvem ainda não tem a tabela de tarefas. Rode supabase/migrations/008_gwen_tarefas.sql no SQL Editor.');
+  }
+  return err;
+};
+
+export const taskRepo = {
+  async list() {
+    try {
+      return (await store.all('tasks')).sort((a, b) => (a.position || 0) - (b.position || 0));
+    } catch (err) {
+      throw tasksError(err);
+    }
+  },
+  async create(task) {
+    const now = nowIso();
+    const row = {
+      id: newId(),
+      title: 'Sem título',
+      description: null,
+      project_id: null,
+      status: 'todo',
+      priority: 0,
+      labels: [],
+      due_date: null,
+      position: Date.now(),
+      github: null,
+      ...cleanTask(task),
+      completed_at: task.status === 'done' ? now : null,
+      created_at: now,
+      updated_at: now,
+    };
+    try {
+      return await store.insert('tasks', row);
+    } catch (err) {
+      throw tasksError(err);
+    }
+  },
+  async update(id, patch, previous = null) {
+    const row = { ...cleanTask(patch), updated_at: nowIso() };
+    if (row.status === 'done' && previous?.status !== 'done') row.completed_at = nowIso();
+    if (row.status && row.status !== 'done') row.completed_at = null;
+    try {
+      await store.update('tasks', id, row);
+    } catch (err) {
+      throw tasksError(err);
+    }
+    return { ...(previous || {}), ...row, id };
+  },
+  async remove(id) {
+    await store.remove('tasks', id);
   },
 };

@@ -223,9 +223,10 @@ function EmptyState({ hasAny, onCreate }) {
 
 /** Linha da vista em lista (0.7), no jeito do Linear: tudo numa linha, ações sempre visíveis */
 function ProjectListRow({ project, time, categoryName, focused, onEdit }) {
-  const { activeSession, launchProject, requestEnd, notes } = useWorkspace();
+  const { activeSessions, launchProject, requestEnd, notes } = useWorkspace();
   const toast = useToast();
-  const running = activeSession?.project_id === project.id;
+  const runningSession = activeSessions.find((s) => s.project_id === project.id);
+  const running = !!runningSession;
   const where = notes?.get(project.id);
   const fronts = projectFronts(project);
 
@@ -262,7 +263,7 @@ function ProjectListRow({ project, time, categoryName, focused, onEdit }) {
         {time > 0 ? formatDuration(time, { short: true }) : '-'}
       </span>
       {running ? (
-        <button className="btn btn-ghost btn-sm" onClick={requestEnd}>
+        <button className="btn btn-ghost btn-sm" onClick={() => requestEnd(runningSession.id)}>
           <Stop size={12} weight="fill" />
           <Label>Encerrar</Label>
         </button>

@@ -26,7 +26,10 @@ import Avatar, { AvatarPicker } from '../components/Avatar';
 import { SETTINGS_SECTIONS, SettingsTabs } from '../components/SettingsNav';
 import wallpaper from '../assets/wallpaper.webp';
 import { DEFAULT_ZOOM, ZOOM_EVENT, ZOOM_STEPS, applyZoom, loadZoom, zoomLabel } from '../lib/zoom';
-import { bubbleEnabled, setBubbleEnabled } from '../lib/layout';
+import { bubbleEnabled, parallelSessionsEnabled, setBubbleEnabled, setParallelSessions } from '../lib/layout';
+import { ActivitySettings, AppsSettings } from '../components/LauncherSettings';
+import { githubToken, setGithubToken } from '../lib/github';
+import { GithubLogo } from '@phosphor-icons/react';
 
 export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow = false }) {
   const { profile, updateProfile, reload } = useProfile();
@@ -468,6 +471,21 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
           <InterfaceSettings />
         </Section>
 
+        {/* APPS (0.8) */}
+        <Section id="apps" title="Apps" description="Programas e atalhos que a G.W.E.N. abre: pelo Início, pelo Ctrl + K ou junto com um projeto.">
+          <AppsSettings />
+        </Section>
+
+        {/* MAPEAMENTO (0.8) */}
+        <Section id="atividade" title="Mapeamento de apps e jogos" description="Quanto tempo vai para cada programa, com alertas de jogo e de trabalho seguido.">
+          <ActivitySettings />
+        </Section>
+
+        {/* INTEGRAÇÕES (0.9) */}
+        <Section id="integracoes" title="Integrações" description="Serviços de fora que a G.W.E.N. consulta.">
+          <GithubSettings />
+        </Section>
+
         {/* MODO SAÚDE */}
         <Section
           id="saude"
@@ -601,6 +619,7 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
         <Section id="sistema" title="Sistema" description="Como a G.W.E.N. se encaixa no seu computador.">
           <AutostartToggle />
           <TrayToggle />
+          <ParallelToggle />
           <div className="flex gap-2 items-end">
             <label className="field flex-1">
               <span className="field-label">Caminho do Git Bash</span>
@@ -723,6 +742,72 @@ function InterfaceSettings() {
         </span>
       </label>
     </>
+  );
+}
+
+/** Token do GitHub (0.9): para ler Issues de repositórios privados e com limite maior */
+function GithubSettings() {
+  const toast = useToast();
+  const [token, setToken] = useState(githubToken);
+  const saved = githubToken();
+  return (
+    <div className="card p-4">
+      <p className="font-display font-semibold flex items-center gap-2">
+        <GithubLogo size={16} /> GitHub
+      </p>
+      <p className="text-[12px] text-muted mt-1 mb-3 leading-relaxed">
+        A tela de Tarefas traz as Issues do repositório de cada projeto (pelo link do GitHub cadastrado nele). Repositórios públicos
+        funcionam sem nada. Para os privados, crie um token em GitHub, Settings, Developer settings, Fine-grained tokens, com acesso aos
+        seus repositórios e a permissão <span className="mono text-bone">Issues: Read-only</span>. O token fica só neste computador.
+      </p>
+      <div className="flex gap-2">
+        <input
+          className="input mono text-[12px]"
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="github_pat_..."
+          autoComplete="off"
+        />
+        <button
+          className="btn btn-ghost"
+          disabled={token.trim() === saved}
+          onClick={() => {
+            setGithubToken(token.trim());
+            toast(token.trim() ? 'Token do GitHub salvo neste computador.' : 'Token do GitHub removido.');
+          }}
+        >
+          <Label>{token.trim() ? 'Salvar' : 'Remover'}</Label>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Sessões em paralelo (0.8): ligado, começar outro projeto não encerra os abertos */
+function ParallelToggle() {
+  const toast = useToast();
+  const [on, setOn] = useState(parallelSessionsEnabled);
+  return (
+    <label className="card p-4 flex items-center gap-4 mb-4 cursor-pointer">
+      <input
+        type="checkbox"
+        className="w-4 h-4 accent-[var(--c-phosphor)]"
+        checked={on}
+        onChange={() => {
+          const next = !on;
+          setParallelSessions(next);
+          setOn(next);
+          toast(next ? 'Começar outro projeto mantém os que já estão abertos.' : 'Começar outro projeto encerra o que estiver aberto.');
+        }}
+      />
+      <span className="flex-1">
+        <span className="block font-display font-semibold">Sessões em paralelo</span>
+        <span className="block text-[12px] text-muted mt-0.5">
+          Ligado, dá para ter vários projetos rodando ao mesmo tempo. Hoje e semana contam o tempo de relógio, sem somar a mesma hora duas vezes; cada projeto conta o seu tempo inteiro.
+        </span>
+      </span>
+    </label>
   );
 }
 

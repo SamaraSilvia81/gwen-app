@@ -22,7 +22,15 @@ export function greeting(date) {
 /** Barra de cima (0.7): caminho da tela à esquerda, sessão e ações à direita. */
 export default function Topbar({ view = 'inicio', filter = 'all' }) {
   const { profile, updateProfile } = useProfile();
-  const { activeSession, activeBreak, projects, categories, requestEnd, startBreak } = useWorkspace();
+  const { activeSession, activeSessions, activeBreak, projects, categories, requestEnd, startBreak } = useWorkspace();
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const sessionsRef = useRef(null);
+  useEffect(() => {
+    if (!sessionsOpen) return;
+    const close = (e) => !sessionsRef.current?.contains(e.target) && setSessionsOpen(false);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [sessionsOpen]);
   const toast = useToast();
   const now = useNow(1000);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,7 +44,9 @@ export default function Topbar({ view = 'inicio', filter = 'all' }) {
   }, [menuOpen]);
 
   const project = activeSession && projects.find((p) => p.id === activeSession.project_id);
-  const elapsed = activeSession ? sessionSeconds(activeSession, now, activeBreak) : 0;
+  // com várias sessões, o relógio da pílula é o da aberta há mais tempo
+  const oldest = activeSessions[activeSessions.length - 1] || null;
+  const elapsed = activeSessions.length > 1 ? sessionSeconds(oldest, now, activeBreak) : activeSession ? sessionSeconds(activeSession, now, activeBreak) : 0;
 
   async function handleBreak(kind) {
     setMenuOpen(false);
@@ -56,8 +66,8 @@ export default function Topbar({ view = 'inicio', filter = 'all' }) {
     }
   }
 
-  function handleEnd() {
-    requestEnd();
+  function handleEnd(id) {
+    requestEnd(id);
   }
 
   return (
@@ -75,7 +85,46 @@ export default function Topbar({ view = 'inicio', filter = 'all' }) {
       </nav>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        {activeSession ? (
+        {activeSessions.length > 1 ? (
+          // várias sessões em paralelo (0.8): a pílula mostra quantas e abre a lista
+          <div className="relative" ref={sessionsRef}>
+            <button className="session-pill pr-2.5" onClick={() => setSessionsOpen((v) => !v)} aria-expanded={sessionsOpen}>
+              <span className="w-2 h-2 rounded-full bg-phosphor anim-breathe shrink-0" />
+              <span className="text-[13px] font-medium">{activeSessions.length} sessões</span>
+              <span className="mono text-[13px] tabular text-phosphor">{formatClock(elapsed)}</span>
+              <CaretDown size={11} />
+            </button>
+            {sessionsOpen && (
+              <div className="card absolute right-0 top-[calc(100%+6px)] w-[300px] p-1.5 shadow-2xl anim-rise z-50">
+                <p className="eyebrow px-2.5 pt-1 pb-1.5">em andamento</p>
+                {activeSessions.map((s) => {
+                  const p = projects.find((x) => x.id === s.project_id);
+                  return (
+                    <div key={s.id} className="flex items-center gap-2 h-10 px-2.5 rounded-ui-sm hover:bg-[var(--c-phosphor-8)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-phosphor shrink-0" />
+                      <span className="flex-1 min-w-0 text-[13px] truncate">
+                        {p?.name || 'Projeto'}
+                        {s.front && <span className="text-muted"> · {s.front}</span>}
+                      </span>
+                      <span className="mono text-[12px] tabular text-phosphor">{formatClock(sessionSeconds(s, now, activeBreak))}</span>
+                      <button
+                        className="btn btn-quiet btn-icon btn-xs"
+                        onClick={() => {
+                          setSessionsOpen(false);
+                          requestEnd(s.id);
+                        }}
+                        title="Encerrar esta sessão"
+                        aria-label={`Encerrar ${p?.name || 'sessão'}`}
+                      >
+                        <Stop size={12} weight="fill" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : activeSession ? (
           <div className="session-pill">
             <span className="w-2 h-2 rounded-full bg-phosphor anim-breathe shrink-0" />
             <span className="text-[13px] font-medium max-w-[200px] truncate max-[760px]:hidden" title={project?.name}>
@@ -85,7 +134,7 @@ export default function Topbar({ view = 'inicio', filter = 'all' }) {
             <span className="mono text-[13px] tabular text-phosphor" title={`Desde ${formatHour(activeSession.started_at)}`}>
               {formatClock(elapsed)}
             </span>
-            <button className="btn btn-quiet btn-icon btn-sm" onClick={handleEnd} title="Encerrar sessão" aria-label="Encerrar sessão">
+            <button className="btn btn-quiet btn-icon btn-sm" onClick={() => handleEnd(activeSession.id)} title="Encerrar sessão" aria-label="Encerrar sessão">
               <Stop size={14} weight="fill" />
             </button>
           </div>

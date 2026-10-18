@@ -40,6 +40,8 @@
 | [`ADR-010`](decisoes/ADR-010-dados-locais-primeiro.md) | Dados locais primeiro | Decisão | Aceita |
 | [`ADR-011`](decisoes/ADR-011-shell-em-trilho-e-saude-com-fonte.md) | Shell em trilho e saúde com fonte | Decisão | Aceita |
 | [`ADR-012`](decisoes/ADR-012-codigo-proprietario.md) | Código proprietário | Decisão | Aceita |
+| [`ADR-013`](decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md) | Sessões em paralelo e mapeamento local | Decisão | Aceita |
+| [`ADR-014`](decisoes/ADR-014-tarefas-locais-e-issues-somente-leitura.md) | Tarefas locais e Issues somente leitura | Decisão | Aceita |
 
 ### $ como os documentos se organizam
 

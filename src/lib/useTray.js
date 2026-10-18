@@ -44,7 +44,8 @@ function trayItems(projects) {
   return items.slice(0, MAX_ITEMS);
 }
 
-export function useTray({ projects, activeSession, activeBreak, now, launchProject, requestEnd, toast }) {
+export function useTray({ projects, activeSessions = [], activeBreak, now, launchProject, requestEnd, toast }) {
+  const activeSession = activeSessions[0] || null;
   // os handlers mudam a cada render; os listeners leem sempre a versão atual
   const latest = useRef({});
   latest.current = { projects, launchProject, requestEnd, toast };
@@ -84,7 +85,9 @@ export function useTray({ projects, activeSession, activeBreak, now, launchProje
   }, []);
 
   const project = activeSession && projects.find((p) => p.id === activeSession.project_id);
-  const activeLabel = project ? `${project.name}${activeSession.front ? ` · ${activeSession.front}` : ''}` : null;
+  const activeLabel = project
+    ? `${project.name}${activeSession.front ? ` · ${activeSession.front}` : ''}${activeSessions.length > 1 ? ` + ${activeSessions.length - 1}` : ''}`
+    : null;
   const minutes = activeSession ? Math.floor(sessionSeconds(activeSession, now, activeBreak) / 60) : 0;
   const itemsKey = JSON.stringify(trayItems(projects));
 

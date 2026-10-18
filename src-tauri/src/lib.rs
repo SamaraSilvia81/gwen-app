@@ -28,7 +28,7 @@ fn path_exists(path: String) -> bool {
 }
 
 /// Abre uma pasta com a ação escolhida no cadastro do projeto.
-/// `action`: "vscode" | "explorer" | "gitbash"
+/// `action`: "vscode" | "explorer" | "gitbash" | "terminal" | "powershell"
 #[tauri::command]
 fn open_folder(action: String, path: String, git_bash_path: Option<String>) -> Result<(), String> {
     if !Path::new(&path).exists() {
@@ -39,6 +39,8 @@ fn open_folder(action: String, path: String, git_bash_path: Option<String>) -> R
         "vscode" => open_vscode(&path),
         "explorer" => open_explorer(&path),
         "gitbash" => open_git_bash(&path, git_bash_path),
+        "terminal" => open_windows_terminal(&path),
+        "powershell" => open_powershell(&path),
         other => return Err(format!("Ação desconhecida: {other}")),
     };
 
@@ -226,6 +228,169 @@ fn open_git_bash(path: &str, _custom: Option<String>) -> std::io::Result<std::pr
         .spawn()
 }
 
+/// Windows Terminal na pasta. Sem ele instalado, cai no PowerShell.
+#[cfg(target_os = "windows")]
+fn open_windows_terminal(path: &str) -> std::io::Result<std::process::Child> {
+    match Command::new("wt.exe").args(["-d", path]).spawn() {
+        Ok(child) => Ok(child),
+        Err(_) => open_powershell(path),
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn open_windows_terminal(path: &str) -> std::io::Result<std::process::Child> {
+    Command::new("x-terminal-emulator").current_dir(path).spawn()
+}
+
+/// PowerShell numa janela própria, já dentro da pasta.
+#[cfg(target_os = "windows")]
+fn open_powershell(path: &str) -> std::io::Result<std::process::Child> {
+    const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+    Command::new("powershell")
+        .args(["-NoLogo", "-NoExit"])
+        .current_dir(path)
+        .creation_flags(CREATE_NEW_CONSOLE)
+        .spawn()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn open_powershell(path: &str) -> std::io::Result<std::process::Child> {
+    Command::new("x-terminal-emulator").current_dir(path).spawn()
+}
+
+/* ─── LANÇADOR DE APPS (0.8) ─── */
+
+/// Endereço de protocolo (discord://, whatsapp:, spotify:) e não caminho (C:\...)
+fn is_protocol(target: &str) -> bool {
+    match target.find(':') {
+        Some(i) if i > 1 => target[..i].chars().all(|c| c.is_ascii_alphanumeric() || "+.-".contains(c)),
+        _ => false,
+    }
+}
+
+/// Abre um app cadastrado: um executável (com argumentos e pasta opcionais)
+/// ou um protocolo como `discord://`. Protocolos vão pelo explorer, que entrega
+/// ao app registrado no Windows sem passar pelo cmd (o `&` não quebra nada).
+#[tauri::command]
+fn launch_app(target: String, args: Option<String>, cwd: Option<String>) -> Result<(), String> {
+    let target = target.trim().trim_matches('"').to_string();
+    if target.is_empty() {
+        return Err("App sem caminho".into());
+    }
+    if is_protocol(&target) {
+        #[cfg(target_os = "windows")]
+        let spawned = Command::new("explorer").arg(&target).spawn();
+        #[cfg(not(target_os = "windows"))]
+        let spawned = Command::new("xdg-open").arg(&target).spawn();
+        return spawned.map(|_| ()).map_err(|e| e.to_string());
+    }
+    let mut cmd = Command::new(&target);
+    if let Some(a) = args.filter(|a| !a.trim().is_empty()) {
+        cmd.args(split_args(&a));
+    }
+    if let Some(dir) = cwd.filter(|d| Path::new(d).is_dir()) {
+        cmd.current_dir(dir);
+    }
+    cmd.spawn().map(|_| ()).map_err(|e| format!("Não consegui abrir {target}: {e}"))
+}
+
+/// Separa argumentos por espaço, respeitando trechos entre aspas
+fn split_args(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut cur = String::new();
+    let mut quoted = false;
+    for c in s.chars() {
+        match c {
+            '"' => quoted = !quoted,
+            ' ' if !quoted => {
+                if !cur.is_empty() {
+                    out.push(std::mem::take(&mut cur));
+                }
+            }
+            _ => cur.push(c),
+        }
+    }
+    if !cur.is_empty() {
+        out.push(cur);
+    }
+    out
+}
+
+/* ─── MAPEAMENTO DE APPS (0.8) ─── */
+
+/// App em primeiro plano. O título da janela não é lido de propósito:
+/// só o nome do executável e o caminho, para classificar (trabalho, jogo...).
+#[derive(serde::Serialize, Default)]
+struct ForegroundApp {
+    exe: String,
+    path: String,
+    /// segundos desde o último toque no teclado ou no mouse
+    idle_seconds: u32,
+}
+
+#[cfg(target_os = "windows")]
+mod activity {
+    use super::ForegroundApp;
+
+    pub fn foreground() -> Option<ForegroundApp> {
+        use windows_sys::Win32::Foundation::CloseHandle;
+        use windows_sys::Win32::System::Threading::{
+            OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
+        };
+        use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.is_null() {
+                return None;
+            }
+            let mut pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, &mut pid);
+            if pid == 0 {
+                return None;
+            }
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if handle.is_null() {
+                return None;
+            }
+            let mut buf = [0u16; 1024];
+            let mut len = buf.len() as u32;
+            let ok = QueryFullProcessImageNameW(handle, PROCESS_NAME_WIN32, buf.as_mut_ptr(), &mut len);
+            CloseHandle(handle);
+            if ok == 0 {
+                return None;
+            }
+            let path = String::from_utf16_lossy(&buf[..len as usize]);
+            let exe = path.rsplit(['\\', '/']).next().unwrap_or(&path).to_string();
+            Some(ForegroundApp { exe, path, idle_seconds: idle_seconds() })
+        }
+    }
+
+    pub fn idle_seconds() -> u32 {
+        use windows_sys::Win32::System::SystemInformation::GetTickCount;
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+        unsafe {
+            let mut info = LASTINPUTINFO { cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32, dwTime: 0 };
+            if GetLastInputInfo(&mut info) == 0 {
+                return 0;
+            }
+            GetTickCount().wrapping_sub(info.dwTime) / 1000
+        }
+    }
+}
+
+#[tauri::command]
+fn foreground_app() -> Option<ForegroundApp> {
+    #[cfg(target_os = "windows")]
+    {
+        activity::foreground()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
+}
+
 /* ─── DADOS LOCAIS ─── */
 
 /// Nome do banco. O plugin sql resolve `sqlite:gwen.db` dentro da pasta de
@@ -258,6 +423,18 @@ fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 4,
             description: "projetos fixados",
             sql: include_str!("../migrations/004_fixados.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 5,
+            description: "lancador e atividade",
+            sql: include_str!("../migrations/005_lancador_e_atividade.sql"),
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 6,
+            description: "tarefas",
+            sql: include_str!("../migrations/006_tarefas.sql"),
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
@@ -499,7 +676,9 @@ pub fn run() {
             read_text_file,
             git_info,
             read_readme,
-            run_command
+            run_command,
+            launch_app,
+            foreground_app
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");

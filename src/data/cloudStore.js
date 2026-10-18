@@ -35,6 +35,8 @@ const check = ({ error }) => {
 export const OPTIONAL_COLUMNS = {
   front: '005_gwen_frentes.sql',
   pinned: '006_gwen_fixados.sql',
+  launcher: '007_gwen_v08.sql',
+  apps: '007_gwen_v08.sql',
 };
 export const MISSING_MIGRATION_EVENT = 'gwen:migracao-faltando';
 const missingColumn = (error) => error?.message?.match(/Could not find the '(\w+)' column/)?.[1] || null;

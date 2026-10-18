@@ -4,6 +4,8 @@ import Modal, { Label } from './Modal';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
 import { FOLDER_ACTIONS, gitInfo, isTauri, pickFolder, readReadme, remoteToWebUrl, repoHostLabel } from '../lib/native';
+import { appIcon, resolveLauncher } from '../lib/launcher';
+import { useProfile } from '../context/ProfileContext';
 import { summarizeReadme } from '../lib/readme';
 import { STATUS } from '../lib/stats';
 import { folderActions, projectFronts } from '../lib/projectModel';
@@ -19,6 +21,8 @@ const baseName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || '';
 
 export default function ProjectForm({ project, defaultCategory, onClose }) {
   const { categories, saveProject, deleteProject } = useWorkspace();
+  const { profile } = useProfile();
+  const registeredApps = resolveLauncher(profile?.launcher).apps;
   const toast = useToast();
   const [initial] = useState(() => {
     const fresh = {
@@ -30,6 +34,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
         ? project.folders.map((f) => ({ ...f, actions: folderActions(f), front: f.front || '', command: f.command || '' }))
         : [emptyFolder()],
       links: (project?.links || []).map((l) => ({ ...l, front: l.front || '' })),
+      apps: Array.isArray(project?.apps) ? project.apps : [],
     };
     if (project) return { draft: fresh, restored: false };
     const saved = readDraft();
@@ -350,6 +355,38 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
             ))}
             {draft.links.length === 0 && <p className="text-[12px] text-muted">Nenhum link ainda.</p>}
           </div>
+        </section>
+
+        {/* APPS (0.8) */}
+        <section>
+          <div className="mb-2">
+            <p className="field-label">Apps</p>
+            <p className="text-[12px] text-muted mt-1">
+              Abrem junto no Começar agora. Cadastre os seus (Discord, WhatsApp, Spotify...) em Ajustes, Apps.
+            </p>
+          </div>
+          {registeredApps.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {registeredApps.map((a) => {
+                const on = (draft.apps || []).includes(a.id);
+                const Icon = appIcon(a);
+                return (
+                  <button
+                    type="button"
+                    key={a.id}
+                    className={`btn btn-sm ${on ? 'btn-accent' : 'btn-ghost'}`}
+                    aria-pressed={on}
+                    onClick={() => set({ apps: on ? draft.apps.filter((x) => x !== a.id) : [...(draft.apps || []), a.id] })}
+                  >
+                    <Icon size={13} />
+                    {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted">Nenhum app cadastrado ainda.</p>
+          )}
         </section>
       </form>
     </Modal>

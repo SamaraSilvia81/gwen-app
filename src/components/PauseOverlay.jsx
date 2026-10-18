@@ -13,7 +13,7 @@ import { Label } from './Modal';
  * já descansou, e chegar a 100% não te expulsa da pausa.
  */
 export default function PauseOverlay() {
-  const { activeBreak, activeSession, projects, endBreak } = useWorkspace();
+  const { activeBreak, activeSession, activeSessions, projects, endBreak } = useWorkspace();
   const toast = useToast();
   const now = useNow(1000);
   const [leaving, setLeaving] = useState(false);
@@ -24,7 +24,8 @@ export default function PauseOverlay() {
   const elapsed = secondsBetween(activeBreak.started_at, now);
   const charge = Math.min(1, elapsed / (kind.target * 60));
   const pct = Math.floor(charge * 100);
-  const project = activeSession && projects.find((p) => p.id === activeSession.project_id);
+  // com várias sessões abertas, a pausa vale para todas (0.8)
+  const project = activeSessions.length === 1 ? projects.find((p) => p.id === activeSession.project_id) : null;
   const Icon = kind.icon;
 
   async function handleBack() {
@@ -89,8 +90,10 @@ export default function PauseOverlay() {
           <ArrowArcLeft size={16} />
           <Label>{project ? `Voltar para ${project.name}` : 'Voltar'}</Label>
         </button>
-        {project && (
-          <p className="mt-3 text-[12px] text-muted">O tempo da pausa não conta na sessão.</p>
+        {activeSessions.length > 0 && (
+          <p className="mt-3 text-[12px] text-muted">
+            {activeSessions.length > 1 ? `O tempo da pausa não conta nas ${activeSessions.length} sessões abertas.` : 'O tempo da pausa não conta na sessão.'}
+          </p>
         )}
       </div>
     </div>

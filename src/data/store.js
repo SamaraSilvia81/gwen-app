@@ -12,12 +12,13 @@ import { isTauri } from '../lib/native';
 import { isAccountMode } from '../lib/cloudConfig';
 import { cloudStore } from './cloudStore';
 
-export const TABLES = ['profiles', 'categories', 'projects', 'sessions', 'breaks', 'wellness_events'];
+export const TABLES = ['profiles', 'categories', 'projects', 'sessions', 'breaks', 'wellness_events', 'tasks'];
 
 /** Colunas guardadas como texto JSON no SQLite */
 const JSON_COLUMNS = {
-  profiles: ['custom_colors', 'wellness'],
-  projects: ['folders', 'links'],
+  profiles: ['custom_colors', 'wellness', 'launcher'],
+  projects: ['folders', 'links', 'apps'],
+  tasks: ['labels', 'github'],
 };
 
 const parseRow = (table, row) => {
@@ -119,6 +120,16 @@ const browserStore = {
 };
 
 const localStore = isTauri ? sqlStore : browserStore;
+
+/**
+ * Dados que ficam sempre no computador, mesmo no modo conta (0.8):
+ * o tempo por app do mapeamento. Ver ADR-013.
+ */
+export const deviceStore = {
+  all: (table) => localStore.all(table),
+  insert: (table, row) => localStore.insert(table, row),
+  update: (table, id, patch) => localStore.update(table, id, patch),
+};
 
 /**
  * Local (SQLite) por padrão. No modo conta, os dados vão para a nuvem.

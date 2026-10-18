@@ -1,5 +1,5 @@
 import { Coffee, Drop, Eye, Laptop, PersonSimpleTaiChi } from '@phosphor-icons/react';
-import { sessionSeconds } from './time';
+import { unionSeconds } from './time';
 
 /**
  * Hábitos e atividade por dia (0.7), para os mapas de calor do perfil e da home.
@@ -48,12 +48,29 @@ export function weekGrid(weeks, today = new Date()) {
   return cols;
 }
 
-/** Minutos trabalhados por dia (a sessão conta no dia em que começou) */
+/**
+ * Minutos trabalhados por dia, em tempo de relógio: sessões em paralelo não
+ * somam a mesma hora duas vezes, e uma sessão que passa da meia-noite é
+ * dividida entre os dois dias.
+ */
 export function minutesByDay(sessions, now = new Date(), activeBreak = null) {
-  const map = new Map();
+  const byDay = new Map();
   for (const s of sessions) {
-    const k = dayKey(s.started_at);
-    map.set(k, (map.get(k) || 0) + sessionSeconds(s, now, activeBreak) / 60);
+    const end = s.ended_at ? new Date(s.ended_at) : new Date(now);
+    const cursor = startOfDay(s.started_at);
+    while (cursor < end) {
+      const k = dayKey(cursor);
+      if (!byDay.has(k)) byDay.set(k, { from: new Date(cursor), list: [] });
+      byDay.get(k).list.push(s);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+  const map = new Map();
+  for (const [k, { from, list }] of byDay) {
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+    const minutes = unionSeconds(list, from, to, now, activeBreak) / 60;
+    if (minutes > 0) map.set(k, minutes);
   }
   return map;
 }

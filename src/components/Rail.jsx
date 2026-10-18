@@ -1,4 +1,4 @@
-import { ChartBar, GearSix, House, Lightning, SidebarSimple, SquaresFour, UserCircle } from '@phosphor-icons/react';
+import { ChartBar, GearSix, House, Kanban, Lightning, SidebarSimple, SquaresFour, UserCircle } from '@phosphor-icons/react';
 import Logo from './Logo';
 import Avatar from './Avatar';
 import { useProfile } from '../context/ProfileContext';
@@ -12,12 +12,13 @@ import { openQuickLaunch } from './QuickLaunch';
 export const VIEWS = {
   inicio: { label: 'Início', icon: House },
   projetos: { label: 'Projetos', icon: SquaresFour },
+  tarefas: { label: 'Tarefas', icon: Kanban },
   relatorio: { label: 'Relatório', icon: ChartBar },
   perfil: { label: 'Perfil', icon: UserCircle },
   config: { label: 'Ajustes', icon: GearSix, title: 'Configurações' },
 };
 
-const TOP = ['inicio', 'projetos', 'relatorio', 'perfil'];
+const TOP = ['inicio', 'projetos', 'tarefas', 'relatorio', 'perfil'];
 
 export default function Rail({ view, onNavigate, panelOpen, onTogglePanel }) {
   const { profile } = useProfile();

@@ -5,6 +5,8 @@ import { useToast } from './ToastContext';
 import { openFolder, openLink, normalizeUrl, runCommand } from '../lib/native';
 import { secondsBetween, startOfWeek } from '../lib/time';
 import { folderActions, inFront } from '../lib/projectModel';
+import { launchApp } from '../lib/launcher';
+import { parallelSessionsEnabled } from '../lib/layout';
 
 /** Sessão sem sinal do app há mais que isso é considerada esquecida */
 const STALE_AFTER_MIN = 15;
@@ -19,11 +21,15 @@ export function WorkspaceProvider({ children }) {
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
   const [sessions, setSessions] = useState([]); // desta semana
-  const [activeSession, setActiveSession] = useState(null);
+  // 0.8: várias sessões abertas ao mesmo tempo, da mais recente para a mais antiga
+  const [activeSessions, setActiveSessions] = useState([]);
+  const activeSession = activeSessions[0] || null;
   const [activeBreak, setActiveBreak] = useState(null);
-  const [staleSession, setStaleSession] = useState(null);
+  const [staleSessions, setStaleSessions] = useState([]);
+  const staleSession = staleSessions[0] || null;
   const [notes, setNotes] = useState(() => new Map()); // "onde parei" por projeto
-  const [endingSession, setEndingSession] = useState(false); // pergunta do "onde parei" aberta
+  // pergunta do "onde parei" aberta: null | id da sessão | 'escolher' (várias abertas)
+  const [endingSession, setEndingSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const checkedStale = useRef(false);
 
@@ -32,7 +38,7 @@ export function WorkspaceProvider({ children }) {
       categoryRepo.list(),
       projectRepo.list(),
       sessionRepo.since(startOfWeek()),
-      sessionRepo.active(),
+      sessionRepo.activeAll(),
       breakRepo.active(),
       sessionRepo.latestNotes().catch(() => new Map()),
     ]);
@@ -40,7 +46,7 @@ export function WorkspaceProvider({ children }) {
     setCategories(cats);
     setProjects(projs);
     setSessions(week);
-    setActiveSession(current);
+    setActiveSessions(current);
     setActiveBreak(brk);
     return { current };
   }, []);
@@ -53,9 +59,8 @@ export function WorkspaceProvider({ children }) {
       .then(({ current }) => {
         if (!alive) return;
         // sessão aberta sem sinal recente = o app foi fechado com ela rodando
-        if (!checkedStale.current && current) {
-          const idleMin = secondsBetween(current.last_seen_at, new Date()) / 60;
-          if (idleMin > STALE_AFTER_MIN) setStaleSession(current);
+        if (!checkedStale.current && current.length) {
+          setStaleSessions(current.filter((s) => secondsBetween(s.last_seen_at, new Date()) / 60 > STALE_AFTER_MIN));
         }
         checkedStale.current = true;
       })
@@ -66,12 +71,20 @@ export function WorkspaceProvider({ children }) {
     };
   }, [user, refresh, toast]);
 
-  // sinal de vida enquanto a G.W.E.N. está aberta
+  // sinal de vida enquanto a G.W.E.N. está aberta (para todas as sessões abertas)
+  const openIds = activeSessions.map((x) => x.id).join('|');
   useEffect(() => {
-    if (!activeSession || staleSession) return;
-    const id = setInterval(() => sessionRepo.heartbeat(activeSession.id).catch(() => {}), HEARTBEAT_MS);
+    if (!openIds || staleSession) return;
+    const ids = openIds.split('|');
+    const id = setInterval(() => ids.forEach((sid) => sessionRepo.heartbeat(sid).catch(() => {})), HEARTBEAT_MS);
     return () => clearInterval(id);
-  }, [activeSession, staleSession]);
+  }, [openIds, staleSession]);
+
+  const replaceActive = (s) =>
+    setActiveSessions((list) => {
+      const others = list.filter((x) => x.id !== s.id);
+      return s.ended_at ? others : [s, ...others].sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)));
+    });
 
   const replaceSession = (s) =>
     setSessions((list) => {
@@ -114,22 +127,27 @@ export function WorkspaceProvider({ children }) {
     await projectRepo.remove(id);
     setProjects((list) => list.filter((p) => p.id !== id));
     setSessions((list) => list.filter((s) => s.project_id !== id));
-    setActiveSession((s) => (s?.project_id === id ? null : s));
+    setActiveSessions((list) => list.filter((s) => s.project_id !== id));
   }, []);
 
   /* ─── PAUSAS ─── */
+  /** A pausa vale para todas as sessões abertas: cada uma ganha o trecho em comum como pausa */
   const endBreak = useCallback(async (endedAt = new Date()) => {
     if (!activeBreak) return;
     const ended = await breakRepo.end(activeBreak.id, endedAt);
-    if (ended.session_id) {
-      const seconds = secondsBetween(ended.started_at, ended.ended_at);
-      const s = await sessionRepo.addPaused(ended.session_id, seconds);
-      setActiveSession((cur) => (cur?.id === s.id ? s : cur));
+    const bStart = new Date(ended.started_at).getTime();
+    const bEnd = new Date(ended.ended_at).getTime();
+    for (const open of activeSessions) {
+      const from = Math.max(bStart, new Date(open.started_at).getTime());
+      const seconds = (bEnd - from) / 1000;
+      if (seconds <= 0) continue;
+      const s = await sessionRepo.addPaused(open.id, seconds);
+      replaceActive(s);
       replaceSession(s);
     }
     setActiveBreak(null);
     return ended;
-  }, [activeBreak]);
+  }, [activeBreak, activeSessions]);
 
   const startBreak = useCallback(async (kind) => {
     if (activeBreak) await endBreak();
@@ -138,12 +156,19 @@ export function WorkspaceProvider({ children }) {
   }, [activeBreak, activeSession, endBreak]);
 
   /* ─── SESSÕES ─── */
-  const endSession = useCallback(async (endedAt = new Date(), note = undefined) => {
-    if (!activeSession) return;
-    if (activeBreak?.session_id === activeSession.id) await endBreak(endedAt);
-    const ended = await sessionRepo.end(activeSession.id, endedAt, note);
+  /** Encerra uma sessão (por id; sem id, a mais recente). As outras continuam. */
+  const endSession = useCallback(async (endedAt = new Date(), note = undefined, sessionId = null) => {
+    const target = sessionId ? activeSessions.find((x) => x.id === sessionId) : activeSession;
+    if (!target) return;
+    // pausa aberta: esta sessão leva o trecho de pausa até agora; a pausa segue para as outras
+    if (activeBreak) {
+      const from = Math.max(new Date(activeBreak.started_at).getTime(), new Date(target.started_at).getTime());
+      const seconds = (new Date(endedAt).getTime() - from) / 1000;
+      if (seconds > 0) await sessionRepo.addPaused(target.id, seconds);
+    }
+    const ended = await sessionRepo.end(target.id, endedAt, note);
     replaceSession(ended);
-    setActiveSession(null);
+    replaceActive(ended);
     if (note !== undefined) {
       setNotes((m) => {
         const next = new Map(m);
@@ -153,23 +178,30 @@ export function WorkspaceProvider({ children }) {
       });
     }
     return ended;
-  }, [activeSession, activeBreak, endBreak]);
+  }, [activeSession, activeSessions, activeBreak, endBreak]);
 
-  /** Encerrar pela interface: abre a pergunta "onde parei?" antes */
-  const requestEnd = useCallback(() => {
-    if (activeSession) setEndingSession(true);
-  }, [activeSession]);
-  const cancelEnd = useCallback(() => setEndingSession(false), []);
+  /** Encerrar pela interface: abre a pergunta "onde parei?" antes.
+   *  Sem id e com várias abertas, a pergunta começa escolhendo qual encerrar. */
+  const requestEnd = useCallback((sessionId = null) => {
+    if (!activeSessions.length) return;
+    const id = typeof sessionId === 'string' ? sessionId : null;
+    if (id) setEndingSession(id);
+    else setEndingSession(activeSessions.length === 1 ? activeSessions[0].id : 'escolher');
+  }, [activeSessions]);
+  const cancelEnd = useCallback(() => setEndingSession(null), []);
 
   const startSession = useCallback(async (projectId, front = null) => {
-    if (activeSession?.project_id === projectId && (activeSession.front || null) === (front || null)) return activeSession;
-    if (activeSession) await endSession();
+    const same = activeSessions.find((x) => x.project_id === projectId && (x.front || null) === (front || null));
+    if (same) return same;
+    const exclusive = !parallelSessionsEnabled();
+    if (exclusive) for (const x of activeSessions) await endSession(new Date(), undefined, x.id);
     if (activeBreak) await endBreak();
-    const s = await sessionRepo.start(projectId, front);
-    setActiveSession(s);
+    const s = await sessionRepo.start(projectId, front, { exclusive });
+    if (exclusive) setActiveSessions([s]);
+    else replaceActive(s);
     replaceSession(s);
     return s;
-  }, [activeSession, activeBreak, endSession, endBreak]);
+  }, [activeSessions, activeBreak, endSession, endBreak]);
 
   /** "Começar agora": abre o que está marcado para abrir e inicia a sessão.
    *  Com `front`, abre só os itens dessa frente (e os que valem para todas). */
@@ -190,6 +222,13 @@ export function WorkspaceProvider({ children }) {
         } catch (err) {
           errors.push(`${folder.command}: ${err?.message || err}`);
         }
+      }
+    }
+    for (const appId of project.apps || []) {
+      try {
+        await launchApp(appId, profile?.launcher);
+      } catch (err) {
+        errors.push(`${appId}: ${err?.message || err}`);
       }
     }
     for (const link of project.links || []) {
@@ -220,13 +259,14 @@ export function WorkspaceProvider({ children }) {
   const resolveStale = useCallback(async (choice, minutes) => {
     const s = staleSession;
     if (!s) return;
+    const next = () => setStaleSessions((list) => list.filter((x) => x.id !== s.id));
     if (choice === 'continue') {
       // o tempo com o app fechado não conta: entra como pausa
       const gap = secondsBetween(s.last_seen_at, new Date());
       const updated = await sessionRepo.addPaused(s.id, gap);
-      setActiveSession(updated);
+      replaceActive(updated);
       replaceSession(updated);
-      setStaleSession(null);
+      next();
       return;
     }
     let endedAt;
@@ -239,8 +279,8 @@ export function WorkspaceProvider({ children }) {
     }
     const ended = await sessionRepo.end(s.id, endedAt);
     replaceSession(ended);
-    setActiveSession(null);
-    setStaleSession(null);
+    replaceActive(ended);
+    next();
     toast('Sessão corrigida.');
   }, [staleSession, activeBreak, endBreak, toast]);
 
@@ -251,6 +291,7 @@ export function WorkspaceProvider({ children }) {
       projects,
       sessions,
       activeSession,
+      activeSessions,
       activeBreak,
       staleSession,
       notes,
@@ -271,7 +312,7 @@ export function WorkspaceProvider({ children }) {
       endBreak,
       resolveStale,
     }),
-    [loading, categories, projects, sessions, activeSession, activeBreak, staleSession, notes, endingSession, requestEnd,
+    [loading, categories, projects, sessions, activeSession, activeSessions, activeBreak, staleSession, notes, endingSession, requestEnd,
       cancelEnd, refresh, createCategory,
       renameCategory, deleteCategory, saveProject, togglePin, deleteProject, launchProject, startSession, endSession,
       startBreak, endBreak, resolveStale],

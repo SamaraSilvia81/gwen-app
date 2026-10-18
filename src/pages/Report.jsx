@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChartBar, DownloadSimple } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, ChartBar, DownloadSimple, GameController } from '@phosphor-icons/react';
+import { useProfile } from '../context/ProfileContext';
+import Timeline from '../components/Timeline';
+import { CATEGORIES, appName, usageBetween } from '../lib/activity';
+import { resolveLauncher } from '../lib/launcher';
+import { dayKey } from '../lib/habits';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
 import { sessionRepo } from '../data/repository';
@@ -12,7 +17,34 @@ import { Label } from '../components/Modal';
  * Relatório de tempo: por categoria, projeto e frente, no período escolhido.
  * O CSV tem uma linha por sessão, para abrir no Excel ou no Google Planilhas.
  */
-export default function Report() {
+const TABS = [
+  ['projetos', 'Projetos'],
+  ['linha', 'Linha do tempo'],
+  ['apps', 'Apps e jogos'],
+];
+
+/** Relatório (0.8): projetos, linha do tempo de um dia e tempo por app */
+export default function Report({ onNavigate }) {
+  const [tab, setTab] = useState('projetos');
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="page">
+        <div className="segmented mb-6">
+          {TABS.map(([id, label]) => (
+            <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'projetos' && <ProjectsReport />}
+        {tab === 'linha' && <TimelineReport />}
+        {tab === 'apps' && <AppsReport onNavigate={onNavigate} />}
+      </div>
+    </div>
+  );
+}
+
+function ProjectsReport() {
   const { projects, categories, activeSession, activeBreak, sessions: weekSessions } = useWorkspace();
   const toast = useToast();
   const now = useNow(60_000);
@@ -66,8 +98,7 @@ export default function Report() {
   const fmtRange = `${from.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} a ${new Date(end - 1).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="page">
+    <>
         <section className="flex items-end justify-between gap-4 mb-5 flex-wrap anim-rise">
           <div>
             <p className="eyebrow mb-1">relatório · {fmtRange}</p>
@@ -99,7 +130,11 @@ export default function Report() {
         ) : (
           <>
             <section className="grid grid-cols-4 max-[900px]:grid-cols-2 gap-3 mb-6 anim-rise">
-              <Stat label="Total" value={formatDuration(report.total, { short: true })} hint="descontando pausas" />
+              <Stat
+                label="Total"
+                value={formatDuration(report.total, { short: true })}
+                hint={report.sum - report.total > 60 ? `tempo de relógio · ${formatDuration(report.sum, { short: true })} somando projetos em paralelo` : 'descontando pausas'}
+              />
               <Stat label="Sessões" value={report.count} />
               <Stat label="Dias com trabalho" value={report.days} />
               <Stat label="Média por dia" value={formatDuration(report.total / Math.max(1, report.days), { short: true })} hint="nos dias com trabalho" />
@@ -148,7 +183,183 @@ export default function Report() {
             </div>
           </>
         )}
+    </>
+  );
+}
+
+/** Linha do tempo de um dia: quando cada sessão começou e quais rodaram juntas */
+function TimelineReport() {
+  const { projects, activeBreak, activeSessions } = useWorkspace();
+  const now = useNow(30_000);
+  const [offset, setOffset] = useState(0); // 0 = hoje, 1 = ontem...
+  const [sessions, setSessions] = useState(null);
+  const day = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - offset);
+    return d;
+  }, [offset]);
+
+  useEffect(() => {
+    let alive = true;
+    const end = new Date(day.getTime() + 86_400_000);
+    sessionRepo.between(day, end).then((list) => alive && setSessions(list)).catch(() => alive && setSessions([]));
+    return () => {
+      alive = false;
+    };
+  }, [day, activeSessions.length]);
+
+  const label = offset === 0 ? 'Hoje' : offset === 1 ? 'Ontem' : day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  return (
+    <>
+      <section className="flex items-end justify-between gap-4 mb-5 flex-wrap anim-rise">
+        <div>
+          <p className="eyebrow mb-1">linha do tempo</p>
+          <h1 className="page-title first-letter:uppercase">{label}</h1>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button className="btn btn-ghost btn-icon" onClick={() => setOffset((o) => o + 1)} aria-label="Dia anterior" title="Dia anterior">
+            <CaretLeft size={14} />
+          </button>
+          <button className="btn btn-ghost" onClick={() => setOffset(0)} disabled={offset === 0}>
+            <Label>Hoje</Label>
+          </button>
+          <button className="btn btn-ghost btn-icon" onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0} aria-label="Próximo dia" title="Próximo dia">
+            <CaretRight size={14} />
+          </button>
+        </div>
+      </section>
+      <section className="card p-4 anim-rise">
+        {sessions ? (
+          <Timeline sessions={sessions} projects={projects} day={day} now={now} activeBreak={activeBreak} />
+        ) : (
+          <p className="mono text-[12px] text-muted">carregando<span className="blink">_</span></p>
+        )}
+      </section>
+      <p className="text-[12px] text-muted mt-3">
+        Cada faixa é um projeto (ou frente). Os trechos marcados mostram quando duas sessões rodaram ao mesmo tempo.
+      </p>
+    </>
+  );
+}
+
+const APP_PERIODS = {
+  hoje: { label: 'Hoje', days: 0 },
+  semana: { label: '7 dias', days: 6 },
+  mes: { label: '30 dias', days: 29 },
+};
+
+/** Tempo por app e por categoria, do mapeamento (0.8) */
+function AppsReport({ onNavigate }) {
+  const { profile } = useProfile();
+  const cfg = resolveLauncher(profile?.launcher);
+  const [period, setPeriod] = useState('hoje');
+  const [rows, setRows] = useState(null);
+
+  useEffect(() => {
+    const from = new Date();
+    from.setDate(from.getDate() - APP_PERIODS[period].days);
+    usageBetween(dayKey(from), dayKey(new Date()), cfg.categories).then(setRows).catch(() => setRows([]));
+  }, [period, profile?.launcher]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { total, cats, apps } = useMemo(() => {
+    const byCat = new Map();
+    const byApp = new Map();
+    let sum = 0;
+    for (const r of rows || []) {
+      sum += r.seconds;
+      byCat.set(r.category, (byCat.get(r.category) || 0) + r.seconds);
+      const k = String(r.exe).toLowerCase();
+      const cur = byApp.get(k) || { exe: r.exe, category: r.category, seconds: 0 };
+      cur.seconds += r.seconds;
+      byApp.set(k, cur);
+    }
+    return {
+      total: sum,
+      cats: [...byCat.entries()].map(([id, seconds]) => ({ id, seconds })).sort((a, b) => b.seconds - a.seconds),
+      apps: [...byApp.values()].sort((a, b) => b.seconds - a.seconds),
+    };
+  }, [rows]);
+  const maxApp = Math.max(1, ...apps.map((a) => a.seconds));
+
+  if (!cfg.tracking.enabled && !(rows || []).length) {
+    return (
+      <div className="card p-10 text-center anim-rise">
+        <GameController size={28} className="mx-auto text-muted mb-3" />
+        <p className="font-display font-semibold">O mapeamento de apps está desligado.</p>
+        <p className="text-[13px] text-muted mt-1 max-w-[460px] mx-auto">
+          Ligado, a G.W.E.N. soma quanto tempo vai para cada programa (código, navegador, conversa, jogos...) e avisa quando você passa do limite jogando ou trabalhando sem parar.
+        </p>
+        <button className="btn btn-primary mt-5" onClick={() => onNavigate?.('config', 'atividade')}>
+          <Label>Ligar em Ajustes</Label>
+        </button>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <section className="flex items-end justify-between gap-4 mb-5 flex-wrap anim-rise">
+        <div>
+          <p className="eyebrow mb-1">apps e jogos</p>
+          <h1 className="page-title">{formatDuration(total, { short: true })} no computador</h1>
+        </div>
+        <div className="segmented">
+          {Object.entries(APP_PERIODS).map(([id, p]) => (
+            <button key={id} className={period === id ? 'active' : ''} onClick={() => setPeriod(id)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {!rows ? (
+        <p className="mono text-[12px] text-muted">carregando<span className="blink">_</span></p>
+      ) : !rows.length ? (
+        <div className="card p-8 text-center text-[13px] text-muted">Nada registrado neste período ainda.</div>
+      ) : (
+        <>
+          <section className="card p-4 mb-3 anim-rise">
+            <div className="cat-bar mb-3" aria-hidden="true">
+              {cats.map((c) => (
+                <span key={c.id} style={{ width: `${(c.seconds / total) * 100}%`, background: CATEGORIES[c.id]?.color }} title={CATEGORIES[c.id]?.label} />
+              ))}
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+              {cats.map((c) => {
+                const C = CATEGORIES[c.id] || CATEGORIES.outros;
+                const Icon = C.icon;
+                return (
+                  <div key={c.id} className="flex items-center gap-2 text-[13px]">
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: C.color }} />
+                    <Icon size={14} className="text-muted" />
+                    <span className="flex-1 truncate">{C.label}</span>
+                    <span className="mono text-[11px] text-muted tabular">{formatDuration(c.seconds, { short: true })}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+          <section className="card p-4 anim-rise">
+            <ul className="flex flex-col gap-2.5">
+              {apps.slice(0, 25).map((a) => (
+                <li key={a.exe} className="grid grid-cols-[minmax(110px,200px)_1fr_auto] gap-3 items-center max-[560px]:grid-cols-[1fr_auto]">
+                  <span className="text-[13px] truncate" title={a.exe}>
+                    {appName(a.exe)}
+                    <span className="text-muted"> · {(CATEGORIES[a.category] || CATEGORIES.outros).label.toLowerCase()}</span>
+                  </span>
+                  <span className="h-2 rounded-full bg-[var(--c-phosphor-8)] overflow-hidden max-[560px]:hidden">
+                    <span className="block h-full rounded-full" style={{ width: `${(a.seconds / maxApp) * 100}%`, background: (CATEGORIES[a.category] || CATEGORIES.outros).color }} />
+                  </span>
+                  <span className="mono text-[12px] tabular text-right min-w-[64px]">{formatDuration(a.seconds, { short: true })}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <p className="text-[12px] text-muted mt-3">Para mudar a categoria de um app: Ajustes, Mapeamento. Fica só neste computador.</p>
+        </>
+      )}
+    </>
   );
 }

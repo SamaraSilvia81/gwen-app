@@ -4,6 +4,8 @@ import { ArrowBendDownRight, Lightning, MagnifyingGlass, Stop } from '@phosphor-
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
 import { projectFronts } from '../lib/projectModel';
+import { useProfile } from '../context/ProfileContext';
+import { appIcon, launchApp, resolveLauncher } from '../lib/launcher';
 
 /** Evento para abrir a paleta de outros lugares (botão da topbar) */
 export const OPEN_QUICK_LAUNCH = 'gwen:quick-launch';
@@ -16,7 +18,9 @@ const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
  * Projetos com frentes aparecem uma vez por frente.
  */
 export default function QuickLaunch() {
-  const { projects, activeSession, launchProject, requestEnd, notes } = useWorkspace();
+  const { projects, activeSessions, launchProject, requestEnd, notes } = useWorkspace();
+  const { profile } = useProfile();
+  const apps = resolveLauncher(profile?.launcher).apps;
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -48,7 +52,11 @@ export default function QuickLaunch() {
 
   const items = useMemo(() => {
     const out = [];
-    if (activeSession) out.push({ key: 'end', kind: 'end', label: 'Encerrar a sessão atual' });
+    // uma linha de encerrar por sessão aberta (0.8: podem ser várias)
+    for (const s of activeSessions) {
+      const p = projects.find((x) => x.id === s.project_id);
+      out.push({ key: `end:${s.id}`, kind: 'end', session: s, label: `Encerrar ${p?.name || 'sessão'}${s.front ? ` · ${s.front}` : ''}` });
+    }
     const list = [...projects]
       .filter((p) => p.status !== 'concluido')
       .sort((a, b) => String(b.last_opened_at || '').localeCompare(String(a.last_opened_at || '')));
@@ -57,9 +65,11 @@ export default function QuickLaunch() {
       if (fronts.length > 1) for (const f of fronts) out.push({ key: `${p.id}::${f}`, kind: 'launch', project: p, front: f, label: `${p.name} · ${f}` });
       else out.push({ key: p.id, kind: 'launch', project: p, front: fronts[0] || null, label: p.name });
     }
+    // apps cadastrados em Ajustes > Apps
+    for (const a of apps) out.push({ key: `app:${a.id}`, kind: 'app', app: a, label: `Abrir ${a.name}` });
     const q = fold(query.trim());
     return q ? out.filter((i) => fold(i.label).includes(q)) : out;
-  }, [projects, activeSession, query]);
+  }, [projects, activeSessions, apps, query]);
 
   useEffect(() => {
     listRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest' });
@@ -70,7 +80,15 @@ export default function QuickLaunch() {
   async function choose(item) {
     if (!item) return;
     setOpen(false);
-    if (item.kind === 'end') return requestEnd();
+    if (item.kind === 'end') return requestEnd(item.session.id);
+    if (item.kind === 'app') {
+      try {
+        await launchApp(item.app);
+      } catch (err) {
+        toast(err?.message || String(err), 'error');
+      }
+      return;
+    }
     try {
       await launchProject(item.project, item.front);
     } catch (err) {
@@ -104,7 +122,7 @@ export default function QuickLaunch() {
           <input
             autoFocus
             className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-muted"
-            placeholder="Começar qual projeto?"
+            placeholder="Começar um projeto ou abrir um app"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -117,7 +135,9 @@ export default function QuickLaunch() {
         <ul ref={listRef} className="max-h-[50vh] overflow-y-auto p-1.5" role="listbox">
           {items.map((item, i) => {
             const note = item.project && notes.get(item.project.id)?.note;
-            const running = item.project && activeSession?.project_id === item.project.id && (activeSession.front || null) === (item.front || null);
+            const running =
+              item.project && activeSessions.some((s) => s.project_id === item.project.id && (s.front || null) === (item.front || null));
+            const AppIcon = item.kind === 'app' ? appIcon(item.app) : null;
             return (
               <li key={item.key}>
                 <button
@@ -128,7 +148,13 @@ export default function QuickLaunch() {
                   onClick={() => choose(item)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-ui-sm text-left ${i === index ? 'bg-[var(--c-phosphor-12)]' : ''}`}
                 >
-                  {item.kind === 'end' ? <Stop size={14} weight="fill" className="text-phosphor" /> : <Lightning size={14} weight="fill" className="text-phosphor" />}
+                  {item.kind === 'end' ? (
+                    <Stop size={14} weight="fill" className="text-phosphor" />
+                  ) : AppIcon ? (
+                    <AppIcon size={15} className="text-phosphor" />
+                  ) : (
+                    <Lightning size={14} weight="fill" className="text-phosphor" />
+                  )}
                   <span className="flex-1 min-w-0">
                     <span className="block text-[14px] truncate">{item.label}</span>
                     {note && (

@@ -9,6 +9,8 @@ export const FOLDER_ACTIONS = {
   vscode: { label: 'VS Code' },
   explorer: { label: 'Explorer' },
   gitbash: { label: 'Git Bash' },
+  terminal: { label: 'Terminal' },
+  powershell: { label: 'PowerShell' },
 };
 
 export async function openFolder(action, path, gitBashPath) {

@@ -1,4 +1,4 @@
-import { sessionSeconds, startOfToday, startOfWeek } from './time';
+import { sessionSeconds, startOfToday, startOfWeek, unionSeconds } from './time';
 
 /** Períodos do relatório: [início, fim) */
 export const PERIODS = {
@@ -63,8 +63,17 @@ export function buildReport({ sessions, projects, categories, from, to, now, act
     if (s.front) e.fronts.set(s.front, (e.fronts.get(s.front) || 0) + sec);
   }
 
+  // total e categorias em tempo de relógio (sessões em paralelo não contam duas vezes)
+  const counted = sessions.filter((s) => secondsIn(s, from, to, now, activeBreak) >= 1);
+  const sum = total;
+  total = unionSeconds(counted, from, to, now, activeBreak);
+  for (const g of groups.values()) {
+    g.seconds = unionSeconds(counted.filter((s) => (projById.get(s.project_id)?.category_id || 'none') === g.id), from, to, now, activeBreak);
+  }
+
   const bySeconds = (a, b) => b.seconds - a.seconds;
   return {
+    sum,
     total,
     count,
     days: days.size,

@@ -13,7 +13,7 @@ const EVERY_MS = 6 * 3600 * 1000;
  * Durante uma sessão ativa, avisa que reiniciar encerra o timer na hora do clique.
  */
 export default function UpdateBar() {
-  const { activeSession, endSession } = useWorkspace();
+  const { activeSession, activeSessions, endSession } = useWorkspace();
   const toast = useToast();
   const [update, setUpdate] = useState(null);
   const [notes, setNotes] = useState(false);
@@ -39,7 +39,7 @@ export default function UpdateBar() {
   async function handleInstall() {
     try {
       // a sessão é encerrada antes, para o tempo não ficar "esquecido" durante o reinício
-      if (activeSession) await endSession();
+      for (const s of activeSessions) await endSession(new Date(), undefined, s.id);
       setProgress(0);
       await installUpdate(update, setProgress);
     } catch (err) {

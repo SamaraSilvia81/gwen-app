@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowBendDownRight, ArrowSquareOut, CaretDown, Code, FolderOpen, GitBranch, Hourglass, Lightning, PencilSimple, PushPin, Stop,
-  TerminalWindow,
+  Terminal, TerminalWindow,
 } from '@phosphor-icons/react';
+import { appIcon, launchApp, resolveLauncher } from '../lib/launcher';
+import { Kanban } from '@phosphor-icons/react';
+import { useTasks } from '../context/TasksContext';
+import { openTasks } from '../lib/tasksNav';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
@@ -15,8 +19,8 @@ import { Label } from './Modal';
 
 import { STALE_DAYS } from '../lib/collections';
 
-const ACTION_ICON = { vscode: Code, explorer: FolderOpen, gitbash: TerminalWindow };
-const ACTION_NAME = { vscode: 'VS Code', explorer: 'Explorer', gitbash: 'Git Bash' };
+const ACTION_ICON = { vscode: Code, explorer: FolderOpen, gitbash: TerminalWindow, terminal: Terminal, powershell: TerminalWindow };
+const ACTION_NAME = { vscode: 'VS Code', explorer: 'Explorer', gitbash: 'Git Bash', terminal: 'Windows Terminal', powershell: 'PowerShell' };
 
 /** Uma linha por repositório: branch, alterações, commits sem push, último commit */
 function GitLine({ repo, showLabel }) {
@@ -42,16 +46,24 @@ function GitLine({ repo, showLabel }) {
 }
 
 export default function ProjectCard({ project, time, frontTimes, categoryName, onEdit, focused = false }) {
-  const { activeSession, launchProject, requestEnd, notes, togglePin } = useWorkspace();
+  const { activeSessions, launchProject, requestEnd, notes, togglePin } = useWorkspace();
   const { profile } = useProfile();
+  const { tasks } = useTasks();
+  const openTaskCount = tasks.filter((t) => t.project_id === project.id && t.status !== 'done').length;
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const isActive = activeSession?.project_id === project.id;
+  // pode haver mais de uma sessão aberta (0.8): esta é a do projeto, se houver
+  const mySessions = activeSessions.filter((s) => s.project_id === project.id);
+  const activeSession = mySessions[0] || null;
+  const isActive = !!activeSession;
 
   const folders = project.folders || [];
   const links = project.links || [];
+  // apps cadastrados em Ajustes que este projeto abre (0.8)
+  const registered = resolveLauncher(profile?.launcher).apps;
+  const projectApps = (project.apps || []).map((id) => registered.find((a) => a.id === id)).filter(Boolean);
   const fronts = projectFronts(project);
   const repos = useGitStatus(folders);
 
@@ -153,7 +165,7 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
         </p>
       )}
 
-      {(folders.length > 0 || links.length > 0) && (
+      {(folders.length > 0 || links.length > 0 || projectApps.length > 0) && (
         <div className="flex flex-wrap gap-1.5">
           {folders.map((f, i) => {
             const actions = folderActions(f);
@@ -185,6 +197,15 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
               <span className="max-w-[120px] truncate">{l.label || 'Link'}</span>
             </button>
           ))}
+          {projectApps.map((a) => {
+            const Icon = appIcon(a);
+            return (
+              <button key={`a${a.id}`} className="btn btn-ghost btn-sm" title={`${a.name}: ${a.target}`} disabled={busy} onClick={() => run(() => launchApp(a))}>
+                <Icon size={13} />
+                <span className="max-w-[120px] truncate">{a.name}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -197,11 +218,17 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
       )}
 
       <footer className="flex items-center justify-between gap-3 mt-auto pt-3 border-t border-rule">
-        <span className="mono text-[11px] text-muted tabular">
-          {time > 0 ? `${formatDuration(time)} esta semana` : 'sem tempo esta semana'}
+        <span className="flex items-center gap-2 min-w-0">
+          <span className="mono text-[11px] text-muted tabular truncate">
+            {time > 0 ? `${formatDuration(time, { short: true })} na semana` : 'sem tempo na semana'}
+          </span>
+          <button className="task-label hover:text-bone" onClick={() => openTasks(project.id)} title="Abrir as tarefas deste projeto">
+            <Kanban size={11} />
+            {openTaskCount ? `${openTaskCount} ${openTaskCount === 1 ? 'tarefa' : 'tarefas'}` : 'tarefas'}
+          </button>
         </span>
         {isActive ? (
-          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={requestEnd}>
+          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => requestEnd(activeSession.id)}>
             <Stop size={12} weight="fill" />
             <Label>Encerrar</Label>
           </button>

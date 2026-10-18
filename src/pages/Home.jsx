@@ -16,6 +16,11 @@ import { healthInsights } from '../lib/healthInsights';
 import { projectFronts } from '../lib/projectModel';
 import { timeAgo } from '../lib/useGitStatus';
 import { openQuickLaunch } from '../components/QuickLaunch';
+import Timeline from '../components/Timeline';
+import { useTasks } from '../context/TasksContext';
+import { DueChip, PriorityIcon, StatusIcon, dueInfo } from '../components/TaskBits';
+import { openTasks } from '../lib/tasksNav';
+import { appIcon, launchApp, resolveLauncher } from '../lib/launcher';
 import { greeting } from '../components/Topbar';
 import { Label } from '../components/Modal';
 
@@ -26,8 +31,9 @@ const WEEK = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
  * onde você parou, a semana e a saúde do dia, tudo numa tela.
  */
 export default function Home({ stats, onNavigate, onOpenProject }) {
-  const { projects, sessions, activeSession, activeBreak, notes, launchProject, requestEnd, startBreak } = useWorkspace();
+  const { projects, sessions, activeSession, activeSessions, activeBreak, notes, launchProject, requestEnd, startBreak } = useWorkspace();
   const { profile } = useProfile();
+  const apps = resolveLauncher(profile?.launcher).apps;
   const toast = useToast();
   const now = useNow(1000);
   const [recent, setRecent] = useState([]); // sessões dos últimos 7 dias
@@ -50,10 +56,10 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
     () =>
       [...(notes?.entries() || [])]
         .map(([id, n]) => ({ ...n, project: projects.find((p) => p.id === id) }))
-        .filter((n) => n.project && n.project.status !== 'concluido' && n.project.id !== activeSession?.project_id)
+        .filter((n) => n.project && n.project.status !== 'concluido' && !activeSessions.some((s) => s.project_id === n.project.id))
         .sort((a, b) => String(b.at).localeCompare(String(a.at)))
         .slice(0, 4),
-    [notes, projects, activeSession?.project_id],
+    [notes, projects, activeSessions],
   );
 
   const recentProjects = useMemo(
@@ -78,7 +84,10 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
   const maxDay = Math.max(60, ...week.map((d) => d.minutes));
   const streak = useMemo(() => streaks(minutesByDay(recent, now, activeBreak), now).current, [recent, now, activeBreak]);
 
-  const insights = healthInsights({ weekTotal: stats.weekTotal, activeSession, activeBreak, lastBreakEnd, recentSessions: recent, now });
+  // tempo sem pausa conta a partir da sessão aberta há mais tempo
+  const oldest = activeSessions[activeSessions.length - 1] || null;
+  const insights = healthInsights({ weekTotal: stats.weekTotal, activeSession: oldest, activeBreak, lastBreakEnd, recentSessions: recent, now });
+  const todaySessions = recent.filter((s) => new Date(s.ended_at || now) >= startOfToday(now));
 
   async function launch(p, front = null) {
     try {
@@ -111,7 +120,43 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
 
           {/* AGORA */}
           <div className="home-now glass anim-rise">
-            {activeSession ? (
+            {activeSessions.length > 1 ? (
+              <>
+                <p className="eyebrow flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${activeBreak ? 'bg-muted' : 'bg-phosphor anim-breathe'}`} />
+                  {activeBreak ? 'em pausa · todas' : `${activeSessions.length} sessões em paralelo`}
+                </p>
+                <div className="flex flex-col mt-1.5">
+                  {activeSessions.slice(0, 4).map((s) => {
+                    const p = projects.find((x) => x.id === s.project_id);
+                    return (
+                      <div key={s.id} className="now-row">
+                        <span className="flex-1 min-w-0 text-[13.5px] font-medium truncate" title={p?.name}>
+                          {p?.name || 'Projeto'}
+                          {s.front && <span className="text-muted font-normal"> · {s.front}</span>}
+                        </span>
+                        <span className="mono text-[13px] tabular text-phosphor">{formatClock(sessionSeconds(s, now, activeBreak))}</span>
+                        <button className="btn btn-quiet btn-icon btn-xs" onClick={() => requestEnd(s.id)} title="Encerrar esta sessão" aria-label={`Encerrar ${p?.name}`}>
+                          <Stop size={11} weight="fill" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-1.5 mt-2">
+                  {!activeBreak && (
+                    <button className="btn btn-ghost btn-sm flex-1" onClick={() => startBreak('cafe').catch((e) => toast(e.message, 'error'))}>
+                      <Pause size={12} weight="bold" />
+                      <Label>Pausar todas</Label>
+                    </button>
+                  )}
+                  <button className="btn btn-ghost btn-sm flex-1" onClick={openQuickLaunch}>
+                    <Lightning size={12} weight="fill" />
+                    <Label>Mais uma</Label>
+                  </button>
+                </div>
+              </>
+            ) : activeSession ? (
               <>
                 <p className="eyebrow flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${activeBreak ? 'bg-muted' : 'bg-phosphor anim-breathe'}`} />
@@ -130,7 +175,7 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
                       <Label>Pausa</Label>
                     </button>
                   )}
-                  <button className="btn btn-primary btn-sm flex-1" onClick={requestEnd}>
+                  <button className="btn btn-primary btn-sm flex-1" onClick={() => requestEnd(activeSession.id)}>
                     <Stop size={12} weight="fill" />
                     <Label>Encerrar</Label>
                   </button>
@@ -213,6 +258,48 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
           </div>
         </section>
 
+        {/* LINHA DO TEMPO */}
+        <section className="card p-4 home-span-2 anim-rise">
+          <header className="card-head">
+            <h2 className="card-title">Linha do tempo de hoje</h2>
+            <button className="btn btn-quiet btn-sm" onClick={() => onNavigate('relatorio')}>
+              <Label>Outros dias</Label>
+              <ArrowRight size={12} />
+            </button>
+          </header>
+          <Timeline sessions={todaySessions} projects={projects} day={now} now={now} activeBreak={activeBreak} compact />
+        </section>
+
+        {/* TAREFAS (0.9) */}
+        <HomeTasks projects={projects} />
+
+        {/* APPS */}
+        <section className="card p-4 anim-rise">
+          <header className="card-head">
+            <h2 className="card-title">Apps</h2>
+            <button className="btn btn-quiet btn-sm" onClick={() => onNavigate('config', 'apps')}>
+              <Label>Editar</Label>
+            </button>
+          </header>
+          {apps.length ? (
+            <div className="grid grid-cols-3 gap-2">
+              {apps.slice(0, 9).map((a) => {
+                const Icon = appIcon(a);
+                return (
+                  <button key={a.id} className="app-tile" onClick={() => launchApp(a).catch((e) => toast(e?.message || String(e), 'error'))} title={a.target}>
+                    <Icon size={20} />
+                    <span className="truncate max-w-full">{a.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted">
+              Cadastre Discord, WhatsApp, Spotify, Windows Terminal e o que mais você usa, para abrir daqui ou pelo Ctrl + K.
+            </p>
+          )}
+        </section>
+
         {/* RECENTES */}
         <section className="card p-4 anim-rise">
           <header className="card-head">
@@ -230,7 +317,7 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
                   <button
                     className="panel-play"
                     onClick={() => launch(p)}
-                    disabled={activeSession?.project_id === p.id}
+                    disabled={activeSessions.some((s) => s.project_id === p.id)}
                     title={`Começar agora: ${p.name}`}
                     aria-label={`Começar ${p.name}`}
                   >
@@ -316,6 +403,59 @@ function HealthCard({ insights }) {
           </article>
         )}
       </div>
+    </section>
+  );
+}
+
+/** Tarefas do Início: o que está em andamento e o que vence logo */
+function HomeTasks({ projects }) {
+  const { tasks, updateTask } = useTasks();
+  const rank = (t) => {
+    const due = dueInfo(t.due_date)?.tone;
+    if (t.status === 'doing') return 0;
+    if (due === 'late') return 1;
+    if (due === 'soon') return 2;
+    if (t.status === 'review') return 3;
+    return 4 + (4 - t.priority) / 10;
+  };
+  const list = tasks
+    .filter((t) => t.status !== 'done')
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, 6);
+  const name = (id) => projects.find((p) => p.id === id)?.name;
+  return (
+    <section className="card p-4 anim-rise">
+      <header className="card-head">
+        <h2 className="card-title">Tarefas</h2>
+        <button className="btn btn-quiet btn-sm" onClick={() => openTasks('all')}>
+          <Label>Ver todas</Label>
+          <ArrowRight size={12} />
+        </button>
+      </header>
+      {list.length ? (
+        <ul className="flex flex-col">
+          {list.map((t) => (
+            <li key={t.id} className="home-task">
+              <button
+                className="task-status-btn"
+                onClick={() => updateTask(t, { status: 'done' }).catch(() => {})}
+                title="Marcar como feita"
+                aria-label={`Marcar ${t.title} como feita`}
+              >
+                <StatusIcon status={t.status} />
+              </button>
+              <PriorityIcon priority={t.priority} size={12} />
+              <button className="flex-1 min-w-0 text-left" onClick={() => openTasks(t.project_id || 'none')}>
+                <span className="block text-[13px] truncate">{t.title}</span>
+                {name(t.project_id) && <span className="block text-[11px] text-muted truncate">{name(t.project_id)}</span>}
+              </button>
+              <DueChip due={t.due_date} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[13px] text-muted">Nenhuma tarefa aberta. Crie em Tarefas, no trilho, ou traga as Issues do GitHub de um projeto.</p>
+      )}
     </section>
   );
 }

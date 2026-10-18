@@ -7,7 +7,47 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Planejado
 - Sincronização entre computadores (opcional)
-- Mapeamento de comportamento: foco, programas abertos e áudio, por categoria
+- Calendário com o Google Calendar
+- Caderno: playbook de padrões e modelos de documentação
+
+## [0.9.0] - 2026-10-18
+
+### Adicionado
+- **Tarefas:** área nova no trilho, com kanban de quatro colunas (A fazer, Fazendo, Revisão, Feito) e vista em lista agrupada por status, no jeito do Linear ([`ADR-014`](docs/decisoes/ADR-014-tarefas-locais-e-issues-somente-leitura.md))
+- **Arrastar e soltar** entre colunas e dentro da coluna para ordenar. Na lista, clicar no ícone de status passa para o próximo
+- **Tarefa completa:** título, descrição, projeto, status, prioridade (sem, baixa, média, alta, urgente), prazo e etiquetas. Prazo de hoje, amanhã e atrasado aparece destacado
+- **Criar rápido:** o `+` de cada coluna abre um campo para digitar o título e dar Enter. A tecla **N** abre uma tarefa nova
+- **Issues do GitHub:** no projeto com link do GitHub, *Issues do GitHub* traz as Issues como tarefas (com número, etiquetas e link). Rodar de novo atualiza: fechada no GitHub vira Feito, reaberta volta para A fazer. Só leitura, nada é escrito no GitHub
+- **Ajustes, Integrações:** token do GitHub (opcional) para repositórios privados e limite maior de consultas. Fica só neste computador
+- **No Início,** o cartão Tarefas mostra o que está em andamento e o que vence primeiro, com um clique para concluir
+- **No card do projeto,** o contador de tarefas abertas leva direto ao quadro daquele projeto. Na tela de Tarefas, clicar num projeto do painel filtra o quadro
+
+### Migração
+- Local: `006_tarefas.sql`, automática
+- Nuvem: rode `supabase/migrations/008_gwen_tarefas.sql`. Sem ela, a tela de Tarefas avisa qual migração falta
+
+## [0.8.0] - 2026-10-18
+
+### Adicionado
+- **Sessões em paralelo:** começar outro projeto não encerra o que já está aberto. A barra superior mostra quantas sessões estão rodando e abre a lista para encerrar cada uma; o Início mostra todas no cartão Agora. Dá para voltar ao jeito antigo (uma por vez) em Ajustes, Sistema ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
+- **Linha do tempo:** uma faixa por projeto com o horário de cada sessão e os trechos em que duas ou mais rodaram juntas. No Início (hoje) e no Relatório, com navegação por dia
+- **Lançador de apps:** cadastre Discord, WhatsApp, Spotify, Windows Terminal, Notion e qualquer programa (caminho do `.exe` com argumentos) ou protocolo (`app://`). Os apps aparecem no Início, no Ctrl + K e no cadastro do projeto, para abrir junto no Começar agora
+- **Pastas no Windows Terminal e no PowerShell**, além de VS Code, Explorer e Git Bash
+- **Mapeamento de apps e jogos** (opcional): a cada 15 segundos a G.W.E.N. vê qual programa está na frente e soma o tempo por app e por categoria (código, navegador, conversa, design, escrita, música, jogos). Sem teclado e mouse por alguns minutos, para de contar. Guarda só o nome do programa, nunca o título da janela, e só neste computador
+- **Alertas de jogo e de trabalho:** "Você está jogando há 2h" e "3h trabalhando sem parar", com limites ajustáveis, no app e na notificação do Windows
+- **Relatório em abas:** Projetos, Linha do tempo e Apps e jogos
+- Ajustes ganham as seções **Apps** e **Mapeamento**
+
+### Alterado
+- **Hoje, semana, categorias e o total do relatório contam tempo de relógio:** com sessões em paralelo, a mesma hora não é somada duas vezes. O tempo de cada projeto continua inteiro
+- **Pausa vale para todas as sessões abertas.** Encerrar uma sessão durante a pausa não encerra a pausa das outras
+- Sessão esquecida: com várias abertas, a G.W.E.N. pergunta uma de cada vez
+- Atualizar o app encerra todas as sessões abertas antes de reiniciar
+
+### Migração
+- Local: `005_lancador_e_atividade.sql`, automática
+- Nuvem: rode `supabase/migrations/007_gwen_v08.sql`. Sem ela, a nuvem só aceita uma sessão por vez (a G.W.E.N. avisa) e os apps cadastrados não são salvos
+- Nova dependência nativa: `windows-sys` (só no Windows), para o mapeamento
 
 ## [0.7.0] - 2026-10-18
 

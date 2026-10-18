@@ -18,7 +18,7 @@ const STATUS_ORDER = { andamento: 0, pausado: 1, ideia: 2, concluido: 3 };
  * Abre e fecha pelo trilho ou com Ctrl + B. Em janela estreita vira gaveta.
  */
 export default function Sidebar({ view, filter, onFilter, onNavigate, onOpenProject, focusId, stats, overlay, onClose }) {
-  const { categories, projects, activeSession, launchProject, requestEnd, createCategory, renameCategory, deleteCategory } = useWorkspace();
+  const { categories, projects, activeSessions, launchProject, requestEnd, createCategory, renameCategory, deleteCategory } = useWorkspace();
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -111,17 +111,18 @@ export default function Sidebar({ view, filter, onFilter, onNavigate, onOpenProj
   };
 
   const ProjectRow = ({ p }) => {
-    const running = activeSession?.project_id === p.id;
+    const runningSession = activeSessions.find((s) => s.project_id === p.id);
+    const running = !!runningSession;
     const week = stats.byProject.get(p.id)?.week || 0;
     return (
-      <div className={`panel-project ${focusId === p.id && onProjects ? 'is-active' : ''}`}>
+      <div className={`panel-project ${focusId === p.id && (onProjects || view === 'tarefas') ? 'is-active' : ''}`}>
         <button className="panel-project-name" onClick={() => { onOpenProject(p); if (overlay) onClose?.(); }} title={p.name}>
           <span className={`status-dot status-${p.status} ${running ? 'anim-breathe' : ''}`} />
           <span className="truncate">{p.name}</span>
         </button>
         {week > 0 && <span className="panel-meta">{formatDuration(week, { short: true })}</span>}
         {running ? (
-          <button className="panel-play is-running" onClick={requestEnd} title="Encerrar sessão" aria-label={`Encerrar ${p.name}`}>
+          <button className="panel-play is-running" onClick={() => requestEnd(runningSession.id)} title="Encerrar sessão" aria-label={`Encerrar ${p.name}`}>
             <Stop size={11} weight="fill" />
           </button>
         ) : p.status !== 'concluido' ? (
