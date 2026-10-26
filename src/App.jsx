@@ -249,7 +249,7 @@ function Shell() {
   else if (view === 'relatorio') page = <Report key={reportTab || 'relatorio'} initialTab={reportTab} onNavigate={navigate} />;
   else if (view === 'perfil') page = <Profile onNavigate={navigate} />;
   else if (view === 'tarefas') page = <Tasks projectId={taskProject} onProject={setTaskProject} />;
-  else if (view === 'inicio') page = <Home stats={stats} onNavigate={navigate} onOpenProject={openProject} />;
+  else if (view === 'inicio') page = <Home stats={stats} onNavigate={navigate} onOpenProject={openProject} onOpenApps={openApps} />;
   else page = <Dashboard filter={filter} stats={stats} focusId={focusId} />;
 
   return (

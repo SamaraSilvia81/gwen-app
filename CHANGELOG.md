@@ -7,10 +7,12 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Corrigido
 - **Apps web instalados (PWA) no mapeamento:** o YouTube instalado pelo Edge contava como `msedge.exe`, porque a janela de um PWA é do navegador. Agora o nativo lê o AppUserModelID da janela (no Edge, `www.youtube.com-<hash>_pd8mbgmqs65xy!App`; no Chrome, `Chrome._crx_<id>`) e o tempo entra como **YouTube (app web)** em Música e vídeo. Apps da Microsoft Store abertos pelo navegador (Netflix) entram como **Netflix (app)**. Outros PWAs ganham categoria pelo nome e dá para trocar em Ajustes, Mapeamento. Continua sem ler o título da janela ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
+- **Launchers de jogos no mapeamento:** a janela da Steam (`steamwebhelper.exe`), o Ubisoft Connect, o Riot Client e o BlueStacks contavam como Outros e agora contam como Jogos
 
 ### Adicionado
 - **Mídia em segundo plano no mapeamento:** o que está tocando pela mídia do Windows (a do controle de volume) também soma tempo, mesmo minimizado e sem teclado e mouse. YouTube minimizado, Spotify por baixo e Netflix contam enquanto estão em *play*; pausado não conta. Aba comum do navegador não entra, para não duplicar o tempo do navegador. Novo comando nativo `media_sessions`
 - **O que está tocando, na barra de cima:** com o mapeamento ligado e algum app em *play* (YouTube, Spotify, Netflix), aparece um chip com o nome dele ao lado da sessão (`+1` quando há mais de um). Some quando pausa. O clique abre o Relatório direto em Apps e jogos
+- **Início, cartão "No computador hoje":** tempo de hoje pelo mapeamento, com ou sem projeto aberto. Faixa por categoria, três números de relance (Trabalho, Música e vídeo, Jogos) e os quatro apps com mais tempo. Atualiza a cada minuto e leva ao Relatório em Apps e jogos
 
 ### Planejado
 - Sincronização entre computadores (opcional)

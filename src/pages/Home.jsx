@@ -21,6 +21,7 @@ import { useTasks } from '../context/TasksContext';
 import { DueChip, PriorityIcon, StatusIcon, dueInfo } from '../components/TaskBits';
 import { openTasks } from '../lib/tasksNav';
 import { appIcon, launchApp, resolveLauncher } from '../lib/launcher';
+import { CATEGORIES, shortAppName, usageBetween } from '../lib/activity';
 import { greeting } from '../components/Topbar';
 import { Label } from '../components/Modal';
 
@@ -30,7 +31,7 @@ const WEEK = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
  * Início (0.7): a capa da G.W.E.N. Wallpaper, o que está rodando agora,
  * onde você parou, a semana e a saúde do dia, tudo numa tela.
  */
-export default function Home({ stats, onNavigate, onOpenProject }) {
+export default function Home({ stats, onNavigate, onOpenProject, onOpenApps }) {
   const { projects, sessions, activeSession, activeSessions, activeBreak, notes, launchProject, requestEnd, startBreak } = useWorkspace();
   const { profile } = useProfile();
   const apps = resolveLauncher(profile?.launcher).apps;
@@ -270,6 +271,9 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
           <Timeline sessions={todaySessions} projects={projects} day={now} now={now} activeBreak={activeBreak} compact />
         </section>
 
+        {/* NO COMPUTADOR HOJE (mapeamento de apps e jogos) */}
+        <ComputerTodayCard onNavigate={onNavigate} onOpenApps={onOpenApps} />
+
         {/* TAREFAS (0.9) */}
         <HomeTasks projects={projects} />
 
@@ -455,6 +459,120 @@ function HomeTasks({ projects }) {
         </ul>
       ) : (
         <p className="text-[13px] text-muted">Nenhuma tarefa aberta. Crie em Tarefas, no trilho, ou traga as Issues do GitHub de um projeto.</p>
+      )}
+    </section>
+  );
+}
+
+/** grupos do cartão "No computador hoje": o que mais interessa ver de relance */
+const TODAY_GROUPS = [
+  { id: 'trabalho', label: 'Trabalho', cats: ['dev', 'trabalho', 'design', 'escrita'] },
+  { id: 'midia', label: 'Música e vídeo', cats: ['midia'] },
+  { id: 'jogos', label: 'Jogos', cats: ['jogos'] },
+];
+
+/**
+ * Início: tempo no computador hoje pelo mapeamento (com ou sem sessão de projeto).
+ * Os números são gravados a cada minuto, então o cartão relê a cada minuto.
+ */
+function ComputerTodayCard({ onNavigate, onOpenApps }) {
+  const { profile } = useProfile();
+  const cfg = resolveLauncher(profile?.launcher);
+  const [rows, setRows] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      const today = dayKey(new Date());
+      usageBetween(today, today, cfg.categories)
+        .then((r) => alive && setRows(r))
+        .catch(() => alive && setRows([]));
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [profile?.launcher]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { total, cats, groups, top } = useMemo(() => {
+    const byCat = new Map();
+    const byApp = new Map();
+    let sum = 0;
+    for (const r of rows || []) {
+      sum += r.seconds;
+      byCat.set(r.category, (byCat.get(r.category) || 0) + r.seconds);
+      const k = String(r.exe).toLowerCase();
+      const cur = byApp.get(k) || { exe: r.exe, category: r.category, seconds: 0 };
+      cur.seconds += r.seconds;
+      byApp.set(k, cur);
+    }
+    return {
+      total: sum,
+      cats: [...byCat.entries()].map(([id, seconds]) => ({ id, seconds })).sort((a, b) => b.seconds - a.seconds),
+      groups: TODAY_GROUPS.map((g) => ({ ...g, seconds: g.cats.reduce((acc, c) => acc + (byCat.get(c) || 0), 0) })),
+      top: [...byApp.values()].sort((a, b) => b.seconds - a.seconds).slice(0, 4),
+    };
+  }, [rows]);
+
+  const off = !cfg.tracking.enabled;
+
+  return (
+    <section className="card p-4 home-span-2 anim-rise">
+      <header className="card-head">
+        <h2 className="card-title">No computador hoje</h2>
+        {off ? (
+          <button className="btn btn-quiet btn-sm" onClick={() => onNavigate('config', 'atividade')}>
+            <Label>Ligar</Label>
+            <ArrowRight size={12} />
+          </button>
+        ) : (
+          <button className="btn btn-quiet btn-sm" onClick={() => (onOpenApps ? onOpenApps() : onNavigate('relatorio'))}>
+            <span className="mono text-[11px] text-muted tabular mr-1">{formatDuration(total, { short: true })}</span>
+            <Label>Apps e jogos</Label>
+            <ArrowRight size={12} />
+          </button>
+        )}
+      </header>
+
+      {off && !(rows || []).length ? (
+        <p className="text-[13px] text-muted py-3">
+          Ligue o mapeamento para ver aqui quanto tempo foi para trabalho, vídeo, música e jogos, com ou sem projeto aberto.
+        </p>
+      ) : !rows ? (
+        <p className="mono text-[12px] text-muted">carregando<span className="blink">_</span></p>
+      ) : !rows.length ? (
+        <p className="text-[13px] text-muted py-3">Nada registrado hoje ainda. Os números aparecem depois do primeiro minuto de uso.</p>
+      ) : (
+        <>
+          <div className="cat-bar mb-3" aria-hidden="true">
+            {cats.map((c) => (
+              <span key={c.id} style={{ width: `${(c.seconds / total) * 100}%`, background: CATEGORIES[c.id]?.color }} title={CATEGORIES[c.id]?.label} />
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {groups.map((g) => {
+              const Icon = (CATEGORIES[g.id] || CATEGORIES.outros).icon;
+              return (
+                <div key={g.id} className="rounded-ui-sm border border-rule p-3">
+                  <Icon size={15} className="text-phosphor mb-1.5" />
+                  <p className="font-display font-semibold text-[18px] tabular leading-none">{formatDuration(g.seconds, { short: true })}</p>
+                  <p className="text-[11.5px] text-muted mt-1">{g.label}</p>
+                </div>
+              );
+            })}
+          </div>
+          <ul className="flex flex-col gap-1">
+            {top.map((a) => (
+              <li key={a.exe} className="flex items-center gap-2 text-[12.5px] min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: (CATEGORIES[a.category] || CATEGORIES.outros).color }} />
+                <span className="flex-1 truncate" title={a.exe}>{shortAppName(a.exe)}</span>
+                <span className="mono text-[11px] text-muted tabular">{formatDuration(a.seconds, { short: true })}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );

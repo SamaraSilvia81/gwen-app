@@ -36,7 +36,7 @@ const BY_EXE = {
   escrita: ['winword.exe', 'obsidian.exe', 'notion.exe', 'onenote.exe', 'typora.exe', 'logseq.exe', 'notepad.exe', 'texstudio.exe', 'overleaf.exe'],
   comunicacao: ['discord.exe', 'whatsapp.exe', 'whatsapp.root.exe', 'slack.exe', 'teams.exe', 'ms-teams.exe', 'telegram.exe', 'zoom.exe', 'signal.exe'],
   midia: ['spotify.exe', 'vlc.exe', 'mpc-hc64.exe', 'music.ui.exe', 'obs64.exe', 'deezer.exe', 'tidal.exe'],
-  jogos: ['league of legends.exe', 'leagueclient.exe', 'valorant.exe', 'valorant-win64-shipping.exe', 'robloxplayerbeta.exe', 'minecraft.exe', 'genshinimpact.exe', 'zenlesszonezero.exe', 'starrail.exe', 'osu!.exe', 'fortniteclient-win64-shipping.exe', 'cs2.exe', 'dota2.exe', 'r5apex.exe', 'overwatch.exe', 'eldenring.exe', 'stardew valley.exe', 'hollow knight.exe', 'steam.exe', 'epicgameslauncher.exe', 'battle.net.exe', 'riotclientservices.exe'],
+  jogos: ['league of legends.exe', 'leagueclient.exe', 'valorant.exe', 'valorant-win64-shipping.exe', 'robloxplayerbeta.exe', 'minecraft.exe', 'genshinimpact.exe', 'zenlesszonezero.exe', 'starrail.exe', 'osu!.exe', 'fortniteclient-win64-shipping.exe', 'cs2.exe', 'dota2.exe', 'r5apex.exe', 'overwatch.exe', 'eldenring.exe', 'stardew valley.exe', 'hollow knight.exe', 'steam.exe', 'steamwebhelper.exe', 'epicgameslauncher.exe', 'battle.net.exe', 'riotclientservices.exe', 'riotclientux.exe', 'upc.exe', 'hd-player.exe'],
 };
 const EXE_CATEGORY = Object.fromEntries(Object.entries(BY_EXE).flatMap(([cat, list]) => list.map((exe) => [exe, cat])));
 const GAME_FOLDERS = /\\(steamapps\\common|epic games|riot games|xboxgames|gog galaxy\\games|ea games|ubisoft game launcher\\games|hoyoplay\\games)\\/i;
