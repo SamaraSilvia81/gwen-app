@@ -3,6 +3,7 @@ import { isTauri } from './native';
 import { sessionSeconds } from './time';
 import { bubbleEnabled } from './layout';
 import { currentActivity } from './nowActivity';
+import { LAYOUT_KEY } from './bubbleOrbit';
 
 /**
  * Bolha flutuante (0.7).
@@ -15,13 +16,12 @@ import { currentActivity } from './nowActivity';
  *   bolha -> main: 'bolha://pronta' (pede o estado), 'bolha://abrir' (clique no círculo)
  *                  e 'bolha://apps' (clique na bolinha de Apps e jogos)
  *
- * Com jogo ou mídia, a janela cresce para cima (BUBBLE_EXTRA) e sobe o mesmo tanto,
- * então o círculo não sai do lugar. A posição salva é sempre a do círculo.
+ * Com jogo ou mídia, a janela cresce para caber a bolinha de Apps e jogos (no lado que a
+ * pessoa escolheu, ver bubbleOrbit.js) e anda o mesmo tanto, então o círculo não sai do
+ * lugar. A posição salva é sempre a do círculo.
  */
 export const BUBBLE_LABEL = 'bubble';
-/** tamanho da janela da bolha (tauri.conf.json) e o espaço extra para a bolinha de Apps e jogos, acima */
-export const BUBBLE_SIZE = 76;
-export const BUBBLE_EXTRA = 52;
+
 export const POS_KEY = 'gwen.bolha.pos';
 const MARGIN = 24;
 
@@ -36,11 +36,15 @@ async function placeBubble(bubble) {
   try {
     const saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-      // com a bolinha de Apps e jogos aberta, a janela começa mais acima
+      // a posição salva é a do círculo; com a bolinha de Apps e jogos aberta, a janela começa antes dele
       const scale = (await bubble.scaleFactor().catch(() => 1)) || 1;
-      const size = await bubble.outerSize();
-      const lifted = size.height > Math.round(BUBBLE_SIZE * scale) + 2 ? Math.round(BUBBLE_EXTRA * scale) : 0;
-      await bubble.setPosition(new PhysicalPosition(saved.x, saved.y - lifted));
+      let off = { ox: 0, oy: 0 };
+      try {
+        off = { ...off, ...JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}') };
+      } catch {
+        /* sem layout salvo: só o círculo */
+      }
+      await bubble.setPosition(new PhysicalPosition(saved.x - Math.round(off.ox * scale), saved.y - Math.round(off.oy * scale)));
       return;
     }
   } catch {
