@@ -6,7 +6,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ## [Não lançado]
 
 ### Corrigido
-- **Apps web instalados (PWA) no mapeamento:** o YouTube instalado pelo Chrome ou pelo Edge contava como tempo de navegador, porque a janela de um PWA é do `chrome.exe`/`msedge.exe`. Agora o nativo lê o AppUserModelID da janela (`Chrome._crx_<id>`) e o nome do app, e o tempo entra como **YouTube (app web)** em Música e vídeo. Outros PWAs ganham categoria pelo nome (WhatsApp em Conversa, Figma em Design...) e dá para trocar em Ajustes, Mapeamento. Continua sem ler o título da janela ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
+- **Apps web instalados (PWA) no mapeamento:** o YouTube instalado pelo Edge contava como `msedge.exe`, porque a janela de um PWA é do navegador. Agora o nativo lê o AppUserModelID da janela (no Edge, `www.youtube.com-<hash>_pd8mbgmqs65xy!App`; no Chrome, `Chrome._crx_<id>`) e o tempo entra como **YouTube (app web)** em Música e vídeo. Apps da Microsoft Store abertos pelo navegador (Netflix) entram como **Netflix (app)**. Outros PWAs ganham categoria pelo nome e dá para trocar em Ajustes, Mapeamento. Continua sem ler o título da janela ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
+
+### Adicionado
+- **Mídia em segundo plano no mapeamento:** o que está tocando pela mídia do Windows (a do controle de volume) também soma tempo, mesmo minimizado e sem teclado e mouse. YouTube minimizado, Spotify por baixo e Netflix contam enquanto estão em *play*; pausado não conta. Aba comum do navegador não entra, para não duplicar o tempo do navegador. Novo comando nativo `media_sessions`
 
 ### Planejado
 - Sincronização entre computadores (opcional)

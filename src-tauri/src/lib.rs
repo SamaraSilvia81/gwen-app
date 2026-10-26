@@ -330,29 +330,57 @@ struct ForegroundApp {
     web_app: Option<WebApp>,
 }
 
-/// PWA do Chrome ou do Edge. A janela é do `chrome.exe`/`msedge.exe`, então o
-/// executável não basta: o navegador marca cada janela de app com um
-/// AppUserModelID próprio (`Chrome._crx_<id>`) e o nome do app.
+/// Identidade de app que o Windows guarda na janela (AppUserModelID).
+/// Um PWA tem janela do `msedge.exe`/`chrome.exe`, então o executável não basta:
+/// o Edge grava `www.youtube.com-54E21B02_pd8mbgmqs65xy!App`, o Chrome
+/// `Chrome._crx_<id>`. Quem decide se é app web é o JS (`appFromAumid`).
 #[derive(serde::Serialize, Default)]
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 struct WebApp {
-    /// id do app no navegador (32 letras de a a p)
+    /// AppUserModelID da janela, como veio
     id: String,
-    /// nome do app como aparece no menu Iniciar ("YouTube"), quando o navegador informa
+    /// nome do app, quando o navegador informa
     name: Option<String>,
 }
 
-/// Tira o id do app de um AppUserModelID como `Chrome._crx_<id>` ou `MSEdge._crx_<id>.UserData...`
+/// Sessão de mídia do Windows (a do controle de volume): quem está tocando,
+/// mesmo minimizado. `app_id` é o AppUserModelID (`Spotify.exe`, o do PWA...).
+#[derive(serde::Serialize, Default)]
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-fn crx_id(aumid: &str) -> Option<String> {
-    let start = aumid.find("_crx_")? + "_crx_".len();
-    let id: String = aumid[start..].chars().take_while(|c| ('a'..='p').contains(c)).collect();
-    (id.len() == 32).then_some(id)
+struct MediaSession {
+    app_id: String,
+    playing: bool,
 }
 
 #[cfg(target_os = "windows")]
 mod activity {
-    use super::{crx_id, ForegroundApp, WebApp};
+    use super::{ForegroundApp, MediaSession, WebApp};
+
+    /// Sessões de mídia abertas agora. Roda fora da thread da interface (WinRT espera a resposta).
+    pub fn media_sessions() -> Vec<MediaSession> {
+        use windows::Media::Control::{
+            GlobalSystemMediaTransportControlsSessionManager as Manager,
+            GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
+        };
+        let Ok(manager) = Manager::RequestAsync().and_then(|op| op.join()) else {
+            return Vec::new();
+        };
+        let Ok(sessions) = manager.GetSessions() else {
+            return Vec::new();
+        };
+        sessions
+            .into_iter()
+            .filter_map(|s| {
+                let app_id = s.SourceAppUserModelId().ok()?.to_string();
+                let playing = s
+                    .GetPlaybackInfo()
+                    .and_then(|i| i.PlaybackStatus())
+                    .map(|st| st == Status::Playing)
+                    .unwrap_or(false);
+                (!app_id.is_empty()).then_some(MediaSession { app_id, playing })
+            })
+            .collect()
+    }
 
     pub fn foreground() -> Option<ForegroundApp> {
         use windows_sys::Win32::Foundation::CloseHandle;
@@ -409,8 +437,7 @@ mod activity {
         use windows::Win32::UI::Shell::PropertiesSystem::{IPropertyStore, SHGetPropertyStoreForWindow};
 
         let store: IPropertyStore = unsafe { SHGetPropertyStoreForWindow(HWND(hwnd)) }.ok()?;
-        let aumid = unsafe { read_text(&store, &PKEY_AppUserModel_ID) }?;
-        let id = crx_id(&aumid)?;
+        let id = unsafe { read_text(&store, &PKEY_AppUserModel_ID) }?;
         // nome de recurso ("@arquivo,-123") não serve como nome legível
         let name = unsafe { read_text(&store, &PKEY_AppUserModel_RelaunchDisplayNameResource) }.filter(|n| !n.starts_with('@'));
         Some(WebApp { id, name })
@@ -459,6 +486,19 @@ fn foreground_app() -> Option<ForegroundApp> {
     #[cfg(not(target_os = "windows"))]
     {
         None
+    }
+}
+
+/// Mídia tocando agora (YouTube minimizado, Spotify em segundo plano...).
+#[tauri::command]
+async fn media_sessions() -> Vec<MediaSession> {
+    #[cfg(target_os = "windows")]
+    {
+        tauri::async_runtime::spawn_blocking(activity::media_sessions).await.unwrap_or_default()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Vec::new()
     }
 }
 
@@ -749,7 +789,8 @@ pub fn run() {
             read_readme,
             run_command,
             launch_app,
-            foreground_app
+            foreground_app,
+            media_sessions
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a G.W.E.N.");

@@ -8,10 +8,13 @@ import { dayKey } from './habits';
  * Mapeamento de apps e jogos (0.8).
  *
  * A cada 15 s a G.W.E.N. pergunta ao Windows qual app está em primeiro plano
- * (só o executável, nunca o título da janela; para apps web instalados, o id
- * e o nome do app que o navegador grava na janela), soma o tempo por app e por dia
- * e guarda neste computador (tabela app_usage), mesmo no modo conta.
- * Sem teclado e mouse por alguns minutos, o tempo para de contar.
+ * (só o executável, nunca o título da janela; num app web instalado, o id de
+ * app que o navegador grava na janela), soma o tempo por app e por dia e guarda
+ * neste computador (tabela app_usage), mesmo no modo conta. Sem teclado e mouse
+ * por alguns minutos, o app da frente para de contar.
+ *
+ * Também soma o que está tocando pela mídia do Windows (YouTube minimizado,
+ * Spotify por baixo), e isso conta mesmo sem teclado e mouse.
  */
 export const CATEGORIES = {
   dev: { label: 'Código e terminal', icon: Code, color: 'var(--c-phosphor)' },
@@ -41,15 +44,40 @@ const GAME_FOLDERS = /\\(steamapps\\common|epic games|riot games|xboxgames|gog g
 const IGNORE = new Set(['gwen.exe', 'searchhost.exe', 'shellexperiencehost.exe', 'startmenuexperiencehost.exe', 'lockapp.exe', 'applicationframehost.exe']);
 
 /**
- * Apps web instalados (PWA). A janela é do chrome.exe/msedge.exe, então o
- * nativo manda junto o id e o nome do app (lidos do AppUserModelID da janela,
- * nunca do título). Eles entram no mapeamento como "YouTube (app web)".
+ * Apps web instalados (PWA) e apps da Microsoft Store.
+ *
+ * A janela de um PWA é do msedge.exe/chrome.exe, então o nativo manda junto o
+ * AppUserModelID dela (nunca o título). Os formatos que aparecem:
+ *   Edge   www.youtube.com-54E21B02_pd8mbgmqs65xy!App   -> "YouTube (app web)"
+ *   Chrome Chrome._crx_agimnkijcaahngcdmfeangaknmldooml -> "YouTube (app web)"
+ *   Store  4DF9E0F8.Netflix_mcm4njqhnhss8!Netflix.App   -> "Netflix (app)"
+ *   Mídia  Spotify.exe                                   -> "Spotify.exe"
+ * O ID padrão do navegador (MSEdge, Chrome...) não vira app: é aba comum.
  */
 export const WEB_APP_SUFFIX = ' (app web)';
-/** nome de reserva quando o navegador não informa o nome (id do Chrome/Edge) */
-const KNOWN_WEB_APPS = {
+export const STORE_APP_SUFFIX = ' (app)';
+/** id do Chrome -> nome, quando o navegador não informa */
+const KNOWN_CRX = {
   agimnkijcaahngcdmfeangaknmldooml: 'YouTube',
   cinhimbnkkaeohfgghhklpknlkffjgod: 'YouTube Music',
+};
+/** domínio do PWA no Edge -> nome */
+const KNOWN_HOSTS = {
+  'www.youtube.com': 'YouTube',
+  'youtube.com': 'YouTube',
+  'm.youtube.com': 'YouTube',
+  'music.youtube.com': 'YouTube Music',
+  'www.netflix.com': 'Netflix',
+  'open.spotify.com': 'Spotify',
+  'www.twitch.tv': 'Twitch',
+  'web.whatsapp.com': 'WhatsApp',
+  'discord.com': 'Discord',
+  'www.figma.com': 'Figma',
+  'www.primevideo.com': 'Prime Video',
+  'www.crunchyroll.com': 'Crunchyroll',
+  'mail.google.com': 'Gmail',
+  'calendar.google.com': 'Google Agenda',
+  'docs.google.com': 'Google Docs',
 };
 const WEB_APP_RULES = [
   [/youtube|netflix|twitch|spotify|deezer|tidal|prime video|disney|crunchyroll|soundcloud/i, 'midia'],
@@ -59,21 +87,49 @@ const WEB_APP_RULES = [
   [/github|gitlab|vercel|supabase|stackblitz|codesandbox|replit/i, 'dev'],
   [/outlook|gmail|calendar|agenda|sheets|planilhas|jira|linear|confluence/i, 'trabalho'],
 ];
+const BROWSER_EXES = new Set(BY_EXE.navegador);
 
-/** Nome com que o app web entra no mapeamento, ou null se a janela não é de um */
-export function webAppExe(webApp) {
-  if (!webApp?.id) return null;
-  const name = webApp.name || KNOWN_WEB_APPS[webApp.id] || `App web ${webApp.id.slice(0, 6)}`;
-  return `${name}${WEB_APP_SUFFIX}`;
+const hostName = (host) => {
+  const h = host.toLowerCase();
+  if (KNOWN_HOSTS[h]) return KNOWN_HOSTS[h];
+  const label = h.replace(/^(www|web|app|m)\./, '').split('.')[0];
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+/**
+ * Nome com que um AppUserModelID entra no mapeamento, ou null quando é o
+ * próprio navegador (ou um formato desconhecido). `name` é o nome que o
+ * navegador grava na janela, quando grava.
+ */
+export function appFromAumid(aumid, name) {
+  const id = String(aumid || '').trim();
+  if (!id) return null;
+  const crx = id.match(/_crx_([a-p]{32})/);
+  if (crx) return `${name || KNOWN_CRX[crx[1]] || `App web ${crx[1].slice(0, 6)}`}${WEB_APP_SUFFIX}`;
+  const edge = id.match(/^([a-z0-9-]+(?:\.[a-z0-9-]+)+)-[0-9a-f]+_[a-z0-9]+!app$/i);
+  if (edge) return `${name || hostName(edge[1])}${WEB_APP_SUFFIX}`;
+  if (/\.exe$/i.test(id)) return id.split(/[\\/]/).pop();
+  const store = id.match(/^([^!_]+)_[a-z0-9]{13}!/i);
+  if (store) return `${name || store[1].split('.').pop()}${STORE_APP_SUFFIX}`;
+  return null;
+}
+
+/** Nome do app da janela da frente: o PWA quando é um, senão o executável */
+export function foregroundName(fg) {
+  if (fg?.web_app?.id && BROWSER_EXES.has(String(fg.exe).toLowerCase())) {
+    return appFromAumid(fg.web_app.id, fg.web_app.name) || fg.exe;
+  }
+  return fg.exe;
 }
 
 /** Categoria do app: a escolha da pessoa vence a regra automática */
 export function classify(exe, path = '', overrides = {}) {
   const key = String(exe || '').toLowerCase();
   if (overrides[key]) return overrides[key];
-  if (key.endsWith(WEB_APP_SUFFIX)) {
-    const name = key.slice(0, -WEB_APP_SUFFIX.length);
-    return WEB_APP_RULES.find(([re]) => re.test(name))?.[1] || 'navegador';
+  const suffix = [WEB_APP_SUFFIX, STORE_APP_SUFFIX].find((sfx) => key.endsWith(sfx));
+  if (suffix) {
+    const name = key.slice(0, -suffix.length);
+    return WEB_APP_RULES.find(([re]) => re.test(name))?.[1] || (suffix === WEB_APP_SUFFIX ? 'navegador' : 'outros');
   }
   if (GAME_FOLDERS.test(path || '')) return 'jogos';
   return EXE_CATEGORY[key] || 'outros';
@@ -91,6 +147,13 @@ async function foreground() {
   if (!isTauri) return null;
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke('foreground_app');
+}
+
+/** Mídia tocando agora pelo Windows (lista vazia se o nativo não responder) */
+async function mediaSessions() {
+  if (!isTauri) return [];
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('media_sessions').catch(() => []);
 }
 
 /**
@@ -118,29 +181,47 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
     async function tick() {
       const { tracking: cfg, overrides: ov, onAlert: alert } = latest.current;
       let fg = null;
+      let media = [];
       try {
-        fg = await foreground();
+        [fg, media] = await Promise.all([foreground(), mediaSessions()]);
       } catch {
         return;
       }
-      if (!alive || !fg?.exe) return;
+      if (!alive) return;
       const now = Date.now();
-      const idle = fg.idle_seconds >= (cfg.idleMin || 5) * 60;
-      if (idle || IGNORE.has(fg.exe.toLowerCase())) return;
-      // PWA (YouTube instalado etc.) conta como app próprio, não como o navegador
-      const name = webAppExe(fg.web_app) || fg.exe;
-      const exe = name.toLowerCase();
-      const category = classify(exe, fg.path, ov);
       const day = dayKey(new Date());
-      const id = `${day}::${exe}`;
-      const row = pending.current.get(id) || { id, day, exe: name, path: fg.path, category, seconds: 0 };
-      row.seconds += TICK_MS / 1000;
-      row.category = category;
-      pending.current.set(id, row);
+      const step = TICK_MS / 1000;
+      const add = (name, path) => {
+        const exe = name.toLowerCase();
+        const category = classify(exe, path, ov);
+        const id = `${day}::${exe}`;
+        const row = pending.current.get(id) || { id, day, exe: name, path, category, seconds: 0 };
+        row.seconds += step;
+        row.category = category;
+        pending.current.set(id, row);
+        return category;
+      };
+
+      // janela da frente: o PWA (YouTube instalado etc.) conta como app próprio, não como o navegador
+      const idle = !fg?.exe || fg.idle_seconds >= (cfg.idleMin || 5) * 60;
+      const ignored = !fg?.exe || IGNORE.has(fg.exe.toLowerCase());
+      const fgName = !idle && !ignored ? foregroundName(fg) : null;
+      const category = fgName ? add(fgName, fg.path) : null;
+
+      // mídia tocando (YouTube minimizado, Spotify por baixo): conta mesmo sem teclado e mouse,
+      // uma vez por app e sem repetir o da frente. Aba comum do navegador não entra.
+      const counted = new Set(fgName ? [fgName.toLowerCase()] : []);
+      for (const m of media || []) {
+        if (!m?.playing) continue;
+        const name = appFromAumid(m.app_id);
+        if (!name || counted.has(name.toLowerCase()) || IGNORE.has(name.toLowerCase())) continue;
+        counted.add(name.toLowerCase());
+        add(name, '');
+      }
+      if (!category) return;
 
       // sequências para os alertas: jogo e trabalho (código + trabalho + design + escrita)
       const s = streak.current;
-      const step = TICK_MS / 1000;
       if (category === 'jogos') {
         s.game = now - s.lastGameAt > STREAK_GAP_S * 1000 ? step : s.game + step;
         s.lastGameAt = now;

@@ -51,7 +51,8 @@ A 0.8 também passa a ver qual programa está em primeiro plano, para mostrar on
 - Fica na tabela `app_usage` do SQLite **mesmo no modo conta**, pelo `deviceStore`. Não existe tabela dela na nuvem.
 - Sem teclado e mouse por alguns minutos (padrão 5), não conta.
 - Categoria por regra (lista de executáveis e pastas de jogos como `steamapps\common`), e a escolha da pessoa vence a regra.
-- **Apps web instalados (PWA)**, como o YouTube pelo Chrome ou pelo Edge, têm janela do próprio navegador. Para não virarem tempo de navegador, o nativo lê o AppUserModelID da janela (`Chrome._crx_<id>`) e o nome do app que o navegador grava nela, pelo crate `windows` (COM). Entram como `<Nome> (app web)`. Continua sem título de janela, e abas comuns seguem como navegador.
+- **Apps web instalados (PWA)**, como o YouTube pelo Edge, têm janela do próprio navegador. Para não virarem tempo de navegador, o nativo lê o AppUserModelID da janela pelo crate `windows` (COM): no Edge `www.youtube.com-<hash>_pd8mbgmqs65xy!App`, no Chrome `Chrome._crx_<id>`. O JS traduz para `<Nome> (app web)` (`appFromAumid` em `src/lib/activity.js`). Continua sem título de janela, e abas comuns seguem como navegador.
+- **Mídia em segundo plano.** Vídeo e música rodam minimizados, então só a janela da frente perde esse tempo. O nativo lê as sessões de mídia do Windows (`GlobalSystemMediaTransportControlsSessionManager`, WinRT) e cada app em *play* soma tempo, mesmo ocioso, uma vez por app e sem repetir o da frente. O ID padrão do navegador (`MSEdge`, `Chrome`) é ignorado, então aba comum tocando não conta.
 - Alertas por sequência na mesma categoria, com tolerância de 5 minutos fora dela: jogo (padrão 120 min) e trabalho em código, docs, design e escrita (padrão 180 min). Depois do primeiro aviso, um a cada hora a mais.
 
 ### $ alternativas consideradas
