@@ -11,7 +11,7 @@
 ![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.9.0-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.9.1-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
