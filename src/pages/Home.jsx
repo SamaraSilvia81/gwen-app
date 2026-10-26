@@ -99,7 +99,7 @@ export default function Home({ stats, onNavigate, onOpenProject }) {
   }
 
   const dateLine = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const first = (profile?.display_name || '').split(' ')[0] || 'dev';
+  const first = profile?.display_name || 'dev'; /* const first = (profile?.display_name || '').split(' ')[0] || 'dev'; */
 
   return (
     <div className="h-full overflow-y-auto">
