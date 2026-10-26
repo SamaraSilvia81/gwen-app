@@ -15,7 +15,8 @@ import { CIRCLE, FRAME, LAYOUT_KEY, ORBIT, ORBIT_KEY, SAT, SLOTS, layoutFor, poi
  * Com jogo na frente ou mídia tocando, aparece uma bolinha de Apps e jogos colada
  * no círculo (ícone + tempo de hoje). Clicar nela abre o Relatório em Apps e jogos;
  * arrastar gira ela em volta do círculo e, ao soltar, encaixa no ponto mais perto
- * entre 8 (ver bubbleOrbit.js). O lugar fica salvo.
+ * entre 8 (ver bubbleOrbit.js). O lugar fica salvo. Sem sessão de projeto, o app
+ * sobe para o círculo principal (ícone + tempo) e a bolinha some.
  */
 const DRAG_PX = 4;
 /** relógio curto para a bolinha (46 px): 05:12 até 1 hora, depois 1h23 */
@@ -81,10 +82,13 @@ export default function Bubble() {
   const elapsed = state?.active ? state.elapsed + (state.paused ? 0 : Math.floor((Date.now() - state.sentAt) / 1000)) : 0;
   const activity = state?.activity || null;
   const activitySecs = activity ? activity.seconds + Math.floor((Date.now() - state.sentAt) / 1000) : 0;
+  // sem sessão, o app tocando/jogo sobe para o círculo principal e a bolinha some
+  const promoted = !!activity && !state?.active;
+  const satActivity = promoted ? null : activity;
 
   // tamanho da janela: só o círculo, o círculo + bolinha no encaixe, ou a volta inteira enquanto arrasta.
   // A janela anda o mesmo tanto que cresce, então o círculo fica parado na tela.
-  const wanted = !activity ? null : dragAngle !== null ? 'drag' : slot;
+  const wanted = !satActivity ? null : dragAngle !== null ? 'drag' : slot;
   useEffect(() => {
     const next = layoutFor(wanted);
     const prev = layoutRef.current;
@@ -112,7 +116,8 @@ export default function Bubble() {
     })();
   }, [wanted]);
 
-  const minuteOfHour = (elapsed % 3600) / 3600;
+  // anel: progresso da hora da sessão, ou do tempo do app quando ele está no círculo
+  const minuteOfHour = ((promoted ? activitySecs : elapsed) % 3600) / 3600;
 
   async function onPointerDown(e) {
     if (e.button !== 0) return;
@@ -184,7 +189,7 @@ export default function Bubble() {
   const frameX = layout.ox;
   const frameY = layout.oy;
   const circleOffset = (FRAME - CIRCLE) / 2;
-  const sat = activity ? satCenter(dragAngle ?? slot) : null;
+  const sat = satActivity ? satCenter(dragAngle ?? slot) : null;
   const center = FRAME / 2;
 
   return (
@@ -210,7 +215,7 @@ export default function Bubble() {
       >
         <svg className="bubble-ring" viewBox="0 0 64 64" aria-hidden="true">
           <circle cx="32" cy="32" r={R} className="bubble-ring-track" />
-          {state?.active && (
+          {(state?.active || promoted) && (
             <circle
               cx="32"
               cy="32"
@@ -222,11 +227,17 @@ export default function Bubble() {
             />
           )}
         </svg>
-        <Logo size={state?.active ? 20 : 26} charge={state?.active ? Math.max(0.08, minuteOfHour) : 0.65} />
+        <Logo size={state?.active || promoted ? 20 : 26} charge={state?.active || promoted ? Math.max(0.08, minuteOfHour) : 0.65} />
         {state?.active && <span className="bubble-time tabular">{formatClock(elapsed)}</span>}
+        {promoted && (
+          <span className="bubble-time bubble-time-app tabular">
+            {activity.kind === 'jogos' ? <GameController size={9} weight="fill" /> : <MusicNotes size={9} weight="fill" />}
+            {shortClock(activitySecs)}
+          </span>
+        )}
         {state?.active && <span className="bubble-rec" />}
       </button>
-      {activity && (
+      {satActivity && (
         <button
           className={`bubble-sat ${dragAngle !== null ? 'is-orbiting' : ''}`}
           style={{ left: frameX + sat.x - SAT / 2, top: frameY + sat.y - SAT / 2 }}
