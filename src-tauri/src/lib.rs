@@ -326,11 +326,33 @@ struct ForegroundApp {
     path: String,
     /// segundos desde o último toque no teclado ou no mouse
     idle_seconds: u32,
+    /// app web instalado (PWA) quando a janela é de um, como o YouTube
+    web_app: Option<WebApp>,
+}
+
+/// PWA do Chrome ou do Edge. A janela é do `chrome.exe`/`msedge.exe`, então o
+/// executável não basta: o navegador marca cada janela de app com um
+/// AppUserModelID próprio (`Chrome._crx_<id>`) e o nome do app.
+#[derive(serde::Serialize, Default)]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+struct WebApp {
+    /// id do app no navegador (32 letras de a a p)
+    id: String,
+    /// nome do app como aparece no menu Iniciar ("YouTube"), quando o navegador informa
+    name: Option<String>,
+}
+
+/// Tira o id do app de um AppUserModelID como `Chrome._crx_<id>` ou `MSEdge._crx_<id>.UserData...`
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn crx_id(aumid: &str) -> Option<String> {
+    let start = aumid.find("_crx_")? + "_crx_".len();
+    let id: String = aumid[start..].chars().take_while(|c| ('a'..='p').contains(c)).collect();
+    (id.len() == 32).then_some(id)
 }
 
 #[cfg(target_os = "windows")]
 mod activity {
-    use super::ForegroundApp;
+    use super::{crx_id, ForegroundApp, WebApp};
 
     pub fn foreground() -> Option<ForegroundApp> {
         use windows_sys::Win32::Foundation::CloseHandle;
@@ -362,8 +384,57 @@ mod activity {
             }
             let path = String::from_utf16_lossy(&buf[..len as usize]);
             let exe = path.rsplit(['\\', '/']).next().unwrap_or(&path).to_string();
-            Some(ForegroundApp { exe, path, idle_seconds: idle_seconds() })
+            Some(ForegroundApp { exe, path, idle_seconds: idle_seconds(), web_app: web_app(hwnd) })
         }
+    }
+
+    /// Se a janela é de um app web instalado, devolve o id e o nome dele.
+    /// Lê só as propriedades de app da janela (AppUserModelID), nunca o título.
+    fn web_app(hwnd: *mut core::ffi::c_void) -> Option<WebApp> {
+        use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
+        unsafe {
+            // o comando pode rodar numa thread sem COM; se já estiver iniciado, só equilibra a contagem
+            let com = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            let found = read_web_app(hwnd);
+            if com.is_ok() {
+                CoUninitialize();
+            }
+            found
+        }
+    }
+
+    unsafe fn read_web_app(hwnd: *mut core::ffi::c_void) -> Option<WebApp> {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::Storage::EnhancedStorage::{PKEY_AppUserModel_ID, PKEY_AppUserModel_RelaunchDisplayNameResource};
+        use windows::Win32::UI::Shell::PropertiesSystem::{IPropertyStore, SHGetPropertyStoreForWindow};
+
+        let store: IPropertyStore = unsafe { SHGetPropertyStoreForWindow(HWND(hwnd)) }.ok()?;
+        let aumid = unsafe { read_text(&store, &PKEY_AppUserModel_ID) }?;
+        let id = crx_id(&aumid)?;
+        // nome de recurso ("@arquivo,-123") não serve como nome legível
+        let name = unsafe { read_text(&store, &PKEY_AppUserModel_RelaunchDisplayNameResource) }.filter(|n| !n.starts_with('@'));
+        Some(WebApp { id, name })
+    }
+
+    unsafe fn read_text(
+        store: &windows::Win32::UI::Shell::PropertiesSystem::IPropertyStore,
+        key: &windows::Win32::Foundation::PROPERTYKEY,
+    ) -> Option<String> {
+        use windows::Win32::System::Com::StructuredStorage::PropVariantClear;
+        use windows::Win32::System::Variant::VT_LPWSTR;
+
+        let mut value = unsafe { store.GetValue(key) }.ok()?;
+        let text = unsafe {
+            let inner = &value.Anonymous.Anonymous;
+            let ptr = inner.Anonymous.pwszVal;
+            if inner.vt == VT_LPWSTR && !ptr.is_null() {
+                ptr.to_string().ok()
+            } else {
+                None
+            }
+        };
+        let _ = unsafe { PropVariantClear(&mut value) };
+        text.map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
     pub fn idle_seconds() -> u32 {

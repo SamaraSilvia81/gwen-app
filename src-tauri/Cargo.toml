@@ -36,3 +36,6 @@ tauri-plugin-autostart = "2"
 # mapeamento de apps (0.8): app em primeiro plano e tempo ocioso, só no Windows
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_SystemInformation"] }
+# apps web instalados (PWA): lê o AppUserModelID da janela, que é COM (o windows-sys não cobre).
+# É a mesma versão que o Tauri já usa, então só entram as features novas.
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_UI_Shell_PropertiesSystem", "Win32_Storage_EnhancedStorage"] }

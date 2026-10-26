@@ -8,7 +8,8 @@ import { dayKey } from './habits';
  * Mapeamento de apps e jogos (0.8).
  *
  * A cada 15 s a G.W.E.N. pergunta ao Windows qual app está em primeiro plano
- * (só o executável, nunca o título da janela), soma o tempo por app e por dia
+ * (só o executável, nunca o título da janela; para apps web instalados, o id
+ * e o nome do app que o navegador grava na janela), soma o tempo por app e por dia
  * e guarda neste computador (tabela app_usage), mesmo no modo conta.
  * Sem teclado e mouse por alguns minutos, o tempo para de contar.
  */
@@ -39,10 +40,41 @@ const GAME_FOLDERS = /\\(steamapps\\common|epic games|riot games|xboxgames|gog g
 /** a própria G.W.E.N. não conta (ela fica aberta o tempo todo) */
 const IGNORE = new Set(['gwen.exe', 'searchhost.exe', 'shellexperiencehost.exe', 'startmenuexperiencehost.exe', 'lockapp.exe', 'applicationframehost.exe']);
 
+/**
+ * Apps web instalados (PWA). A janela é do chrome.exe/msedge.exe, então o
+ * nativo manda junto o id e o nome do app (lidos do AppUserModelID da janela,
+ * nunca do título). Eles entram no mapeamento como "YouTube (app web)".
+ */
+export const WEB_APP_SUFFIX = ' (app web)';
+/** nome de reserva quando o navegador não informa o nome (id do Chrome/Edge) */
+const KNOWN_WEB_APPS = {
+  agimnkijcaahngcdmfeangaknmldooml: 'YouTube',
+  cinhimbnkkaeohfgghhklpknlkffjgod: 'YouTube Music',
+};
+const WEB_APP_RULES = [
+  [/youtube|netflix|twitch|spotify|deezer|tidal|prime video|disney|crunchyroll|soundcloud/i, 'midia'],
+  [/whatsapp|discord|telegram|slack|teams|meet|messenger|instagram/i, 'comunicacao'],
+  [/figma|canva|excalidraw|penpot|miro/i, 'design'],
+  [/notion|obsidian|google docs|docs|keep|overleaf/i, 'escrita'],
+  [/github|gitlab|vercel|supabase|stackblitz|codesandbox|replit/i, 'dev'],
+  [/outlook|gmail|calendar|agenda|sheets|planilhas|jira|linear|confluence/i, 'trabalho'],
+];
+
+/** Nome com que o app web entra no mapeamento, ou null se a janela não é de um */
+export function webAppExe(webApp) {
+  if (!webApp?.id) return null;
+  const name = webApp.name || KNOWN_WEB_APPS[webApp.id] || `App web ${webApp.id.slice(0, 6)}`;
+  return `${name}${WEB_APP_SUFFIX}`;
+}
+
 /** Categoria do app: a escolha da pessoa vence a regra automática */
 export function classify(exe, path = '', overrides = {}) {
   const key = String(exe || '').toLowerCase();
   if (overrides[key]) return overrides[key];
+  if (key.endsWith(WEB_APP_SUFFIX)) {
+    const name = key.slice(0, -WEB_APP_SUFFIX.length);
+    return WEB_APP_RULES.find(([re]) => re.test(name))?.[1] || 'navegador';
+  }
   if (GAME_FOLDERS.test(path || '')) return 'jogos';
   return EXE_CATEGORY[key] || 'outros';
 }
@@ -94,12 +126,14 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
       if (!alive || !fg?.exe) return;
       const now = Date.now();
       const idle = fg.idle_seconds >= (cfg.idleMin || 5) * 60;
-      const exe = fg.exe.toLowerCase();
-      if (idle || IGNORE.has(exe)) return;
+      if (idle || IGNORE.has(fg.exe.toLowerCase())) return;
+      // PWA (YouTube instalado etc.) conta como app próprio, não como o navegador
+      const name = webAppExe(fg.web_app) || fg.exe;
+      const exe = name.toLowerCase();
       const category = classify(exe, fg.path, ov);
       const day = dayKey(new Date());
       const id = `${day}::${exe}`;
-      const row = pending.current.get(id) || { id, day, exe: fg.exe, path: fg.path, category, seconds: 0 };
+      const row = pending.current.get(id) || { id, day, exe: name, path: fg.path, category, seconds: 0 };
       row.seconds += TICK_MS / 1000;
       row.category = category;
       pending.current.set(id, row);

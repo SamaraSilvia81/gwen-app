@@ -51,6 +51,7 @@ A 0.8 também passa a ver qual programa está em primeiro plano, para mostrar on
 - Fica na tabela `app_usage` do SQLite **mesmo no modo conta**, pelo `deviceStore`. Não existe tabela dela na nuvem.
 - Sem teclado e mouse por alguns minutos (padrão 5), não conta.
 - Categoria por regra (lista de executáveis e pastas de jogos como `steamapps\common`), e a escolha da pessoa vence a regra.
+- **Apps web instalados (PWA)**, como o YouTube pelo Chrome ou pelo Edge, têm janela do próprio navegador. Para não virarem tempo de navegador, o nativo lê o AppUserModelID da janela (`Chrome._crx_<id>`) e o nome do app que o navegador grava nela, pelo crate `windows` (COM). Entram como `<Nome> (app web)`. Continua sem título de janela, e abas comuns seguem como navegador.
 - Alertas por sequência na mesma categoria, com tolerância de 5 minutos fora dela: jogo (padrão 120 min) e trabalho em código, docs, design e escrita (padrão 180 min). Depois do primeiro aviso, um a cada hora a mais.
 
 ### $ alternativas consideradas

@@ -5,6 +5,9 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Corrigido
+- **Apps web instalados (PWA) no mapeamento:** o YouTube instalado pelo Chrome ou pelo Edge contava como tempo de navegador, porque a janela de um PWA é do `chrome.exe`/`msedge.exe`. Agora o nativo lê o AppUserModelID da janela (`Chrome._crx_<id>`) e o nome do app, e o tempo entra como **YouTube (app web)** em Música e vídeo. Outros PWAs ganham categoria pelo nome (WhatsApp em Conversa, Figma em Design...) e dá para trocar em Ajustes, Mapeamento. Continua sem ler o título da janela ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
+
 ### Planejado
 - Sincronização entre computadores (opcional)
 - Calendário com o Google Calendar
