@@ -10,6 +10,22 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Calendário com o Google Calendar
 - Caderno: playbook de padrões e modelos de documentação
 
+## [0.9.1] - 2026-10-26
+
+### Corrigido
+- **Travamento no modo alongamento:** ao encerrar a pausa guiada, o overlay travava indefinidamente quando o banco não respondia a tempo. O botão ficava desabilitado e bloqueava toda a interface, incluindo os controles nativos do Tauri. Adicionados timeouts de 6s em `breakRepo.end` e 4s em `sessionRepo.addPaused`, com reset automático do estado em caso de falha. O botão agora mostra "Encerrando…" durante a operação e um aviso de erro se não concluir
+- **Blur ausente na tela de pausa:** o overlay usava o token `--c-pause-veil` direto, sem `backdrop-filter`, então o fundo ficava só escuro, sem o efeito de desfoque. Adicionada a classe `.pause-overlay` com `blur(24px)`. O estilo Terminal mantém o comportamento sem blur
+- **Nome cortado na saudação do Início:** o `display_name` era dividido por espaço e só o primeiro trecho era exibido (`~/` em vez de `~/ sammy.sh`). O nome completo é exibido agora
+- **Linha do Git saindo do card:** na vista em grade, a linha com branch, alterações e data do último commit ultrapassava a borda do card. Adicionado `overflow-hidden` no container e as partes passam a truncar dentro do espaço disponível
+
+### Adicionado
+- **Abrir múltiplas frentes ao mesmo tempo:** com o projeto já ativo, o footer do card mostra um botão "+ Frente" quando há frentes que ainda não estão abertas em nenhuma sessão paralela. Selecionar uma frente chama `launchProject` e abre uma nova sessão para ela, sem encerrar as que já estão rodando
+
+### Documentação
+- Pasta `docs/feedbacks/` criada com o tipo `FBK` para registros de uso real
+- [`FBK-001`](docs/feedbacks/FBK-001-feedback-uso-beta-0.9.md): feedback da autora após uma semana usando a 0.9.0, com bugs, melhorias e desejos para próximas versões
+- `docs/README.md` atualizado: nova entrada para `FBK` na tabela de tipos e `FBK-001` no índice
+
 ## [0.9.0] - 2026-10-18
 
 ### Adicionado
