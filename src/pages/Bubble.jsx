@@ -227,14 +227,20 @@ export default function Bubble() {
             />
           )}
         </svg>
-        <Logo size={state?.active || promoted ? 20 : 26} charge={state?.active || promoted ? Math.max(0.08, minuteOfHour) : 0.65} />
-        {state?.active && <span className="bubble-time tabular">{formatClock(elapsed)}</span>}
-        {promoted && (
-          <span className="bubble-time bubble-time-app tabular">
-            {activity.kind === 'jogos' ? <GameController size={9} weight="fill" /> : <MusicNotes size={9} weight="fill" />}
-            {shortClock(activitySecs)}
-          </span>
+        {promoted ? (
+          // sem sessão: o ícone da categoria toma o lugar do G (a sessão traz o G de volta)
+          <>
+            {activity.kind === 'jogos' ? (
+              <GameController size={22} weight="fill" className="bubble-app-icon" />
+            ) : (
+              <MusicNotes size={22} weight="fill" className="bubble-app-icon" />
+            )}
+            <span className="bubble-time tabular">{shortClock(activitySecs)}</span>
+          </>
+        ) : (
+          <Logo size={state?.active ? 20 : 26} charge={state?.active ? Math.max(0.08, minuteOfHour) : 0.65} />
         )}
+        {state?.active && <span className="bubble-time tabular">{formatClock(elapsed)}</span>}
         {state?.active && <span className="bubble-rec" />}
       </button>
       {satActivity && (

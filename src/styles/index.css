@@ -691,9 +691,8 @@ html.is-bubble body::before { display: none; }
 .bubble-ring-track { fill: none; stroke: var(--c-rule); stroke-width: 2.5; }
 .bubble-ring-fill { fill: none; stroke: var(--c-phosphor); stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
 .bubble-time { font-family: var(--f-mono); font-size: 9.5px; font-weight: 600; color: var(--c-bone); line-height: 1; }
-/* app tocando/jogo no círculo principal (sem sessão): ícone + tempo na mesma linha */
-.bubble-time-app { display: inline-flex; align-items: center; gap: 2px; color: var(--c-phosphor); }
-.bubble-time-app svg { flex-shrink: 0; }
+/* app tocando/jogo no círculo principal (sem sessão): o ícone da categoria no lugar do G */
+.bubble-app-icon { color: var(--c-phosphor); flex-shrink: 0; }
 .bubble-rec { position: absolute; top: 7px; right: 9px; width: 7px; height: 7px; border-radius: 999px; background: var(--c-ember); animation: breathe 2s ease-in-out infinite; }
 .bubble.is-paused .bubble-rec { animation: none; background: var(--c-muted); }
 .bubble.is-paused .bubble-ring-fill { stroke: var(--c-muted); }
