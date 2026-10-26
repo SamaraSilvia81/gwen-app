@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CaretDown, Lightning, Moon, Pause, Stop, Sun } from '@phosphor-icons/react';
+import { CaretDown, Lightning, Moon, MusicNotes, Pause, Stop, Sun } from '@phosphor-icons/react';
 import { openQuickLaunch } from './QuickLaunch';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useProfile } from '../context/ProfileContext';
@@ -10,6 +10,7 @@ import { effectiveMode } from '../lib/themes';
 import { Label } from './Modal';
 import { VIEWS } from './Rail';
 import { filterLabel } from '../lib/collections';
+import { CATEGORIES, shortAppName } from '../lib/activity';
 
 export function greeting(date) {
   const h = date.getHours();
@@ -20,7 +21,7 @@ export function greeting(date) {
 }
 
 /** Barra de cima (0.7): caminho da tela à esquerda, sessão e ações à direita. */
-export default function Topbar({ view = 'inicio', filter = 'all' }) {
+export default function Topbar({ view = 'inicio', filter = 'all', playing = [], onOpenApps }) {
   const { profile, updateProfile } = useProfile();
   const { activeSession, activeSessions, activeBreak, projects, categories, requestEnd, startBreak } = useWorkspace();
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -140,6 +141,20 @@ export default function Topbar({ view = 'inicio', filter = 'all' }) {
           </div>
         ) : (
           <span className="mono text-[11px] text-muted hidden lg:inline mr-1">nenhuma sessão ativa</span>
+        )}
+
+        {playing.length > 0 && (
+          // mídia tocando agora (mapeamento): some quando pausa; clique abre Relatório, Apps e jogos
+          <button
+            className="btn btn-ghost gap-1.5 px-2.5"
+            onClick={onOpenApps}
+            title={`Tocando agora: ${playing.map(shortAppName).join(', ')}. Conta em ${CATEGORIES.midia.label}. Clique para ver Apps e jogos.`}
+            aria-label={`Tocando agora: ${playing.map(shortAppName).join(', ')}`}
+          >
+            <MusicNotes size={14} weight="fill" className="text-phosphor anim-breathe" />
+            <span className="text-[13px] max-w-[140px] truncate max-[760px]:hidden">{shortAppName(playing[0])}</span>
+            {playing.length > 1 && <span className="mono text-[11px] text-muted max-[760px]:hidden">+{playing.length - 1}</span>}
+          </button>
         )}
 
         <button className="btn btn-ghost btn-icon" onClick={openQuickLaunch} title="Começar um projeto (Ctrl + K)" aria-label="Começar um projeto">

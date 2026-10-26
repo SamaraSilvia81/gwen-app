@@ -84,6 +84,8 @@ function Shell() {
   const [cfgSection, setCfgSection] = useState('perfil');
   const [cfgJump, setCfgJump] = useState(0);
   const [backTo, setBackTo] = useState('inicio');
+  /** aba do Relatório pedida por um atalho (o chip de mídia abre Apps e jogos) */
+  const [reportTab, setReportTab] = useState(null);
   // Tarefas: projeto filtrado ('all', 'none' ou o id)
   const [taskProject, setTaskProject] = useStoredState('gwen.tarefas.projeto', 'all');
   const narrow = useMediaQuery(NARROW_QUERY);
@@ -232,11 +234,19 @@ function Shell() {
     },
     [toast],
   );
-  useActivityTracker({ tracking: launcherCfg.tracking, overrides: launcherCfg.categories, onAlert: onActivityAlert });
+  const { playing } = useActivityTracker({ tracking: launcherCfg.tracking, overrides: launcherCfg.categories, onAlert: onActivityAlert });
+  const openApps = useCallback(() => {
+    setReportTab('apps');
+    navigate('relatorio');
+  }, [navigate]);
+  // o pedido de aba vale só para essa ida ao Relatório
+  useEffect(() => {
+    if (view !== 'relatorio') setReportTab(null);
+  }, [view]);
 
   let page;
   if (view === 'config') page = <Settings section={cfgSection} jump={cfgJump} onSpy={spySection} narrow={narrow} />;
-  else if (view === 'relatorio') page = <Report onNavigate={navigate} />;
+  else if (view === 'relatorio') page = <Report key={reportTab || 'relatorio'} initialTab={reportTab} onNavigate={navigate} />;
   else if (view === 'perfil') page = <Profile onNavigate={navigate} />;
   else if (view === 'tarefas') page = <Tasks projectId={taskProject} onProject={setTaskProject} />;
   else if (view === 'inicio') page = <Home stats={stats} onNavigate={navigate} onOpenProject={openProject} />;
@@ -265,7 +275,7 @@ function Shell() {
         </>
       )}
       <main className="flex-1 min-w-0 flex flex-col">
-        <Topbar view={view} filter={filter} />
+        <Topbar view={view} filter={filter} playing={playing} onOpenApps={openApps} />
         <UpdateBar />
         <div className="flex-1 min-h-0">{page}</div>
       </main>

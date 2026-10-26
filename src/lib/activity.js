@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Briefcase, ChatsCircle, Code, DotsThreeCircle, GameController, Globe, MusicNotes, PaintBrush, PencilLine } from '@phosphor-icons/react';
 import { isTauri } from './native';
 import { deviceStore, nowIso } from '../data/store';
@@ -138,6 +138,13 @@ export function classify(exe, path = '', overrides = {}) {
 /** Nome amigável a partir do executável: "Code.exe" -> "Code" */
 export const appName = (exe) => String(exe || '').replace(/\.exe$/i, '');
 
+/** Nome curto para a interface: "YouTube (app web)" -> "YouTube", "Spotify.exe" -> "Spotify" */
+export const shortAppName = (exe) => {
+  const name = appName(exe);
+  const suffix = [WEB_APP_SUFFIX, STORE_APP_SUFFIX].find((sfx) => name.endsWith(sfx));
+  return suffix ? name.slice(0, -suffix.length) : name;
+};
+
 const TICK_MS = 15_000;
 const FLUSH_MS = 60_000;
 /** sem trocar de categoria por mais que isso, a sequência (jogo, trabalho) recomeça */
@@ -159,6 +166,7 @@ async function mediaSessions() {
 /**
  * Liga o mapeamento na janela principal. `config` é o launcher.tracking do perfil.
  * `onAlert(kind, minutes)` dispara quando passa do limite de jogo ou de trabalho.
+ * Devolve `playing`: os apps tocando agora (mídia do Windows), para a topbar.
  */
 export function useActivityTracker({ tracking, overrides, onAlert }) {
   const pending = useRef(new Map()); // id -> { day, exe, path, category, seconds }
@@ -166,9 +174,14 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
   const streak = useRef({ game: 0, work: 0, lastGameAt: 0, lastWorkAt: 0, gameAlerted: 0, workAlerted: 0 });
   const latest = useRef({});
   latest.current = { tracking, overrides, onAlert };
+  /** apps tocando agora pela mídia do Windows (nomes do mapeamento), para a topbar */
+  const [playing, setPlaying] = useState([]);
 
   useEffect(() => {
-    if (!tracking.enabled || !isTauri) return;
+    if (!tracking.enabled || !isTauri) {
+      setPlaying([]);
+      return;
+    }
     let alive = true;
 
     // linhas de hoje, para somar em cima do que já existe
@@ -211,13 +224,18 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
       // mídia tocando (YouTube minimizado, Spotify por baixo): conta mesmo sem teclado e mouse,
       // uma vez por app e sem repetir o da frente. Aba comum do navegador não entra.
       const counted = new Set(fgName ? [fgName.toLowerCase()] : []);
+      const nowPlaying = [];
       for (const m of media || []) {
         if (!m?.playing) continue;
         const name = appFromAumid(m.app_id);
-        if (!name || counted.has(name.toLowerCase()) || IGNORE.has(name.toLowerCase())) continue;
+        if (!name || IGNORE.has(name.toLowerCase()) || nowPlaying.includes(name)) continue;
+        nowPlaying.push(name);
+        if (counted.has(name.toLowerCase())) continue;
         counted.add(name.toLowerCase());
         add(name, '');
       }
+      // só troca o estado quando muda, para a topbar não renderizar a cada 15 s à toa
+      setPlaying((prev) => (prev.join('|') === nowPlaying.join('|') ? prev : nowPlaying));
       if (!category) return;
 
       // sequências para os alertas: jogo e trabalho (código + trabalho + design + escrita)
@@ -274,6 +292,8 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
       flush();
     };
   }, [tracking.enabled]);
+
+  return { playing };
 }
 
 /** Lê o tempo por app entre duas datas (dias no formato AAAA-MM-DD, inclusive) */

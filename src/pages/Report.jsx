@@ -24,8 +24,8 @@ const TABS = [
 ];
 
 /** Relatório (0.8): projetos, linha do tempo de um dia e tempo por app */
-export default function Report({ onNavigate }) {
-  const [tab, setTab] = useState('projetos');
+export default function Report({ onNavigate, initialTab = null }) {
+  const [tab, setTab] = useState(initialTab || 'projetos');
   return (
     <div className="h-full overflow-y-auto">
       <div className="page">
