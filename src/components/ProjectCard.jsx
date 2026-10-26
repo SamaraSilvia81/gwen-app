@@ -34,13 +34,13 @@ function GitLine({ repo, showLabel }) {
   if (last) parts.push({ text: `último commit ${timeAgo(last)}`, warn: false });
 
   return (
-    <p className="flex items-center gap-1.5 mono text-[11px] text-muted min-w-0" title={repo.path}>
+    <p className="flex items-center gap-1.5 mono text-[11px] text-muted min-w-0 overflow-hidden" title={repo.path}>
       <GitBranch size={12} className="shrink-0" />
-      {showLabel && repo.label && <span className="truncate max-w-[90px]">{repo.label}:</span>}
-      <span className="text-bone truncate max-w-[110px]">{branch || 'sem branch'}</span>
-      {parts.map((p, i) => (
-        <span key={i} className={`whitespace-nowrap ${p.warn ? 'text-phosphor' : ''}`}>· {p.text}</span>
-      ))}
+      {showLabel && repo.label && <span className="truncate max-w-[90px] shrink-0">{repo.label}:</span>}
+      <span className="text-bone truncate max-w-[110px] shrink-0">{branch || 'sem branch'}</span>
+      <span className="truncate">{parts.map((p, i) => (
+        <span key={i} className={p.warn ? 'text-phosphor' : ''}>· {p.text} </span>
+      ))}</span>
     </p>
   );
 }
@@ -228,10 +228,47 @@ export default function ProjectCard({ project, time, frontTimes, categoryName, o
           </button>
         </span>
         {isActive ? (
-          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => requestEnd(activeSession.id)}>
-            <Stop size={12} weight="fill" />
-            <Label>Encerrar</Label>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Frentes abertas neste projeto nesta sessão */}
+            {(() => {
+              const openFronts = new Set(mySessions.map((s) => s.front).filter(Boolean));
+              const closedFronts = fronts.filter((f) => !openFronts.has(f));
+              return closedFronts.length > 0 ? (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={busy}
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-expanded={menuOpen}
+                    title="Abrir outra frente deste projeto"
+                  >
+                    <Lightning size={13} weight="fill" />
+                    <Label>+ Frente</Label>
+                    <CaretDown size={11} />
+                  </button>
+                  {menuOpen && (
+                    <div className="card absolute right-0 bottom-[calc(100%+6px)] w-[220px] p-1.5 shadow-2xl anim-rise z-50">
+                      <p className="eyebrow px-2.5 pt-1 pb-1.5">abrir também</p>
+                      {closedFronts.map((front) => (
+                        <button
+                          key={front}
+                          onClick={() => launch(front)}
+                          className="w-full flex items-center gap-3 h-9 px-2.5 rounded-ui-sm text-left hover:bg-[var(--c-phosphor-8)]"
+                        >
+                          <span className="flex-1 text-[13px] truncate">{front}</span>
+                          {frontTime(front) > 0 && <span className="mono text-[10px] text-muted">{formatDuration(frontTime(front))}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => requestEnd(activeSession.id)}>
+              <Stop size={12} weight="fill" />
+              <Label>Encerrar</Label>
+            </button>
+          </div>
         ) : fronts.length > 1 ? (
           <div className="relative" ref={menuRef}>
             <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen}>
