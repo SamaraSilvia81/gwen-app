@@ -218,7 +218,6 @@ function Shell() {
     [sessions, projects, now, activeBreak],
   );
   useTray({ projects, activeSessions, activeBreak, now, launchProject, requestEnd, toast });
-  useBubble({ projects, activeSessions, activeBreak });
 
   // mapeamento de apps e jogos (0.8), com os alertas de tempo seguido
   const launcherCfg = useMemo(() => resolveLauncher(profile?.launcher), [profile?.launcher]);
@@ -235,6 +234,7 @@ function Shell() {
     [toast],
   );
   const { playing } = useActivityTracker({ tracking: launcherCfg.tracking, overrides: launcherCfg.categories, onAlert: onActivityAlert });
+  useBubble({ projects, activeSessions, activeBreak, playing });
   const openApps = useCallback(() => {
     setReportTab('apps');
     navigate('relatorio');

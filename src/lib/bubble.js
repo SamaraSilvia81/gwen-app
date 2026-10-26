@@ -10,10 +10,12 @@ import { bubbleEnabled } from './layout';
  * sessão, sempre no topo e arrastável. Clicar nela traz a janela de volta.
  * A bolha é uma segunda janela do Tauri (label "bubble", ver tauri.conf.json),
  * transparente e sem borda. As duas conversam por eventos:
- *   main -> bolha: 'bolha://estado' com { label, startedAt, pausedSeconds, paused, elapsed }
+ *   main -> bolha: 'bolha://estado' com { label, paused, elapsed, media: { name, seconds } | null }
  *   bolha -> main: 'bolha://pronta' (pede o estado) e 'bolha://abrir' (clique)
  */
 export const BUBBLE_LABEL = 'bubble';
+/** "YouTube (app web)" -> "YouTube" (sem importar activity.js, que puxaria o banco para a janela da bolha) */
+const shortName = (n) => String(n || '').replace(/\.exe$/i, '').replace(/ \((app web|app)\)$/i, '');
 export const POS_KEY = 'gwen.bolha.pos';
 const MARGIN = 24;
 
@@ -45,7 +47,7 @@ async function placeBubble(bubble) {
 }
 
 /** Na janela principal: mostra a bolha ao minimizar e manda o estado da sessão */
-export function useBubble({ projects, activeSessions = [], activeBreak }) {
+export function useBubble({ projects, activeSessions = [], activeBreak, playing = [] }) {
   // a bolha mostra a sessão aberta há mais tempo; com várias, o rótulo diz quantas
   const activeSession = activeSessions[activeSessions.length - 1] || null;
   const state = useRef(null);
@@ -58,6 +60,10 @@ export function useBubble({ projects, activeSessions = [], activeBreak }) {
     count: activeSessions.length,
     paused: !!activeBreak,
     elapsed: activeSession ? Math.floor(sessionSeconds(activeSession, new Date(), activeBreak)) : 0,
+    // mídia tocando (mapeamento): a bolha mostra o tempo de hoje do primeiro app embaixo do círculo
+    media: playing.length
+      ? { name: shortName(playing[0].name), seconds: playing[0].seconds + Math.floor((Date.now() - playing[0].at) / 1000), more: playing.length - 1 }
+      : null,
     sentAt: Date.now(),
   };
 
@@ -72,7 +78,7 @@ export function useBubble({ projects, activeSessions = [], activeBreak }) {
       /* bolha fechada: tudo bem */
     }
   };
-  const key = `${activeSessions.map((s) => s.id).join(',')}|${activeBreak?.id}|${state.current.label}`;
+  const key = `${activeSessions.map((s) => s.id).join(',')}|${activeBreak?.id}|${state.current.label}|${state.current.media?.name || ''}`;
   useEffect(() => {
     send.current();
     const id = setInterval(() => send.current(), 15_000);

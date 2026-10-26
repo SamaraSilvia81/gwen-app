@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { MusicNotes } from '@phosphor-icons/react';
 import Logo from '../components/Logo';
 import { isTauri } from '../lib/native';
 import { formatClock } from '../lib/time';
@@ -10,6 +11,9 @@ import { POS_KEY } from '../lib/bubble';
  * Arrastar move a bolha; clicar sem arrastar devolve a janela principal.
  */
 const DRAG_PX = 4;
+/** a janela cresce para baixo quando há mídia tocando, sem mexer no círculo */
+const SIZE = 76;
+const SIZE_WITH_MEDIA = 100;
 
 export default function Bubble() {
   const [state, setState] = useState(null);
@@ -56,6 +60,18 @@ export default function Bubble() {
   }, []);
 
   const elapsed = state?.active ? state.elapsed + (state.paused ? 0 : Math.floor((Date.now() - state.sentAt) / 1000)) : 0;
+  const media = state?.media || null;
+  const mediaSeconds = media ? media.seconds + Math.floor((Date.now() - state.sentAt) / 1000) : 0;
+
+  // espaço para a pílula da mídia: a janela cresce para baixo (o canto de cima fica parado)
+  const hasMedia = !!media;
+  useEffect(() => {
+    if (!isTauri) return;
+    (async () => {
+      const { getCurrentWindow, LogicalSize } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setSize(new LogicalSize(SIZE, hasMedia ? SIZE_WITH_MEDIA : SIZE)).catch(() => {});
+    })();
+  }, [hasMedia]);
   const minuteOfHour = (elapsed % 3600) / 3600;
 
   async function onPointerDown(e) {
@@ -85,9 +101,10 @@ export default function Bubble() {
   // anel: quanto da hora atual já passou na sessão
   const R = 30;
   const C = 2 * Math.PI * R;
+  const mediaLine = media ? `\nTocando: ${media.name}${media.more > 0 ? ` (+${media.more})` : ''} · ${formatClock(mediaSeconds)} hoje` : '';
   const title = state?.active
-    ? `${state.label || 'Sessão'} · ${formatClock(elapsed)}${state.paused ? ' (em pausa)' : ''}\nClique para abrir · arraste para mover`
-    : 'G.W.E.N. · nenhuma sessão ativa\nClique para abrir · arraste para mover';
+    ? `${state.label || 'Sessão'} · ${formatClock(elapsed)}${state.paused ? ' (em pausa)' : ''}${mediaLine}\nClique para abrir · arraste para mover`
+    : `G.W.E.N. · nenhuma sessão ativa${mediaLine}\nClique para abrir · arraste para mover`;
 
   return (
     <div className="bubble-stage">
@@ -117,6 +134,12 @@ export default function Bubble() {
         {state?.active && <span className="bubble-time tabular">{formatClock(elapsed)}</span>}
         {state?.active && <span className="bubble-rec" />}
       </button>
+      {media && (
+        <span className="bubble-media tabular" title={`${media.name} · ${formatClock(mediaSeconds)} hoje`}>
+          <MusicNotes size={9} weight="fill" />
+          {formatClock(mediaSeconds)}
+        </span>
+      )}
     </div>
   );
 }

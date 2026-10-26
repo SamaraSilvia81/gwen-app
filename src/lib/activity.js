@@ -166,7 +166,7 @@ async function mediaSessions() {
 /**
  * Liga o mapeamento na janela principal. `config` é o launcher.tracking do perfil.
  * `onAlert(kind, minutes)` dispara quando passa do limite de jogo ou de trabalho.
- * Devolve `playing`: os apps tocando agora (mídia do Windows), para a topbar.
+ * Devolve `playing`: os apps tocando agora (mídia do Windows) e o tempo de hoje de cada um.
  */
 export function useActivityTracker({ tracking, overrides, onAlert }) {
   const pending = useRef(new Map()); // id -> { day, exe, path, category, seconds }
@@ -174,7 +174,11 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
   const streak = useRef({ game: 0, work: 0, lastGameAt: 0, lastWorkAt: 0, gameAlerted: 0, workAlerted: 0 });
   const latest = useRef({});
   latest.current = { tracking, overrides, onAlert };
-  /** apps tocando agora pela mídia do Windows (nomes do mapeamento), para a topbar */
+  /**
+   * Apps tocando agora pela mídia do Windows, para a topbar e a bolha:
+   * [{ name, seconds, at }], com `seconds` = tempo de hoje desse app no instante `at`
+   * (a interface soma os segundos desde `at`, sem esperar o próximo ciclo).
+   */
   const [playing, setPlaying] = useState([]);
 
   useEffect(() => {
@@ -234,8 +238,13 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
         counted.add(name.toLowerCase());
         add(name, '');
       }
-      // só troca o estado quando muda, para a topbar não renderizar a cada 15 s à toa
-      setPlaying((prev) => (prev.join('|') === nowPlaying.join('|') ? prev : nowPlaying));
+      const at = Date.now();
+      setPlaying(
+        nowPlaying.map((name) => {
+          const id = `${day}::${name.toLowerCase()}`;
+          return { name, seconds: (known.current.get(id) || 0) + (pending.current.get(id)?.seconds || 0), at };
+        }),
+      );
       if (!category) return;
 
       // sequências para os alertas: jogo e trabalho (código + trabalho + design + escrita)
@@ -303,3 +312,6 @@ export async function usageBetween(fromDay, toDay, overrides = {}) {
     .filter((r) => r.day >= fromDay && r.day <= toDay)
     .map((r) => ({ ...r, category: overrides[String(r.exe).toLowerCase()] || r.category || classify(r.exe, r.path) }));
 }
+
+/** Tempo de hoje de um item de `playing`, andando por segundo entre um ciclo e outro */
+export const playingSeconds = (p, now = Date.now()) => (p?.seconds || 0) + Math.max(0, Math.floor((now - (p?.at || now)) / 1000));

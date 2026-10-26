@@ -10,7 +10,7 @@ import { effectiveMode } from '../lib/themes';
 import { Label } from './Modal';
 import { VIEWS } from './Rail';
 import { filterLabel } from '../lib/collections';
-import { CATEGORIES, shortAppName } from '../lib/activity';
+import { playingSeconds, shortAppName } from '../lib/activity';
 
 export function greeting(date) {
   const h = date.getHours();
@@ -144,15 +144,17 @@ export default function Topbar({ view = 'inicio', filter = 'all', playing = [], 
         )}
 
         {playing.length > 0 && (
-          // mídia tocando agora (mapeamento): some quando pausa; clique abre Relatório, Apps e jogos
+          // mídia tocando agora (mapeamento): nome e tempo de hoje desse app. Some quando pausa;
+          // o clique abre Relatório, Apps e jogos. Largura do relógio fixa para não pular.
           <button
             className="btn btn-ghost gap-1.5 px-2.5"
             onClick={onOpenApps}
-            title={`Tocando agora: ${playing.map(shortAppName).join(', ')}. Conta em ${CATEGORIES.midia.label}. Clique para ver Apps e jogos.`}
-            aria-label={`Tocando agora: ${playing.map(shortAppName).join(', ')}`}
+            title={`Tocando agora: ${playing.map((p) => `${shortAppName(p.name)} (${formatClock(playingSeconds(p, now.getTime()))} hoje)`).join(', ')}. Clique para ver Apps e jogos.`}
+            aria-label={`Tocando agora: ${playing.map((p) => shortAppName(p.name)).join(', ')}`}
           >
             <MusicNotes size={14} weight="fill" className="text-phosphor anim-breathe" />
-            <span className="text-[13px] max-w-[140px] truncate max-[760px]:hidden">{shortAppName(playing[0])}</span>
+            <span className="text-[13px] max-w-[120px] truncate max-[760px]:hidden">{shortAppName(playing[0].name)}</span>
+            <span className="mono text-[12px] tabular text-phosphor text-right min-w-[5ch]">{formatClock(playingSeconds(playing[0], now.getTime()))}</span>
             {playing.length > 1 && <span className="mono text-[11px] text-muted max-[760px]:hidden">+{playing.length - 1}</span>}
           </button>
         )}

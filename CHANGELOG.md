@@ -11,7 +11,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Adicionado
 - **Mídia em segundo plano no mapeamento:** o que está tocando pela mídia do Windows (a do controle de volume) também soma tempo, mesmo minimizado e sem teclado e mouse. YouTube minimizado, Spotify por baixo e Netflix contam enquanto estão em *play*; pausado não conta. Aba comum do navegador não entra, para não duplicar o tempo do navegador. Novo comando nativo `media_sessions`
-- **O que está tocando, na barra de cima:** com o mapeamento ligado e algum app em *play* (YouTube, Spotify, Netflix), aparece um chip com o nome dele ao lado da sessão (`+1` quando há mais de um). Some quando pausa. O clique abre o Relatório direto em Apps e jogos
+- **O que está tocando, na barra de cima e na bolha:** com o mapeamento ligado e algum app em *play* (YouTube, Spotify, Netflix), aparece um chip com o nome e o tempo de hoje desse app, andando por segundo (`+1` quando há mais de um). Some quando pausa e o clique abre o Relatório direto em Apps e jogos. Com a G.W.E.N. minimizada, a bolha ganha uma pílula embaixo do círculo com o mesmo tempo; a janela da bolha cresce para baixo, então o círculo não sai do lugar (permissão `core:window:allow-set-size`)
 - **Início, cartão "No computador hoje":** tempo de hoje pelo mapeamento, com ou sem projeto aberto. Faixa por categoria, três números de relance (Trabalho, Música e vídeo, Jogos) e os quatro apps com mais tempo. Atualiza a cada minuto e leva ao Relatório em Apps e jogos
 
 ### Planejado
