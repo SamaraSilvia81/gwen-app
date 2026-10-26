@@ -5,11 +5,11 @@
 
 # Documentação da G.W.E.N.
 
-![status](https://img.shields.io/badge/status-vigente-0A0A0B) ![documentos](https://img.shields.io/badge/documentos-12-3A3A3F) ![versão](https://img.shields.io/badge/versão%20do%20app-0.4.0-5E5E66)
+![status](https://img.shields.io/badge/status-vigente-0A0A0B) ![documentos](https://img.shields.io/badge/documentos-17-3A3A3F) ![versão](https://img.shields.io/badge/versão%20do%20app-0.9.0-5E5E66)
 
 | Campo | Valor |
 |---|---|
-| Atualizado | sábado, 17/10/2026 |
+| Atualizado | segunda-feira, 26/10/2026 |
 | Redigido por | Samara Silvia |
 | Banners | gerados em [`_assets/gerador/banners-docs.html`](../_assets/gerador/banners-docs.html) |
 
@@ -42,6 +42,7 @@
 | [`ADR-012`](decisoes/ADR-012-codigo-proprietario.md) | Código proprietário | Decisão | Aceita |
 | [`ADR-013`](decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md) | Sessões em paralelo e mapeamento local | Decisão | Aceita |
 | [`ADR-014`](decisoes/ADR-014-tarefas-locais-e-issues-somente-leitura.md) | Tarefas locais e Issues somente leitura | Decisão | Aceita |
+| [`FBK-001`](feedbacks/FBK-001-feedback-uso-beta-0.9.md) | Feedback de uso — beta 0.9 | Feedback | Processado |
 
 ### $ como os documentos se organizam
 
@@ -50,8 +51,11 @@
 | `ARQ` | Arquitetura | `docs/` | Visão de como as partes se encaixam. Muda pouco |
 | `DAT` | Dados | `docs/` | Tabelas, relações, regras de cálculo |
 | `ADR` | Registro de decisão | `docs/decisoes/` | Toda escolha que teve alternativas reais e que alguém vai perguntar "por que assim?" |
+| `FBK` | Feedback | `docs/feedbacks/` | Registro de uso real, com bugs, desejos e observações de quem usou o app |
 
 **ADRs não são reescritos depois de aceitos.** Se uma decisão mudar, cria-se um ADR novo que substitui o antigo, e o antigo ganha o status `Substituída por ADR-00X`. Status possíveis: `Proposta` · `Aceita` · `Substituída` · `Descartada`.
+
+**FBKs não são reescritos depois de processados.** O que foi resolvido fica registrado na seção "O que foi resolvido", com o commit correspondente. Status possíveis: `Aberto` · `Processado` · `Arquivado`.
 
 ### $ padrão de cada documento
 
