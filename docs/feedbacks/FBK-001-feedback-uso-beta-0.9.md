@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../_assets/banners/docs/fbk-001-claro.png">
+  <img src="../_assets/banners/docs/fbk-001.png" alt="FBK-001 · Feedback de uso — beta 0.9" width="100%">
+</picture>
+
 # FBK-001 · Feedback de uso — beta 0.9
 
 ![status](https://img.shields.io/badge/status-processado-0A0A0B) ![tipo](https://img.shields.io/badge/tipo-feedback-3A3A3F) ![código](https://img.shields.io/badge/código-FBK--001-5E5E66)
