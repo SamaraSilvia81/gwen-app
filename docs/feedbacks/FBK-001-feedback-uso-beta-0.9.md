@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="../_assets/banners/docs/fbk-001-claro.png">
-  <img src="../_assets/banners/docs/fbk-001.png" alt="FBK-001 · Feedback de uso — beta 0.9" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="../../_assets/banners/docs/fbk-001-claro.png">
+  <img src="../../_assets/banners/docs/fbk-001.png" alt="FBK-001 · Feedback de uso — beta 0.9" width="100%">
 </picture>
 
 # FBK-001 · Feedback de uso — beta 0.9
