@@ -29,7 +29,7 @@
   --c-ember-20: color-mix(in srgb, var(--c-ember) 20%, transparent);
   --c-surface-glass: color-mix(in srgb, var(--c-surface) 72%, transparent);
   --c-void-veil: color-mix(in srgb, var(--c-void) 82%, transparent);
-  --c-pause-veil: var(--c-void-veil);
+  --c-pause-veil: color-mix(in srgb, var(--c-void) 75%, transparent);
 
   --f-display: 'Space Grotesk Variable', 'Space Grotesk', system-ui, sans-serif;
   --f-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
@@ -123,6 +123,19 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--c-surface-glass);
   backdrop-filter: blur(var(--blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+}
+
+
+/* The pause overlay needs its own backdrop-filter rule because it uses a
+   custom background token instead of --c-surface-glass (which .glass uses).
+   Blur is intentionally stronger here to keep the content underneath unreadable. */
+.pause-overlay {
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+}
+:root[data-style='terminal'] .pause-overlay {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ─── CARD ─── */
@@ -426,7 +439,8 @@ select option { background: var(--c-surface); color: var(--c-bone); }
   background-image: linear-gradient(180deg, color-mix(in srgb, var(--c-void) 55%, transparent) 0%, color-mix(in srgb, var(--c-void) 88%, transparent) 60%, var(--c-void) 100%), var(--wallpaper);
 }
 .home-hero-inner { width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-top: 36px !important; padding-bottom: 24px !important; }
-.home-title { font-family: var(--f-heading); font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; }
+.home-hero-inner > *:first-child { flex: 1 1 0; min-width: 0; }
+.home-title { font-family: var(--f-heading); font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; overflow-wrap: break-word; word-break: break-word; }
 :root[data-style='terminal'] .home-title { font-size: clamp(40px, 6vw, 64px); font-weight: 400; letter-spacing: 0.03em; line-height: 0.92; }
 .home-now {
   width: 290px; flex-shrink: 0; padding: 16px; border-radius: var(--radius);
