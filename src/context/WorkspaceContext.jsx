@@ -134,16 +134,31 @@ export function WorkspaceProvider({ children }) {
   /** A pausa vale para todas as sessões abertas: cada uma ganha o trecho em comum como pausa */
   const endBreak = useCallback(async (endedAt = new Date()) => {
     if (!activeBreak) return;
-    const ended = await breakRepo.end(activeBreak.id, endedAt);
+    // Guard: if the DB call hangs (e.g. during the stretch overlay), reject after
+    // 6 s so the UI does not stay locked. The break row is cleared from state
+    // regardless, letting the user retry or navigate away.
+    const withTimeout = (promise, ms) =>
+      Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+    let ended;
+    try {
+      ended = await withTimeout(breakRepo.end(activeBreak.id, endedAt), 6000);
+    } catch {
+      setActiveBreak(null);
+      throw new Error('Não foi possível registrar a pausa. O banco não respondeu a tempo.');
+    }
     const bStart = new Date(ended.started_at).getTime();
     const bEnd = new Date(ended.ended_at).getTime();
     for (const open of activeSessions) {
       const from = Math.max(bStart, new Date(open.started_at).getTime());
       const seconds = (bEnd - from) / 1000;
       if (seconds <= 0) continue;
-      const s = await sessionRepo.addPaused(open.id, seconds);
-      replaceActive(s);
-      replaceSession(s);
+      try {
+        const s = await withTimeout(sessionRepo.addPaused(open.id, seconds), 4000);
+        replaceActive(s);
+        replaceSession(s);
+      } catch {
+        // session update failed — break is already closed, keep going
+      }
     }
     setActiveBreak(null);
     return ended;

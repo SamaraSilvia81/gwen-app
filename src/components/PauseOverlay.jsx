@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowArcLeft } from '@phosphor-icons/react';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useToast } from '../context/ToastContext';
@@ -17,6 +17,19 @@ export default function PauseOverlay() {
   const toast = useToast();
   const now = useNow(1000);
   const [leaving, setLeaving] = useState(false);
+  const timeoutRef = useRef(null);
+
+  // Safety net: if leaving gets stuck for more than 8s, force-reset the flag
+  // so the button becomes clickable again and the user can try once more.
+  useEffect(() => {
+    if (leaving) {
+      timeoutRef.current = setTimeout(() => {
+        setLeaving(false);
+        toast('Não foi possível encerrar a pausa. Tente novamente.', 'error');
+      }, 8000);
+    }
+    return () => clearTimeout(timeoutRef.current);
+  }, [leaving, toast]);
 
   if (!activeBreak) return null;
 
@@ -29,19 +42,22 @@ export default function PauseOverlay() {
   const Icon = kind.icon;
 
   async function handleBack() {
+    if (leaving) return;
     setLeaving(true);
     try {
       await endBreak();
+      clearTimeout(timeoutRef.current);
       toast(`Pausa de ${formatDuration(elapsed)} registrada.`);
     } catch (err) {
-      toast(err.message, 'error');
+      clearTimeout(timeoutRef.current);
       setLeaving(false);
+      toast(err?.message || 'Erro ao encerrar a pausa.', 'error');
     }
   }
 
   return (
     <div
-      className="glass fixed inset-0 z-[150] flex flex-col items-center justify-center anim-fade"
+      className="fixed inset-0 z-[150] flex flex-col items-center justify-center anim-fade pause-overlay"
       style={{ background: 'var(--c-pause-veil)' }}
     >
       <div className="flex flex-col items-center w-full max-w-[520px] px-8">
@@ -88,7 +104,7 @@ export default function PauseOverlay() {
 
         <button className="btn btn-ghost btn-lg mt-12" onClick={handleBack} disabled={leaving}>
           <ArrowArcLeft size={16} />
-          <Label>{project ? `Voltar para ${project.name}` : 'Voltar'}</Label>
+          <Label>{leaving ? 'Encerrando…' : project ? `Voltar para ${project.name}` : 'Voltar'}</Label>
         </button>
         {activeSessions.length > 0 && (
           <p className="mt-3 text-[12px] text-muted">
