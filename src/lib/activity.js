@@ -3,6 +3,7 @@ import { Briefcase, ChatsCircle, Code, DotsThreeCircle, GameController, Globe, M
 import { isTauri } from './native';
 import { deviceStore, nowIso } from '../data/store';
 import { dayKey } from './habits';
+import { activitySeconds, shortName } from './nowActivity';
 
 /**
  * Mapeamento de apps e jogos (0.8).
@@ -139,11 +140,7 @@ export function classify(exe, path = '', overrides = {}) {
 export const appName = (exe) => String(exe || '').replace(/\.exe$/i, '');
 
 /** Nome curto para a interface: "YouTube (app web)" -> "YouTube", "Spotify.exe" -> "Spotify" */
-export const shortAppName = (exe) => {
-  const name = appName(exe);
-  const suffix = [WEB_APP_SUFFIX, STORE_APP_SUFFIX].find((sfx) => name.endsWith(sfx));
-  return suffix ? name.slice(0, -suffix.length) : name;
-};
+export const shortAppName = shortName;
 
 const TICK_MS = 15_000;
 const FLUSH_MS = 60_000;
@@ -166,7 +163,8 @@ async function mediaSessions() {
 /**
  * Liga o mapeamento na janela principal. `config` é o launcher.tracking do perfil.
  * `onAlert(kind, minutes)` dispara quando passa do limite de jogo ou de trabalho.
- * Devolve `playing`: os apps tocando agora (mídia do Windows) e o tempo de hoje de cada um.
+ * Devolve `playing` (apps tocando pela mídia do Windows) e `game` (jogo na frente),
+ * com o tempo de hoje de cada um, para a topbar e a bolha (ver nowActivity.js).
  */
 export function useActivityTracker({ tracking, overrides, onAlert }) {
   const pending = useRef(new Map()); // id -> { day, exe, path, category, seconds }
@@ -180,10 +178,13 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
    * (a interface soma os segundos desde `at`, sem esperar o próximo ciclo).
    */
   const [playing, setPlaying] = useState([]);
+  /** jogo na janela da frente agora ({ name, seconds, at }) ou null */
+  const [game, setGame] = useState(null);
 
   useEffect(() => {
     if (!tracking.enabled || !isTauri) {
       setPlaying([]);
+      setGame(null);
       return;
     }
     let alive = true;
@@ -239,12 +240,12 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
         add(name, '');
       }
       const at = Date.now();
-      setPlaying(
-        nowPlaying.map((name) => {
-          const id = `${day}::${name.toLowerCase()}`;
-          return { name, seconds: (known.current.get(id) || 0) + (pending.current.get(id)?.seconds || 0), at };
-        }),
-      );
+      const today = (name) => {
+        const id = `${day}::${name.toLowerCase()}`;
+        return (known.current.get(id) || 0) + (pending.current.get(id)?.seconds || 0);
+      };
+      setPlaying(nowPlaying.map((name) => ({ name, seconds: today(name), at })));
+      setGame(category === 'jogos' ? { name: fgName, seconds: today(fgName), at } : null);
       if (!category) return;
 
       // sequências para os alertas: jogo e trabalho (código + trabalho + design + escrita)
@@ -302,7 +303,7 @@ export function useActivityTracker({ tracking, overrides, onAlert }) {
     };
   }, [tracking.enabled]);
 
-  return { playing };
+  return { playing, game };
 }
 
 /** Lê o tempo por app entre duas datas (dias no formato AAAA-MM-DD, inclusive) */
@@ -313,5 +314,6 @@ export async function usageBetween(fromDay, toDay, overrides = {}) {
     .map((r) => ({ ...r, category: overrides[String(r.exe).toLowerCase()] || r.category || classify(r.exe, r.path) }));
 }
 
+
 /** Tempo de hoje de um item de `playing`, andando por segundo entre um ciclo e outro */
-export const playingSeconds = (p, now = Date.now()) => (p?.seconds || 0) + Math.max(0, Math.floor((now - (p?.at || now)) / 1000));
+export const playingSeconds = activitySeconds;

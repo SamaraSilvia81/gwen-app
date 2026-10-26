@@ -659,14 +659,18 @@ select option { background: var(--c-surface); color: var(--c-bone); }
 /* ═══ BOLHA (janela própria, transparente) ═══ */
 html.is-bubble, html.is-bubble body, html.is-bubble #root { background: transparent !important; overflow: hidden; }
 html.is-bubble body::before { display: none; }
-.bubble-stage { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; gap: 4px; }
-/* mídia tocando: pílula embaixo do círculo; a janela cresce para baixo e o círculo não sai do lugar */
-.bubble-media {
-  display: inline-flex; align-items: center; gap: 3px; height: 16px; padding: 0 6px; border-radius: 999px;
-  font-family: var(--f-mono); font-size: 9px; font-weight: 600; line-height: 1; min-width: 46px; justify-content: center;
-  background: var(--c-surface); border: 1px solid var(--c-rule-light); color: var(--c-phosphor);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); pointer-events: none;
+.bubble-stage { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 6px; gap: 6px; }
+/* bolinha de Apps e jogos: acima do círculo; a janela cresce para cima e o círculo fica parado */
+.bubble-sat {
+  width: 46px; height: 46px; border-radius: 999px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: var(--c-surface); border: 1px solid var(--c-phosphor); color: var(--c-phosphor);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45); cursor: pointer;
+  transition: transform 0.2s var(--ease-out);
 }
+.bubble-sat:hover { transform: scale(1.06); }
+.bubble-sat-time { font-family: var(--f-mono); font-size: 10.5px; font-weight: 700; color: var(--c-bone); line-height: 1; }
+:root[data-style='terminal'] .bubble-sat-time { color: var(--c-phosphor); }
 .bubble {
   position: relative; width: 64px; height: 64px; border-radius: 999px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { isTauri } from './native';
 import { sessionSeconds } from './time';
 import { bubbleEnabled } from './layout';
+import { currentActivity } from './nowActivity';
 
 /**
  * Bolha flutuante (0.7).
@@ -10,12 +11,17 @@ import { bubbleEnabled } from './layout';
  * sessão, sempre no topo e arrastável. Clicar nela traz a janela de volta.
  * A bolha é uma segunda janela do Tauri (label "bubble", ver tauri.conf.json),
  * transparente e sem borda. As duas conversam por eventos:
- *   main -> bolha: 'bolha://estado' com { label, paused, elapsed, media: { name, seconds } | null }
- *   bolha -> main: 'bolha://pronta' (pede o estado) e 'bolha://abrir' (clique)
+ *   main -> bolha: 'bolha://estado' com { label, paused, elapsed, activity: { kind, name, seconds, more } | null }
+ *   bolha -> main: 'bolha://pronta' (pede o estado), 'bolha://abrir' (clique no círculo)
+ *                  e 'bolha://apps' (clique na bolinha de Apps e jogos)
+ *
+ * Com jogo ou mídia, a janela cresce para cima (BUBBLE_EXTRA) e sobe o mesmo tanto,
+ * então o círculo não sai do lugar. A posição salva é sempre a do círculo.
  */
 export const BUBBLE_LABEL = 'bubble';
-/** "YouTube (app web)" -> "YouTube" (sem importar activity.js, que puxaria o banco para a janela da bolha) */
-const shortName = (n) => String(n || '').replace(/\.exe$/i, '').replace(/ \((app web|app)\)$/i, '');
+/** tamanho da janela da bolha (tauri.conf.json) e o espaço extra para a bolinha de Apps e jogos, acima */
+export const BUBBLE_SIZE = 76;
+export const BUBBLE_EXTRA = 52;
 export const POS_KEY = 'gwen.bolha.pos';
 const MARGIN = 24;
 
@@ -30,7 +36,11 @@ async function placeBubble(bubble) {
   try {
     const saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-      await bubble.setPosition(new PhysicalPosition(saved.x, saved.y));
+      // com a bolinha de Apps e jogos aberta, a janela começa mais acima
+      const scale = (await bubble.scaleFactor().catch(() => 1)) || 1;
+      const size = await bubble.outerSize();
+      const lifted = size.height > Math.round(BUBBLE_SIZE * scale) + 2 ? Math.round(BUBBLE_EXTRA * scale) : 0;
+      await bubble.setPosition(new PhysicalPosition(saved.x, saved.y - lifted));
       return;
     }
   } catch {
@@ -47,7 +57,7 @@ async function placeBubble(bubble) {
 }
 
 /** Na janela principal: mostra a bolha ao minimizar e manda o estado da sessão */
-export function useBubble({ projects, activeSessions = [], activeBreak, playing = [] }) {
+export function useBubble({ projects, activeSessions = [], activeBreak, playing = [], game = null, onOpenApps }) {
   // a bolha mostra a sessão aberta há mais tempo; com várias, o rótulo diz quantas
   const activeSession = activeSessions[activeSessions.length - 1] || null;
   const state = useRef(null);
@@ -60,14 +70,17 @@ export function useBubble({ projects, activeSessions = [], activeBreak, playing 
     count: activeSessions.length,
     paused: !!activeBreak,
     elapsed: activeSession ? Math.floor(sessionSeconds(activeSession, new Date(), activeBreak)) : 0,
-    // mídia tocando (mapeamento): a bolha mostra o tempo de hoje do primeiro app embaixo do círculo
-    media: playing.length
-      ? { name: shortName(playing[0].name), seconds: playing[0].seconds + Math.floor((Date.now() - playing[0].at) / 1000), more: playing.length - 1 }
-      : null,
+    // agora no mapeamento (jogo na frente ou mídia tocando): a bolinha de cima
+    activity: (() => {
+      const a = currentActivity({ playing, game });
+      return a ? { kind: a.kind, name: a.name, seconds: a.seconds + Math.floor((Date.now() - a.at) / 1000), more: a.more } : null;
+    })(),
     sentAt: Date.now(),
   };
 
   // estado para a bolha: a cada mudança e a cada 15 s (a bolha conta os segundos sozinha)
+  const openApps = useRef(onOpenApps);
+  openApps.current = onOpenApps;
   const send = useRef(async () => {});
   send.current = async () => {
     if (!isTauri) return;
@@ -78,7 +91,7 @@ export function useBubble({ projects, activeSessions = [], activeBreak, playing 
       /* bolha fechada: tudo bem */
     }
   };
-  const key = `${activeSessions.map((s) => s.id).join(',')}|${activeBreak?.id}|${state.current.label}|${state.current.media?.name || ''}`;
+  const key = `${activeSessions.map((s) => s.id).join(',')}|${activeBreak?.id}|${state.current.label}|${state.current.activity?.kind || ''}:${state.current.activity?.name || ''}`;
   useEffect(() => {
     send.current();
     const id = setInterval(() => send.current(), 15_000);
@@ -122,6 +135,10 @@ export function useBubble({ projects, activeSessions = [], activeBreak, playing 
         main.onFocusChanged(sync),
         listen('bolha://abrir', restore),
         listen('bolha://pronta', () => send.current()),
+        listen('bolha://apps', async () => {
+          await restore();
+          openApps.current?.();
+        }),
       ]);
       if (alive) offs = list;
       else list.forEach((off) => off());

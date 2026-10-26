@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CaretDown, Lightning, Moon, MusicNotes, Pause, Stop, Sun } from '@phosphor-icons/react';
+import { CaretDown, GameController, Lightning, Moon, MusicNotes, Pause, Stop, Sun } from '@phosphor-icons/react';
 import { openQuickLaunch } from './QuickLaunch';
 import { useWorkspace, useNow } from '../context/WorkspaceContext';
 import { useProfile } from '../context/ProfileContext';
@@ -10,7 +10,7 @@ import { effectiveMode } from '../lib/themes';
 import { Label } from './Modal';
 import { VIEWS } from './Rail';
 import { filterLabel } from '../lib/collections';
-import { playingSeconds, shortAppName } from '../lib/activity';
+import { ACTIVITY_LABEL, activitySeconds, currentActivity } from '../lib/nowActivity';
 
 export function greeting(date) {
   const h = date.getHours();
@@ -21,7 +21,7 @@ export function greeting(date) {
 }
 
 /** Barra de cima (0.7): caminho da tela à esquerda, sessão e ações à direita. */
-export default function Topbar({ view = 'inicio', filter = 'all', playing = [], onOpenApps }) {
+export default function Topbar({ view = 'inicio', filter = 'all', playing = [], game = null, onOpenApps }) {
   const { profile, updateProfile } = useProfile();
   const { activeSession, activeSessions, activeBreak, projects, categories, requestEnd, startBreak } = useWorkspace();
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -45,6 +45,7 @@ export default function Topbar({ view = 'inicio', filter = 'all', playing = [], 
   }, [menuOpen]);
 
   const project = activeSession && projects.find((p) => p.id === activeSession.project_id);
+  const activity = currentActivity({ playing, game });
   // com várias sessões, o relógio da pílula é o da aberta há mais tempo
   const oldest = activeSessions[activeSessions.length - 1] || null;
   const elapsed = activeSessions.length > 1 ? sessionSeconds(oldest, now, activeBreak) : activeSession ? sessionSeconds(activeSession, now, activeBreak) : 0;
@@ -143,19 +144,23 @@ export default function Topbar({ view = 'inicio', filter = 'all', playing = [], 
           <span className="mono text-[11px] text-muted hidden lg:inline mr-1">nenhuma sessão ativa</span>
         )}
 
-        {playing.length > 0 && (
-          // mídia tocando agora (mapeamento): nome e tempo de hoje desse app. Some quando pausa;
-          // o clique abre Relatório, Apps e jogos. Largura do relógio fixa para não pular.
+        {activity && (
+          // agora no mapeamento: jogo na frente ou mídia tocando, com o tempo de hoje desse app.
+          // Some quando para; o clique abre Relatório, Apps e jogos. Relógio com largura fixa para não pular.
           <button
             className="btn btn-ghost gap-1.5 px-2.5"
             onClick={onOpenApps}
-            title={`Tocando agora: ${playing.map((p) => `${shortAppName(p.name)} (${formatClock(playingSeconds(p, now.getTime()))} hoje)`).join(', ')}. Clique para ver Apps e jogos.`}
-            aria-label={`Tocando agora: ${playing.map((p) => shortAppName(p.name)).join(', ')}`}
+            title={`${ACTIVITY_LABEL[activity.kind]}: ${activity.name}${activity.more > 0 ? ` (+${activity.more})` : ''} · ${formatClock(activitySeconds(activity, now.getTime()))} hoje. Clique para ver Apps e jogos.`}
+            aria-label={`${ACTIVITY_LABEL[activity.kind]}: ${activity.name}`}
           >
-            <MusicNotes size={14} weight="fill" className="text-phosphor anim-breathe" />
-            <span className="text-[13px] max-w-[120px] truncate max-[760px]:hidden">{shortAppName(playing[0].name)}</span>
-            <span className="mono text-[12px] tabular text-phosphor text-right min-w-[5ch]">{formatClock(playingSeconds(playing[0], now.getTime()))}</span>
-            {playing.length > 1 && <span className="mono text-[11px] text-muted max-[760px]:hidden">+{playing.length - 1}</span>}
+            {activity.kind === 'jogos' ? (
+              <GameController size={14} weight="fill" className="text-phosphor anim-breathe" />
+            ) : (
+              <MusicNotes size={14} weight="fill" className="text-phosphor anim-breathe" />
+            )}
+            <span className="text-[13px] max-w-[120px] truncate max-[760px]:hidden">{activity.name}</span>
+            <span className="mono text-[12px] tabular text-phosphor text-right min-w-[5ch]">{formatClock(activitySeconds(activity, now.getTime()))}</span>
+            {activity.more > 0 && <span className="mono text-[11px] text-muted max-[760px]:hidden">+{activity.more}</span>}
           </button>
         )}
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { WorkspaceProvider, useNow, useWorkspace } from './context/WorkspaceContext';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -233,12 +233,15 @@ function Shell() {
     },
     [toast],
   );
-  const { playing } = useActivityTracker({ tracking: launcherCfg.tracking, overrides: launcherCfg.categories, onAlert: onActivityAlert });
-  useBubble({ projects, activeSessions, activeBreak, playing });
+  const { playing, game } = useActivityTracker({ tracking: launcherCfg.tracking, overrides: launcherCfg.categories, onAlert: onActivityAlert });
   const openApps = useCallback(() => {
     setReportTab('apps');
     navigate('relatorio');
   }, [navigate]);
+  // a bolha registra o ouvinte uma vez só; o ref sempre aponta para a versão atual
+  const openAppsRef = useRef(openApps);
+  openAppsRef.current = openApps;
+  useBubble({ projects, activeSessions, activeBreak, playing, game, onOpenApps: () => openAppsRef.current() });
   // o pedido de aba vale só para essa ida ao Relatório
   useEffect(() => {
     if (view !== 'relatorio') setReportTab(null);
@@ -275,7 +278,7 @@ function Shell() {
         </>
       )}
       <main className="flex-1 min-w-0 flex flex-col">
-        <Topbar view={view} filter={filter} playing={playing} onOpenApps={openApps} />
+        <Topbar view={view} filter={filter} playing={playing} game={game} onOpenApps={openApps} />
         <UpdateBar />
         <div className="flex-1 min-h-0">{page}</div>
       </main>
