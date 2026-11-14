@@ -5,7 +5,18 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Planejado
+- Sincronização entre computadores (opcional)
+- Calendário com o Google Calendar
+- Caderno: playbook de padrões e modelos de documentação
+
+## [0.9.1] - 2026-11-14
+
 ### Corrigido
+- **Travamento no modo alongamento:** ao encerrar a pausa guiada, o overlay travava indefinidamente quando o banco não respondia a tempo. O botão ficava desabilitado e bloqueava toda a interface, incluindo os controles nativos do Tauri. Adicionados timeouts de 6s em `breakRepo.end` e 4s em `sessionRepo.addPaused`, com reset automático do estado em caso de falha. O botão agora mostra "Encerrando…" durante a operação e um aviso de erro se não concluir
+- **Blur ausente na tela de pausa:** o overlay usava o token `--c-pause-veil` direto, sem `backdrop-filter`, então o fundo ficava só escuro, sem o efeito de desfoque. Adicionada a classe `.pause-overlay` com `blur(24px)`. O estilo Terminal mantém o comportamento sem blur
+- **Nome cortado na saudação do Início:** o `display_name` era dividido por espaço e só o primeiro trecho era exibido (`~/` em vez de `~/ sammy.sh`). O nome completo é exibido agora
+- **Linha do Git saindo do card:** na vista em grade, a linha com branch, alterações e data do último commit ultrapassava a borda do card. Adicionado `overflow-hidden` no container e as partes passam a truncar dentro do espaço disponível
 - **Apps web instalados (PWA) no mapeamento:** o YouTube instalado pelo Edge contava como `msedge.exe`, porque a janela de um PWA é do navegador. Agora o nativo lê o AppUserModelID da janela (no Edge, `www.youtube.com-<hash>_pd8mbgmqs65xy!App`; no Chrome, `Chrome._crx_<id>`) e o tempo entra como **YouTube (app web)** em Música e vídeo. Apps da Microsoft Store abertos pelo navegador (Netflix) entram como **Netflix (app)**. Outros PWAs ganham categoria pelo nome e dá para trocar em Ajustes, Mapeamento. Continua sem ler o título da janela ([`ADR-013`](docs/decisoes/ADR-013-sessoes-em-paralelo-e-mapeamento-local.md))
 - **Launchers de jogos no mapeamento:** a janela da Steam (`steamwebhelper.exe`), o Ubisoft Connect, o Riot Client e o BlueStacks contavam como Outros e agora contam como Jogos
 
@@ -13,21 +24,6 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Mídia em segundo plano no mapeamento:** o que está tocando pela mídia do Windows (a do controle de volume) também soma tempo, mesmo minimizado e sem teclado e mouse. YouTube minimizado, Spotify por baixo e Netflix contam enquanto estão em *play*; pausado não conta. Aba comum do navegador não entra, para não duplicar o tempo do navegador. Novo comando nativo `media_sessions`
 - **Agora em Apps e jogos, na barra de cima e na bolha:** com o mapeamento ligado, um jogo na janela da frente ou um app em *play* (YouTube, Spotify, Netflix) aparece com ícone do Phosphor (`GameController` ou `MusicNotes`), nome e tempo de hoje desse app, andando por segundo. Jogo vence mídia. Some quando para e o clique abre o Relatório direto em Apps e jogos. Com a G.W.E.N. minimizada, aparece uma bolinha de Apps e jogos colada no círculo da bolha. Arrastando a bolinha, ela gira em volta do círculo (com um guia pontilhado) e, ao soltar, encaixa no ponto mais perto entre 8; o lado escolhido fica salvo (padrão: em cima, à direita). A janela cresce para o lado da bolinha e anda o mesmo tanto, então o círculo não sai do lugar, e a posição salva continua sendo a do círculo (geometria em `src/lib/bubbleOrbit.js`). Sem sessão de projeto, o app sobe para o círculo principal: o ícone da categoria toma o lugar do G, com o tempo embaixo e o anel acompanhando, e a bolinha some. Com sessão, o G volta (permissão `core:window:allow-set-size`). Lógica compartilhada em `src/lib/nowActivity.js`
 - **Início, cartão "No computador hoje":** tempo de hoje pelo mapeamento, com ou sem projeto aberto. Faixa por categoria, três números de relance (Trabalho, Música e vídeo, Jogos) e os quatro apps com mais tempo. Atualiza a cada minuto e leva ao Relatório em Apps e jogos
-
-### Planejado
-- Sincronização entre computadores (opcional)
-- Calendário com o Google Calendar
-- Caderno: playbook de padrões e modelos de documentação
-
-## [0.9.1] - 2026-10-26
-
-### Corrigido
-- **Travamento no modo alongamento:** ao encerrar a pausa guiada, o overlay travava indefinidamente quando o banco não respondia a tempo. O botão ficava desabilitado e bloqueava toda a interface, incluindo os controles nativos do Tauri. Adicionados timeouts de 6s em `breakRepo.end` e 4s em `sessionRepo.addPaused`, com reset automático do estado em caso de falha. O botão agora mostra "Encerrando…" durante a operação e um aviso de erro se não concluir
-- **Blur ausente na tela de pausa:** o overlay usava o token `--c-pause-veil` direto, sem `backdrop-filter`, então o fundo ficava só escuro, sem o efeito de desfoque. Adicionada a classe `.pause-overlay` com `blur(24px)`. O estilo Terminal mantém o comportamento sem blur
-- **Nome cortado na saudação do Início:** o `display_name` era dividido por espaço e só o primeiro trecho era exibido (`~/` em vez de `~/ sammy.sh`). O nome completo é exibido agora
-- **Linha do Git saindo do card:** na vista em grade, a linha com branch, alterações e data do último commit ultrapassava a borda do card. Adicionado `overflow-hidden` no container e as partes passam a truncar dentro do espaço disponível
-
-### Adicionado
 - **Abrir múltiplas frentes ao mesmo tempo:** com o projeto já ativo, o footer do card mostra um botão "+ Frente" quando há frentes que ainda não estão abertas em nenhuma sessão paralela. Selecionar uma frente chama `launchProject` e abre uma nova sessão para ela, sem encerrar as que já estão rodando
 
 ### Documentação

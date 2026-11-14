@@ -181,7 +181,7 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.9.0_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.9.1_x64-setup.exe
 ```
 
 Rode o `.exe` e instale (para atualizar, instale a versão nova por cima). A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
@@ -208,8 +208,8 @@ yarn tauri signer generate -w ~/.tauri/gwen.key
 1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json` e `src-tauri/Cargo.toml`, o `CHANGELOG.md` e **este README** (badge da versão, funcionalidades, como usar, roadmap e prints).
 2. Crie e envie a tag:
    ```bash
-   git tag v0.9.0
-   git push origin v0.9.0
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
    ```
 3. O workflow [`release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release como **rascunho**. Confira as notas e clique em **Publish**. A partir daí, as instalações existentes mostram "Atualizar e reiniciar".
 

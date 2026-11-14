@@ -18,7 +18,9 @@
         "height": 800,
         "minWidth": 720,
         "minHeight": 520,
-        "center": true
+        "center": true,
+        "transparent": true,
+        "shadow": false
       },
       {
         "label": "bubble",
