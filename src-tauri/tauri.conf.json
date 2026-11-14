@@ -66,7 +66,7 @@
       }
     },
     "updater": {
-      "pubkey": "COLE_AQUI_A_CHAVE_PUBLICA_GERADA_COM_tauri_signer_generate",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5NEI1MDNBMzFFNDJFRDAKUldUUUx1UXhPbEJMYVh5cW5NRnRCeUlkQ1lGbHozaEFTK2VpWGpoNXd0dTFFZzh1SXFRZEJKY3MK",
       "endpoints": [
         "https://github.com/SamaraSilvia81/gwen-app/releases/latest/download/latest.json"
       ],
