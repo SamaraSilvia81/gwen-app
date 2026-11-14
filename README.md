@@ -348,12 +348,21 @@ As decisões de arquitetura estão registradas em [`docs/`](docs/), uma por arqu
 - [x] **V0.7** · nova navegação (trilho e painel em árvore), Início, Perfil com hábitos, alertas de saúde com fonte, escala da interface, bolha ao minimizar, estilo Terminal no jeito do Atelier.sh
 - [x] **V0.8** · sessões em paralelo, linha do tempo, lançador de apps (Windows Terminal, PowerShell, Discord, WhatsApp...), mapeamento de apps e jogos com alertas
 - [x] **V0.9** · tarefas por projeto em kanban e lista, com as Issues do GitHub
-- [ ] **V0.10** · calendário, com Google Calendar
-- [ ] **V0.11** · finanças: modelo do projeto, receitas e valor real por hora
-- [ ] **V0.12** · caderno: playbook de padrões, modelos (README, ADR) e editor que salva no repositório
-- [ ] **V0.13** · ideias: captura, descrição e "virar projeto"
-- [ ] **V0.14** · padrões de trabalho: ritmo, foco e histórico do Git
+- [x] **V0.9.1** · várias frentes do mesmo projeto, apps web (PWA) e mídia em segundo plano no mapeamento, "No computador hoje" no Início, bolinha de Apps e jogos na bolha, primeira versão com atualização assinada
+- [ ] **V0.9.2** · botão "Nova coleção" visível e um nome só para coleção e categoria
+- [ ] **V0.10** · clientes e pipeline: área Clientes ligada aos projetos, fase comercial separada do status, visão em cards e em tabela
+- [ ] **V0.11** · finanças e check-in de foco: cobranças com comprovante, painel do mês, valor real da hora, "ainda nesse projeto?"
+- [ ] **V0.12** · pronta para o público: onboarding, política de privacidade, planos (Gratuito, Pro, Freelance), site e lançamento
+- [ ] **V0.13** · calendário, com Google Calendar
+- [ ] **V0.14** · sistemas: catálogo dos seus produtos (stack, banco, deploy, docs, admin)
+- [ ] **V0.15** · caderno: playbook de padrões, modelos (README, ADR) e editor que salva no repositório
+- [ ] **V0.16** · ideias e planejamento: captura e refino de ideias, ciclo de vida dos seus projetos e produtos
+- [ ] **V0.17** · padrões de trabalho: ritmo, foco e histórico do Git
 - [ ] **V1.0** · assistente local que conversa sobre os seus dados e revisa contra o seu playbook
+
+Até a 0.11, a G.W.E.N. roda em beta fechado. A partir da 0.12, as versões chegam como atualização para todo mundo.
+
+**Sem versão definida:** suporte a Linux (hoje bandeja, mapeamento, mídia, bolha e abrir com o sistema são só Windows), sincronização entre computadores, tarefas com o GitHub Projects nos dois sentidos, fontes personalizadas, versão mobile depois da 1.0.
 
 ### $ documentação
 
