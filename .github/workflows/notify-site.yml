@@ -1,0 +1,23 @@
+# Avisa o site quando uma versão é publicada, para ele refazer o build
+# com as notas novas. O site também confere a API do GitHub no navegador,
+# então a versão e o link de download já mudam antes disso.
+#
+# Segredo necessário (Settings > Secrets and variables > Actions):
+#   VERCEL_DEPLOY_HOOK   URL do Deploy Hook do projeto gwen-site na Vercel
+
+name: notify-site
+
+on:
+  release:
+    types: [published, edited]
+
+jobs:
+  deploy-hook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refazer o build do site
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "VERCEL_DEPLOY_HOOK não configurado"; exit 0; fi
+          curl -fsS -X POST "$HOOK"
