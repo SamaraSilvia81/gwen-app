@@ -130,8 +130,11 @@ button { font-family: inherit; cursor: pointer; }
    custom background token instead of --c-surface-glass (which .glass uses).
    Blur is intentionally stronger here to keep the content underneath unreadable. */
 .pause-overlay {
-  backdrop-filter: blur(24px) saturate(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  /* força composição de GPU no Tauri/Windows */
+  transform: translateZ(0);
+  isolation: isolate;
 }
 :root[data-style='terminal'] .pause-overlay {
   backdrop-filter: none;
@@ -697,3 +700,6 @@ html.is-bubble body::before { display: none; }
 .bubble.is-paused .bubble-rec { animation: none; background: var(--c-muted); }
 .bubble.is-paused .bubble-ring-fill { stroke: var(--c-muted); }
 :root[data-style='terminal'] .bubble-time { color: var(--c-phosphor); }
+
+/* título da abertura: segunda linha vazada, como no site */
+.onb-out { color: transparent; -webkit-text-stroke: 1.4px var(--c-bone); }
