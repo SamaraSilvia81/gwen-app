@@ -16,7 +16,8 @@ export const profileRepo = {
     const rows = await store.all('profiles');
     return rows.find((p) => p.id === LOCAL_ID) || null;
   },
-  async create(displayName, avatar = null, environments = null) {
+  /** `extras`: o que o onboarding já escolheu (environments, mode, style, wellness, launcher) */
+  async create(displayName, avatar = null, extras = {}) {
     const now = nowIso();
     return store.insert('profiles', {
       id: LOCAL_ID,
@@ -28,8 +29,8 @@ export const profileRepo = {
       wellness: null,
       git_bash_path: null,
       avatar,
-      // sem escolha, a coluna fica fora do insert e o perfil vale Geral (ADR-015)
-      ...(environments?.length ? { environments } : {}),
+      // só entra o que foi escolhido; ambientes em branco ficam fora e valem Geral (ADR-015)
+      ...Object.fromEntries(Object.entries(extras || {}).filter(([, v]) => v != null && !(Array.isArray(v) && !v.length))),
       created_at: now,
       updated_at: now,
     });
