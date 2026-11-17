@@ -1,0 +1,211 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* ═══════════════════════════════════════════════
+ * TOKENS — Noir escuro (padrão)
+ * ═══════════════════════════════════════════════ */
+:root {
+  --c-void:        #0A0A0B;
+  --c-surface:     #121214;
+  --c-surface-alt: #19191C;
+  --c-phosphor:    #9A9AA3;
+  --c-ember:       #FFFFFF;
+  --c-bone:        #EDEBE7;
+  --c-muted:       #77777F;
+  --c-rule:        #26262A;
+  --c-rule-light:  #34343A;
+  --c-logo:        #EDEBE7;
+  --c-logo-charge: #77777F;
+
+  --c-phosphor-8:  color-mix(in srgb, var(--c-phosphor) 8%,  transparent);
+  --c-phosphor-12: color-mix(in srgb, var(--c-phosphor) 12%, transparent);
+  --c-phosphor-20: color-mix(in srgb, var(--c-phosphor) 20%, transparent);
+  --c-phosphor-40: color-mix(in srgb, var(--c-phosphor) 40%, transparent);
+  --c-ember-8:     color-mix(in srgb, var(--c-ember) 8%,  transparent);
+  --c-ember-20:    color-mix(in srgb, var(--c-ember) 20%, transparent);
+  --c-surface-glass: color-mix(in srgb, var(--c-surface) 72%, transparent);
+
+  --f-display: 'Space Grotesk Variable', system-ui, sans-serif;
+  --f-body:    'Inter Variable', system-ui, sans-serif;
+  --f-mono:    'JetBrains Mono Variable', monospace;
+
+  --radius:    12px;
+  --radius-sm: 8px;
+  --blur:      20px;
+  --ease-out:  cubic-bezier(.16, 1, .3, 1);
+  --shadow-pop: 0 1px 0 color-mix(in srgb, var(--c-bone) 6%, transparent) inset, 0 8px 28px rgba(0,0,0,.28);
+
+  --max-w: 1120px;
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+}
+
+/* ── Modo claro ── */
+:root[data-mode='claro'] {
+  --c-void:        #F4F3F0;
+  --c-surface:     #FFFFFF;
+  --c-surface-alt: #ECEAE6;
+  --c-phosphor:    #5E5E66;
+  --c-ember:       #0A0A0B;
+  --c-bone:        #0A0A0B;
+  --c-muted:       #74747C;
+  --c-rule:        #DAD8D3;
+  --c-rule-light:  #C6C3BD;
+  --c-logo:        #0A0A0B;
+  --c-logo-charge: #8A8A90;
+}
+
+/* Tailwind lê os tokens */
+@theme inline {
+  --color-void:        var(--c-void);
+  --color-surface:     var(--c-surface);
+  --color-surface-alt: var(--c-surface-alt);
+  --color-phosphor:    var(--c-phosphor);
+  --color-ember:       var(--c-ember);
+  --color-bone:        var(--c-bone);
+  --color-muted:       var(--c-muted);
+  --color-rule:        var(--c-rule);
+  --color-rule-light:  var(--c-rule-light);
+  --font-display:      var(--f-display);
+  --font-body:         var(--f-body);
+  --font-mono:         var(--f-mono);
+}
+
+/* ─── BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html { scroll-behavior: smooth; background: var(--c-void); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+body {
+  background: var(--c-void);
+  color: var(--c-bone);
+  font-family: var(--f-body);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s ease, color .3s ease;
+}
+
+::selection { background: var(--c-phosphor-20); color: var(--c-bone); }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-rule); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-muted); }
+
+/* ─── IDENTIDADE: eyebrow (mono + uppercase + spacing) ─── */
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+/* ─── IDENTIDADE: prompt $ ─── */
+.prompt::before {
+  content: '$ ';
+  color: var(--c-phosphor);
+  font-family: var(--f-mono);
+}
+
+/* ─── IDENTIDADE: chip ─── */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 8px; border-radius: 999px;
+  font-family: var(--f-mono); font-size: 11px;
+  border: 1px solid var(--c-rule); color: var(--c-muted);
+}
+
+/* ─── IDENTIDADE: barra de energia ─── */
+.energy-track {
+  position: relative; height: 8px; width: 100%;
+  background: var(--c-surface-alt); border: 1px solid var(--c-rule);
+  border-radius: 999px; overflow: hidden;
+}
+.energy-fill {
+  position: absolute; inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--c-phosphor), var(--c-ember));
+  box-shadow: 0 0 18px var(--c-ember-20);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+/* ─── IDENTIDADE: card ─── */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius);
+  transition: border-color .25s ease;
+}
+.card:hover { border-color: var(--c-rule-light); }
+
+/* ─── IDENTIDADE: glass (nav/overlay) ─── */
+.glass {
+  background: var(--c-surface-glass);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+}
+
+/* ─── IDENTIDADE: botões ─── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 18px; height: 38px; border-radius: var(--radius-sm);
+  font-family: var(--f-body); font-weight: 600; font-size: 13.5px;
+  border: 1px solid transparent;
+  transition: transform .15s var(--ease-out), background .2s, border-color .2s, color .2s, box-shadow .2s;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--c-ember); color: var(--c-void); border-color: var(--c-ember); }
+.btn-primary:hover { box-shadow: 0 6px 20px var(--c-ember-20); }
+.btn-ghost { background: transparent; color: var(--c-bone); border-color: var(--c-rule); }
+.btn-ghost:hover { border-color: var(--c-phosphor); color: var(--c-phosphor); }
+.btn-lg { height: 46px; padding: 0 24px; font-size: 15px; }
+
+/* ─── ANIMAÇÕES (mesmas do app) ─── */
+@keyframes fade-in  { from { opacity: 0; }                         to { opacity: 1; } }
+@keyframes rise-in  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes breathe  { 0%,100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.06); opacity: 1; } }
+@keyframes charge   { from { transform: scaleX(.15); } to { transform: scaleX(.88); } }
+@keyframes ring-pulse { 0%,100% { transform: scale(1); opacity: .3; } 50% { transform: scale(1.06); opacity: .1; } }
+
+.anim-fade { animation: fade-in .4s ease both; }
+.anim-rise { animation: rise-in .45s var(--ease-out) both; }
+
+/* logo hero — barra de energia pulsando */
+.logo-charge-anim {
+  transform-origin: left center;
+  animation: charge 3s ease-in-out infinite alternate;
+}
+/* anel externo ao redor do BrandArt */
+.brand-ring::before {
+  content: '';
+  position: absolute; inset: -24px;
+  border: 1px solid var(--c-rule);
+  border-radius: 50%;
+  animation: ring-pulse 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* reveal on scroll */
+.reveal {
+  opacity: 0; transform: translateY(12px);
+  transition: opacity .55s var(--ease-out), transform .55s var(--ease-out);
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+/* screens strip */
+.screens-strip {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-rule) transparent;
+}
+.screen-snap { scroll-snap-align: start; }

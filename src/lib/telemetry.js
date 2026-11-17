@@ -16,8 +16,9 @@
 import { isTauri } from './native';
 import { currentVersion } from './updater';
 
-const URL_ = import.meta.env.VITE_TELEMETRY_URL;
-const KEY = import.meta.env.VITE_TELEMETRY_KEY;
+const URL_ = (import.meta.env.VITE_TELEMETRY_URL || '').trim().replace(/\/+$/, '');
+// trim: um espaço ou quebra de linha colado junto no .env já dá 401
+const KEY = (import.meta.env.VITE_TELEMETRY_KEY || '').trim().replace(/^['"]|['"]$/g, '');
 
 const ID_KEY = 'gwen.installId';
 const OFF_KEY = 'gwen.telemetry.off';
@@ -89,7 +90,8 @@ async function rpc(fn, body) {
     method: 'POST',
     headers: {
       apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
+      // a chave anon antiga é um JWT e vai também como Bearer; a publishable nova (sb_publishable_) vai só no apikey
+      ...(KEY.startsWith('eyJ') ? { Authorization: `Bearer ${KEY}` } : {}),
       'Content-Type': 'application/json',
       'Content-Profile': 'gwen',
     },
