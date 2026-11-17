@@ -1,10 +1,11 @@
 /**
- * Estatística anônima de uso (0.9.2).
+ * Registro de quem usa a G.W.E.N. (0.9.2).
  *
  * Serve para a autora saber quantas instalações existem, quantas estão ativas
- * e em qual versão. Vai só isto: um código aleatório gerado neste computador,
- * a versão da G.W.E.N., o sistema (ex.: Windows 11), o idioma e se a abertura
- * já foi concluída. Nunca vai nome, projetos, tempos, pastas ou e-mail.
+ * e em qual versão. Vai isto: um código aleatório gerado neste computador,
+ * o nome e a foto escolhidos na abertura, a versão da G.W.E.N., o sistema
+ * (ex.: Windows 11), o idioma e se a abertura já foi concluída. Nunca vão
+ * projetos, tempos, pastas ou e-mail.
  *
  * O destino é o Supabase da autora (VITE_TELEMETRY_URL e VITE_TELEMETRY_KEY no
  * build), não a conexão de nuvem que a pessoa configura em Ajustes. A chave é a
@@ -98,7 +99,7 @@ async function rpc(fn, body) {
 }
 
 /** Avisa que esta instalação está viva. Nunca lança: sem internet ou sem config, só não envia. */
-export async function sendHeartbeat({ onboarded }) {
+export async function sendHeartbeat({ onboarded, name = null, avatar = null }) {
   if (!telemetryAvailable || !telemetryEnabled()) return;
   try {
     await rpc('heartbeat', {
@@ -108,6 +109,8 @@ export async function sendHeartbeat({ onboarded }) {
       p_os: await osName(),
       p_locale: navigator.language || null,
       p_onboarded: !!onboarded,
+      p_name: name,
+      p_avatar: avatar,
     });
     if (import.meta.env.DEV) console.info('[gwen] heartbeat enviado', installId(), ORIGIN);
   } catch (err) {
@@ -120,7 +123,7 @@ export async function setTelemetry(on) {
   if (on) {
     store.del(OFF_KEY);
     // religar só acontece em Ajustes, então a abertura já foi concluída
-    await sendHeartbeat({ onboarded: true });
+    await sendHeartbeat({ ...lastState, onboarded: true });
     return;
   }
   const id = store.get(ID_KEY);
@@ -129,17 +132,21 @@ export async function setTelemetry(on) {
   if (telemetryAvailable && id) await rpc('forget_install', { p_id: id });
 }
 
-let lastOnboarded = null;
+let lastState = {};
+let lastKey = null;
 let timer = null;
 
 /**
- * Envia ao abrir, de novo quando a abertura é concluída, e depois uma vez por dia
- * enquanto o app fica aberto. Chamar várias vezes com o mesmo estado não reenvia
- * (o StrictMode monta duas vezes em dev).
+ * Envia ao abrir, de novo quando a abertura é concluída ou o nome/foto mudam,
+ * e depois uma vez por dia enquanto o app fica aberto. Chamar várias vezes com
+ * o mesmo estado não reenvia (o StrictMode monta duas vezes em dev).
  */
-export function trackInstall(onboarded) {
-  if (lastOnboarded === onboarded) return;
-  lastOnboarded = onboarded;
-  sendHeartbeat({ onboarded });
-  if (!timer) timer = setInterval(() => sendHeartbeat({ onboarded: lastOnboarded }), DAY_MS);
+export function trackInstall({ onboarded, name, avatar }) {
+  const state = { onboarded, name: name && name !== 'você' ? name : null, avatar: avatar || null };
+  const key = `${state.onboarded}|${state.name}|${state.avatar?.length || 0}|${state.avatar?.slice(-32) || ''}`;
+  if (key === lastKey) return;
+  lastKey = key;
+  lastState = state;
+  sendHeartbeat(state);
+  if (!timer) timer = setInterval(() => sendHeartbeat(lastState), DAY_MS);
 }

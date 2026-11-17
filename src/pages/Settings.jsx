@@ -692,7 +692,7 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
   );
 }
 
-/** Estatística anônima de uso (0.9.2). Desligar apaga o registro no servidor. */
+/** Registro da instalação (0.9.2): nome, foto, versão e sistema. Desligar apaga o registro no servidor. */
 function TelemetryToggle() {
   const toast = useToast();
   const [on, setOn] = useState(telemetryEnabled);
@@ -703,7 +703,7 @@ function TelemetryToggle() {
     try {
       await setTelemetry(next);
       setOn(next);
-      toast(next ? 'Estatística anônima ligada. Obrigada!' : 'Desligado. O registro desta instalação foi apagado.');
+      toast(next ? 'Registro ligado. Obrigada!' : 'Desligado. O registro desta instalação foi apagado.');
     } catch (err) {
       toast(`Não deu para apagar o registro agora: ${err?.message || err}`, 'error');
     } finally {
@@ -715,10 +715,10 @@ function TelemetryToggle() {
     <label className="card p-4 flex items-start gap-4 mt-5 cursor-pointer">
       <input type="checkbox" className="w-4 h-4 mt-0.5 accent-[var(--c-phosphor)]" checked={on} disabled={busy} onChange={toggle} />
       <span className="flex-1">
-        <span className="block font-display font-semibold">Enviar estatística anônima de uso</span>
+        <span className="block font-display font-semibold">Compartilhar meu registro com a G.W.E.N.</span>
         <span className="block text-[12px] text-muted mt-0.5">
-          Ajuda a saber quantas pessoas usam a G.W.E.N. e em qual versão. Vai só um código aleatório deste computador, a versão e o
-          sistema. Nunca seu nome, projetos, tempos ou pastas. Desligar apaga o registro.{' '}
+          Ajuda a saber quantas pessoas usam a G.W.E.N. e em qual versão. Vão seu nome, sua foto, um código aleatório deste
+          computador, a versão e o sistema. Nunca seus projetos, tempos ou pastas. Desligar apaga o registro.{' '}
           <button type="button" className="underline hover:text-bone" onClick={(e) => { e.preventDefault(); openLink('https://gwenapp.vercel.app/#privacidade'); }}>
             Saiba mais
           </button>

@@ -60,13 +60,15 @@ function ZoomKeys() {
 }
 
 function Gate() {
-  const { loading, error, needsOnboarding } = useProfile();
+  const { loading, error, needsOnboarding, profile } = useProfile();
   // a abertura roda inteira uma vez por inicialização, mesmo que os dados carreguem antes
   const [intro, setIntro] = useState(true);
-  // estatística anônima: só o código da instalação, versão e sistema (lib/telemetry.js)
+  // registro da instalação: código, nome, foto, versão e sistema (lib/telemetry.js)
   useEffect(() => {
-    if (!loading && !error) trackInstall(!needsOnboarding);
-  }, [loading, error, needsOnboarding]);
+    if (!loading && !error) {
+      trackInstall({ onboarded: !needsOnboarding, name: profile?.display_name, avatar: profile?.avatar });
+    }
+  }, [loading, error, needsOnboarding, profile?.display_name, profile?.avatar]);
   if (loading || intro) return <Splash ready={!loading} onDone={() => setIntro(false)} />;
   if (error) return <DataError message={error} />;
   if (needsOnboarding) return <Onboarding />;
