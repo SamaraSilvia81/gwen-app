@@ -30,6 +30,8 @@ import { bubbleEnabled, parallelSessionsEnabled, setBubbleEnabled, setParallelSe
 import { ActivitySettings, AppsSettings } from '../components/LauncherSettings';
 import { githubToken, setGithubToken } from '../lib/github';
 import { GithubLogo } from '@phosphor-icons/react';
+import { ORIGIN, storedInstallId, setTelemetry, telemetryAvailable, telemetryEnabled } from '../lib/telemetry';
+import { openLink } from '../lib/native';
 
 export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow = false }) {
   const { profile, updateProfile, reload } = useProfile();
@@ -608,6 +610,7 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
             <p className="text-[12px] text-muted mt-3">Última importação da nuvem: {formatDay(importedAt)}</p>
           )}
           <p className="text-[12px] text-muted mt-3">Importar nunca apaga nada: só entra o que ainda não existe aqui.</p>
+          <TelemetryToggle />
         </Section>
 
         {/* CONTA NA NUVEM */}
@@ -686,6 +689,47 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
         />
       )}
     </div>
+  );
+}
+
+/** Estatística anônima de uso (0.9.2). Desligar apaga o registro no servidor. */
+function TelemetryToggle() {
+  const toast = useToast();
+  const [on, setOn] = useState(telemetryEnabled);
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    const next = !on;
+    setBusy(true);
+    try {
+      await setTelemetry(next);
+      setOn(next);
+      toast(next ? 'Estatística anônima ligada. Obrigada!' : 'Desligado. O registro desta instalação foi apagado.');
+    } catch (err) {
+      toast(`Não deu para apagar o registro agora: ${err?.message || err}`, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!telemetryAvailable) return null;
+  return (
+    <label className="card p-4 flex items-start gap-4 mt-5 cursor-pointer">
+      <input type="checkbox" className="w-4 h-4 mt-0.5 accent-[var(--c-phosphor)]" checked={on} disabled={busy} onChange={toggle} />
+      <span className="flex-1">
+        <span className="block font-display font-semibold">Enviar estatística anônima de uso</span>
+        <span className="block text-[12px] text-muted mt-0.5">
+          Ajuda a saber quantas pessoas usam a G.W.E.N. e em qual versão. Vai só um código aleatório deste computador, a versão e o
+          sistema. Nunca seu nome, projetos, tempos ou pastas. Desligar apaga o registro.{' '}
+          <button type="button" className="underline hover:text-bone" onClick={(e) => { e.preventDefault(); openLink('https://gwenapp.vercel.app/#privacidade'); }}>
+            Saiba mais
+          </button>
+        </span>
+        {on && storedInstallId() && (
+          <span className="block mono text-[11px] text-muted mt-2">
+            código: {storedInstallId()}{ORIGIN !== 'app' && ` · ${ORIGIN}`}
+          </span>
+        )}
+      </span>
+    </label>
   );
 }
 

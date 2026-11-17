@@ -37,6 +37,7 @@ import AccountGate from './components/AccountGate';
 import { isAccountMode, setAccountMode, WELCOME_KEY } from './lib/cloudConfig';
 import { fileToAvatar } from './lib/avatar';
 import { MISSING_MIGRATION_EVENT } from './data/cloudStore';
+import { trackInstall } from './lib/telemetry';
 
 export default function App() {
   return (
@@ -62,6 +63,10 @@ function Gate() {
   const { loading, error, needsOnboarding } = useProfile();
   // a abertura roda inteira uma vez por inicialização, mesmo que os dados carreguem antes
   const [intro, setIntro] = useState(true);
+  // estatística anônima: só o código da instalação, versão e sistema (lib/telemetry.js)
+  useEffect(() => {
+    if (!loading && !error) trackInstall(!needsOnboarding);
+  }, [loading, error, needsOnboarding]);
   if (loading || intro) return <Splash ready={!loading} onDone={() => setIntro(false)} />;
   if (error) return <DataError message={error} />;
   if (needsOnboarding) return <Onboarding />;

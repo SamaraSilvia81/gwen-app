@@ -4,6 +4,8 @@
 # Segredos necessários (Settings > Secrets and variables > Actions):
 #   TAURI_SIGNING_PRIVATE_KEY           conteúdo do arquivo .key gerado por `yarn tauri signer generate`
 #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  a senha escolhida na geração
+#   VITE_TELEMETRY_URL                  URL do Supabase que recebe a contagem anônima (009)
+#   VITE_TELEMETRY_KEY                  chave anon desse projeto
 
 name: release
 
@@ -39,6 +41,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_TELEMETRY_URL: ${{ secrets.VITE_TELEMETRY_URL }}
+          VITE_TELEMETRY_KEY: ${{ secrets.VITE_TELEMETRY_KEY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'G.W.E.N. ${{ github.ref_name }}'
