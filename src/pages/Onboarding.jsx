@@ -60,7 +60,7 @@ export default function Onboarding() {
         </span>
         <div className="noir absolute bottom-10 left-10 right-10">
           <Wordmark size={46} />
-          <p className="font-display text-[22px] font-medium text-bone leading-snug max-w-[340px] mt-6">
+          <p className="font-display text-[22px] font-medium text-bone leading-snug max-w-[340px] mt-2.5">
             Gestão de Wellness, Eficiência e Navegação.
           </p>
         </div>
@@ -123,8 +123,8 @@ export default function Onboarding() {
             <div className="card p-4 mt-8 flex gap-3.5">
               <HardDrives size={20} className="text-phosphor shrink-0 mt-0.5" />
               <p className="text-[14px] text-muted leading-relaxed">
-                Vou guardar seus projetos, tempos e pausas aqui, <span className="text-bone">neste computador</span>. Se quiser uma cópia, é só
-                fazer backup em Ajustes.
+                Vou guardar seus projetos, tempos e pausas aqui, <span className="text-bone">neste computador</span>. Seu nome e sua foto
+                ficam registrados com a G.W.E.N., junto da versão e do sistema, para sabermos quem está usando. Dá para desligar em Ajustes.
               </p>
             </div>
           </form>
