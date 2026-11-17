@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowSquareOut, Check, Plus, Trash } from '@phosphor-icons/react';
 import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../context/ToastContext';
-import { APP_SUGGESTIONS, appIcon, launchApp, newAppId, resolveLauncher } from '../lib/launcher';
+import { appIcon, launchApp, newAppId, resolveLauncher, suggestionsFor } from '../lib/launcher';
+import { useEnvironments } from '../lib/useEnvironments';
 import { CATEGORIES, appName, usageBetween } from '../lib/activity';
 import { dayKey } from '../lib/habits';
 import { isTauri } from '../lib/native';
@@ -32,7 +33,17 @@ function useLauncher() {
 export function AppsSettings() {
   const { config, save, toast } = useLauncher();
   const [draft, setDraft] = useState({ name: '', target: '', args: '' });
-  const missing = APP_SUGGESTIONS.filter((s) => !config.apps.some((a) => a.target === s.target));
+  const env = useEnvironments();
+  const missing = suggestionsFor(env.apps).filter(
+    (s) => !config.apps.some((a) => (s.target ? a.target === s.target : a.name === s.name)),
+  );
+
+  /** Sugestão sem protocolo conhecido: preenche o nome e deixa escolher o executável */
+  function suggest(s) {
+    if (!s.needsPath) return add(s);
+    setDraft({ name: s.name, target: '', args: '' });
+    toast(`Informe o caminho do ${s.name} em "Outro app", logo abaixo.`);
+  }
 
   async function add(app) {
     if (!app.name.trim() || !app.target.trim()) return;
@@ -81,7 +92,7 @@ export function AppsSettings() {
             {missing.map((s) => {
               const Icon = appIcon(s);
               return (
-                <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => add(s)}>
+                <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => suggest(s)}>
                   <Icon size={13} />
                   {s.name}
                   <Plus size={11} />

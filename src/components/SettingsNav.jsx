@@ -1,6 +1,6 @@
 import {
   CalendarBlank, CaretLeft, CloudArrowUp, Database, Desktop, GameController, Heartbeat, Info, Keyboard, PaintBrush, PlugsConnected, Sliders,
-  SquaresFour, UserCircle,
+  SquaresFour, Stack, UserCircle,
 } from '@phosphor-icons/react';
 
 /**
@@ -10,6 +10,7 @@ import {
  */
 export const SETTINGS_SECTIONS = [
   { id: 'perfil', label: 'Perfil', icon: UserCircle },
+  { id: 'ambientes', label: 'Ambientes', icon: Stack },
   { id: 'aparencia', label: 'Aparência', icon: PaintBrush },
   { id: 'interface', label: 'Interface', icon: Sliders },
   { id: 'apps', label: 'Apps', icon: SquaresFour },

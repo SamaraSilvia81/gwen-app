@@ -6,12 +6,13 @@ import { useToast } from '../context/ToastContext';
 import { FOLDER_ACTIONS, gitInfo, isTauri, pickFolder, readReadme, remoteToWebUrl, repoHostLabel } from '../lib/native';
 import { appIcon, resolveLauncher } from '../lib/launcher';
 import { useProfile } from '../context/ProfileContext';
+import { useEnvironments } from '../lib/useEnvironments';
 import { summarizeReadme } from '../lib/readme';
 import { STATUS } from '../lib/stats';
 import { folderActions, projectFronts } from '../lib/projectModel';
 import { hasContent, readDraft, writeDraft } from '../lib/projectDraft';
 
-const emptyFolder = () => ({ label: '', path: '', actions: ['vscode'], on_launch: true, front: '', command: '' });
+const emptyFolder = (action = 'explorer') => ({ label: '', path: '', actions: [action], on_launch: true, front: '', command: '' });
 const emptyLink = () => ({ label: '', url: '', on_launch: false, front: '' });
 
 const normalize = (url) => String(url || '').trim().replace(/^https?:\/\//, '').replace(/\.git$|\/$/g, '').toLowerCase();
@@ -22,6 +23,7 @@ const baseName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || '';
 export default function ProjectForm({ project, defaultCategory, onClose }) {
   const { categories, saveProject, deleteProject } = useWorkspace();
   const { profile } = useProfile();
+  const env = useEnvironments();
   const registeredApps = resolveLauncher(profile?.launcher).apps;
   const toast = useToast();
   const [initial] = useState(() => {
@@ -32,7 +34,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
       category_id: project?.category_id || (defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : ''),
       folders: project?.folders?.length
         ? project.folders.map((f) => ({ ...f, actions: folderActions(f), front: f.front || '', command: f.command || '' }))
-        : [emptyFolder()],
+        : [emptyFolder(env.defaultAction)],
       links: (project?.links || []).map((l) => ({ ...l, front: l.front || '' })),
       apps: Array.isArray(project?.apps) ? project.apps : [],
     };
@@ -59,7 +61,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
       description: '',
       status: 'ideia',
       category_id: defaultCategory && !['all', 'none'].includes(defaultCategory) ? defaultCategory : '',
-      folders: [emptyFolder()],
+      folders: [emptyFolder(env.defaultAction)],
       links: [],
     });
   }
@@ -182,7 +184,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
         <div className="grid grid-cols-[1fr_200px] gap-4">
           <label className="field">
             <span className="field-label">Nome</span>
-            <input className="input" value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="CuraData" autoFocus />
+            <input className="input" value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder={env.examples.project} autoFocus />
           </label>
           <label className="field">
             <span className="field-label">Categoria</span>
@@ -234,7 +236,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
                 Marque com o que cada pasta abre. A frente é opcional: use para separar partes do projeto (ex.: Landing e Plataforma).
               </p>
             </div>
-            <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={() => set({ folders: [...draft.folders, emptyFolder()] })}>
+            <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={() => set({ folders: [...draft.folders, emptyFolder(env.defaultAction)] })}>
               <Plus size={13} /> <Label>Pasta</Label>
             </button>
           </div>
@@ -249,7 +251,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
                       className="input mono text-[12px]"
                       value={f.path}
                       onChange={(e) => setFolder(i, { path: e.target.value })}
-                      placeholder="C:\Projetos\..."
+                      placeholder={env.examples.path}
                     />
                     <button type="button" className="btn btn-ghost btn-icon" onClick={() => choose(i)} title="Escolher pasta" aria-label="Escolher pasta">
                       <FolderOpen size={15} />
@@ -265,7 +267,7 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="segmented" role="group" aria-label="Abrir com">
-                      {Object.entries(FOLDER_ACTIONS).map(([id, a]) => (
+                      {Object.entries(FOLDER_ACTIONS).filter(([id]) => env.folderActions.includes(id) || actions.includes(id)).map(([id, a]) => (
                         <button
                           type="button"
                           key={id}
@@ -295,14 +297,16 @@ export default function ProjectForm({ project, defaultCategory, onClose }) {
                       abrir no Começar agora
                     </label>
                   </div>
-                  <input
-                    className="input mono text-[12px]"
-                    value={f.command}
-                    onChange={(e) => setFolder(i, { command: e.target.value })}
-                    placeholder="Comando ao começar (opcional), ex.: yarn dev"
-                    aria-label="Comando ao começar"
-                    title="Roda num PowerShell novo, dentro desta pasta, quando o Começar agora abrir a pasta"
-                  />
+                  {(env.startCommand || f.command) && (
+                    <input
+                      className="input mono text-[12px]"
+                      value={f.command}
+                      onChange={(e) => setFolder(i, { command: e.target.value })}
+                      placeholder="Comando ao começar (opcional), ex.: yarn dev"
+                      aria-label="Comando ao começar"
+                      title="Roda num PowerShell novo, dentro desta pasta, quando o Começar agora abrir a pasta"
+                    />
+                  )}
                 </div>
               );
             })}

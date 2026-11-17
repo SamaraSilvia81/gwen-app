@@ -9,6 +9,7 @@ import { useStoredState } from '../lib/layout';
 import TaskModal from '../components/TaskModal';
 import { DueChip, GithubChip, PriorityIcon, STATUS_ORDER, StatusIcon, dueInfo } from '../components/TaskBits';
 import { Label } from '../components/Modal';
+import { useEnvironments } from '../lib/useEnvironments';
 
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -19,6 +20,7 @@ const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 export default function Tasks({ projectId, onProject }) {
   const { tasks, loading, error, moveTask, updateTask, createTask, importIssues } = useTasks();
   const { projects } = useWorkspace();
+  const env = useEnvironments();
   const toast = useToast();
   const [view, setView] = useStoredState('gwen.tarefas.vista', 'kanban');
   const [query, setQuery] = useState('');
@@ -177,7 +179,7 @@ export default function Tasks({ projectId, onProject }) {
                 <List size={14} weight="bold" />
               </button>
             </div>
-            {repo && (
+            {repo && env.githubIssues && (
               <button className="btn btn-ghost" onClick={runImport} disabled={importing} title={`Importar e atualizar as Issues de ${repo.owner}/${repo.repo}`}>
                 <GithubLogo size={14} />
                 <Label>{importing ? 'Lendo Issues...' : 'Issues do GitHub'}</Label>
@@ -269,12 +271,12 @@ export default function Tasks({ projectId, onProject }) {
                 </div>
               ) : null,
             )}
-            {!visible.length && <EmptyTasks onCreate={() => setEditing({ defaults: { project_id: project ? project.id : '' } })} repo={repo} onImport={runImport} />}
+            {!visible.length && <EmptyTasks onCreate={() => setEditing({ defaults: { project_id: project ? project.id : '' } })} repo={env.githubIssues ? repo : null} issues={env.githubIssues} onImport={runImport} />}
           </section>
         )}
 
         {view === 'kanban' && !loading && !error && !visible.length && (
-          <EmptyTasks onCreate={() => setEditing({ defaults: { project_id: project ? project.id : '' } })} repo={repo} onImport={runImport} />
+          <EmptyTasks onCreate={() => setEditing({ defaults: { project_id: project ? project.id : '' } })} repo={env.githubIssues ? repo : null} issues={env.githubIssues} onImport={runImport} />
         )}
       </div>
 
@@ -307,13 +309,14 @@ function QuickAdd({ onAdd, onClose }) {
   );
 }
 
-function EmptyTasks({ onCreate, repo, onImport }) {
+function EmptyTasks({ onCreate, repo, issues, onImport }) {
   return (
     <div className="card border-dashed px-8 py-12 text-center mt-3">
       <p className="prompt mono text-[13px] text-muted mb-2">gwen tasks</p>
       <h3 className="font-display text-xl font-semibold mb-2">Nenhuma tarefa aqui.</h3>
       <p className="text-muted max-w-[440px] mx-auto mb-6 leading-relaxed">
-        Crie com o botão ou com a tecla N. {repo ? 'Ou traga as Issues do repositório deste projeto.' : 'Com um link do GitHub no projeto, dá para trazer as Issues.'}
+        Crie com o botão ou com a tecla N.{' '}
+        {issues && (repo ? 'Ou traga as Issues do repositório deste projeto.' : 'Com um link do GitHub no projeto, dá para trazer as Issues.')}
       </p>
       <div className="flex gap-2 justify-center">
         <button className="btn btn-primary" onClick={onCreate}>

@@ -1,5 +1,5 @@
 import {
-  AppWindow, ChatCircleDots, DiscordLogo, FigmaLogo, MicrosoftTeamsLogo, NotionLogo, SlackLogo, SpotifyLogo, TerminalWindow,
+  AppWindow, ChatCircleDots, Code, DiscordLogo, FigmaLogo, MicrosoftTeamsLogo, NotionLogo, SlackLogo, SpotifyLogo, TerminalWindow,
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { isTauri } from './native';
@@ -11,6 +11,11 @@ import { isTauri } from './native';
  * registrado no Windows (discord://, whatsapp:, spotify:). Ficam no perfil, em
  * `launcher.apps`, junto das categorias do mapeamento e dos alertas.
  */
+/**
+ * Catálogo de apps sugeridos. Quais aparecem depende dos ambientes do perfil
+ * (`apps` em environments.js, ADR-015). `needsPath` marca os que não têm
+ * protocolo conhecido: a sugestão preenche o nome e a pessoa escolhe o .exe.
+ */
 export const APP_SUGGESTIONS = [
   { id: 'discord', name: 'Discord', target: 'discord://' },
   { id: 'whatsapp', name: 'WhatsApp', target: 'whatsapp:' },
@@ -21,7 +26,25 @@ export const APP_SUGGESTIONS = [
   { id: 'figma', name: 'Figma', target: 'figma://' },
   { id: 'slack', name: 'Slack', target: 'slack://' },
   { id: 'teams', name: 'Microsoft Teams', target: 'msteams:' },
+  { id: 'word', name: 'Word', target: 'ms-word:' },
+  { id: 'excel', name: 'Excel', target: 'ms-excel:' },
+  { id: 'edge', name: 'Microsoft Edge', target: 'microsoft-edge:' },
+  { id: 'canva', name: 'Canva', target: 'https://www.canva.com' },
+  { id: 'overleaf', name: 'Overleaf', target: 'https://www.overleaf.com' },
+  { id: 'zotero', name: 'Zotero', target: 'zotero://' },
+  { id: 'vscode', name: 'VS Code', target: 'vscode://' },
+  { id: 'postman', name: 'Postman', target: 'postman://' },
+  { id: 'powerbi', name: 'Power BI', target: 'ms-powerbi:' },
+  { id: 'docker', name: 'Docker Desktop', target: '', needsPath: true },
+  { id: 'dbeaver', name: 'DBeaver', target: '', needsPath: true },
+  { id: 'photoshop', name: 'Photoshop', target: '', needsPath: true },
+  { id: 'illustrator', name: 'Illustrator', target: '', needsPath: true },
+  { id: 'premiere', name: 'Premiere Pro', target: '', needsPath: true },
+  { id: 'blender', name: 'Blender', target: '', needsPath: true },
 ];
+
+/** As sugestões dos ambientes marcados, na ordem de `ids` (ver environmentTraits) */
+export const suggestionsFor = (ids) => ids.map((id) => APP_SUGGESTIONS.find((s) => s.id === id)).filter(Boolean);
 
 const ICONS = [
   [/discord/i, DiscordLogo],
@@ -31,6 +54,7 @@ const ICONS = [
   [/figma/i, FigmaLogo],
   [/slack/i, SlackLogo],
   [/teams/i, MicrosoftTeamsLogo],
+  [/vs ?code|vscode/i, Code],
   [/telegram|signal/i, ChatCircleDots],
   [/\bwt(\.exe)?$|terminal|powershell|pwsh|cmd\.exe|bash/i, TerminalWindow],
 ];

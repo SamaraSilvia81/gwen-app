@@ -5,6 +5,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Adicionado
+- **Ambientes de uso** ([`ADR-015`](docs/decisoes/ADR-015-ambientes-de-uso.md)): Geral, TI, Design e Acadêmico, com escolha de um ou mais em Ajustes, Ambientes. O ambiente muda as ações ao abrir uma pasta (VS Code e terminais só com TI; Explorer para os demais), o campo "Comando ao começar", o botão de Issues do GitHub nas tarefas, os apps sugeridos e os exemplos de texto. Sessões, tempo, tarefas, pausa e status de projeto são iguais para todos, e nenhum dado é apagado ao trocar de ambiente. Configuração em `src/lib/environments.js`; nova coluna `environments` em `profiles` (migração local 007 e `011_gwen_ambientes.sql` na nuvem). Quem já usava a G.W.E.N. continua como TI
+- **Mais apps sugeridos:** Word, Excel, Edge, Canva, Overleaf, Zotero, VS Code, Postman e Power BI abrem por protocolo; Docker, DBeaver, Photoshop, Illustrator, Premiere e Blender preenchem o nome e pedem o caminho do executável
+
 ### Planejado
 - Sincronização entre computadores (opcional)
 - Calendário com o Google Calendar

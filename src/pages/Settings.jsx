@@ -29,6 +29,8 @@ import { DEFAULT_ZOOM, ZOOM_EVENT, ZOOM_STEPS, applyZoom, loadZoom, zoomLabel } 
 import { bubbleEnabled, parallelSessionsEnabled, setBubbleEnabled, setParallelSessions } from '../lib/layout';
 import { ActivitySettings, AppsSettings } from '../components/LauncherSettings';
 import { githubToken, setGithubToken } from '../lib/github';
+import { ENVIRONMENTS, ENVIRONMENT_ORDER } from '../lib/environments';
+import { useEnvironments } from '../lib/useEnvironments';
 import { GithubLogo } from '@phosphor-icons/react';
 import { ORIGIN, storedInstallId, setTelemetry, telemetryAvailable, telemetryEnabled } from '../lib/telemetry';
 import { openLink } from '../lib/native';
@@ -37,6 +39,7 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
   const { profile, updateProfile, reload } = useProfile();
   const { refresh } = useWorkspace();
   const toast = useToast();
+  const env = useEnvironments();
   const account = isAccountMode();
 
   const [name, setName] = useState(profile?.display_name || '');
@@ -286,6 +289,19 @@ export default function Settings({ section = 'perfil', jump = 0, onSpy, narrow =
               <Label>Salvar</Label>
             </button>
           </div>
+        </Section>
+
+        {/* AMBIENTES (0.9.2, ADR-015) */}
+        <Section
+          id="ambientes"
+          title="Ambientes"
+          description="O que você faz no computador. Marque um ou mais: a G.W.E.N. adapta as ações da pasta, os apps sugeridos e os exemplos. Seus dados não mudam."
+        >
+          <EnvironmentsSettings
+            selected={env.ids}
+            saving={saving}
+            onChange={(ids) => save({ environments: ids }, 'Ambientes atualizados.')}
+          />
         </Section>
 
         {/* APARÊNCIA */}
@@ -790,6 +806,41 @@ function InterfaceSettings() {
 }
 
 /** Token do GitHub (0.9): para ler Issues de repositórios privados e com limite maior */
+/** Escolha dos ambientes de uso: um ou mais, na ordem em que foram marcados */
+function EnvironmentsSettings({ selected, saving, onChange }) {
+  function toggle(id) {
+    const on = selected.includes(id);
+    if (on && selected.length === 1) return; // sempre fica pelo menos um
+    onChange(on ? selected.filter((x) => x !== id) : [...selected, id]);
+  }
+  return (
+    <div className="grid grid-cols-2 max-[720px]:grid-cols-1 gap-2">
+      {ENVIRONMENT_ORDER.map((id) => {
+        const e = ENVIRONMENTS[id];
+        const on = selected.includes(id);
+        return (
+          <button
+            key={id}
+            type="button"
+            className="card p-3 text-left flex flex-col gap-1"
+            style={on ? { borderColor: 'var(--c-phosphor)' } : undefined}
+            aria-pressed={on}
+            disabled={saving}
+            onClick={() => toggle(id)}
+          >
+            <span className="flex items-center gap-2 font-medium">
+              {e.label}
+              {on && <Check size={13} weight="bold" className="text-phosphor" />}
+            </span>
+            <span className="text-[12px] text-muted">{e.hint}</span>
+            <span className="text-[11px] text-muted">{e.adds}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function GithubSettings() {
   const toast = useToast();
   const [token, setToken] = useState(githubToken);

@@ -29,7 +29,7 @@ async function mergeRows(tables) {
   return added;
 }
 
-const PROFILE_FIELDS = ['theme', 'style', 'mode', 'custom_colors', 'wellness', 'git_bash_path', 'avatar', 'launcher'];
+const PROFILE_FIELDS = ['theme', 'style', 'mode', 'custom_colors', 'wellness', 'git_bash_path', 'avatar', 'launcher', 'environments'];
 
 async function mergeProfile(remote) {
   if (!remote) return;

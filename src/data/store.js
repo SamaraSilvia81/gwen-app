@@ -16,7 +16,7 @@ export const TABLES = ['profiles', 'categories', 'projects', 'sessions', 'breaks
 
 /** Colunas guardadas como texto JSON no SQLite */
 const JSON_COLUMNS = {
-  profiles: ['custom_colors', 'wellness', 'launcher'],
+  profiles: ['custom_colors', 'wellness', 'launcher', 'environments'],
   projects: ['folders', 'links', 'apps'],
   tasks: ['labels', 'github'],
 };

@@ -60,6 +60,7 @@ erDiagram
     text custom_colors "tema do usuário, com light opcional"
     text wellness "configuração do modo saúde"
     text git_bash_path
+    text environments "ids dos ambientes de uso (JSON); nulo = geral"
   }
   CATEGORIES {
     text id PK
@@ -103,7 +104,7 @@ erDiagram
 
 ### $ tabelas
 
-**`profiles`**: uma linha só, com `id = 'local'`, criada na primeira abertura com o nome escolhido. Guarda aparência, modo saúde e o caminho do Git Bash.
+**`profiles`**: uma linha só, com `id = 'local'`, criada na primeira abertura com o nome escolhido. Guarda aparência, modo saúde, o caminho do Git Bash e os ambientes de uso (`environments`, lista de ids em JSON: `geral`, `ti`, `design`, `academico`; nulo vale Geral. Ver [`ADR-015`](decisoes/ADR-015-ambientes-de-uso.md)).
 
 **`categories`**: agrupamento livre. Excluir uma categoria **não apaga** projetos: o repositório limpa o `category_id` deles, e eles aparecem em "Sem categoria".
 
