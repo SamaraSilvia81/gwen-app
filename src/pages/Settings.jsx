@@ -29,7 +29,7 @@ import { DEFAULT_ZOOM, ZOOM_EVENT, ZOOM_STEPS, applyZoom, loadZoom, zoomLabel } 
 import { bubbleEnabled, parallelSessionsEnabled, setBubbleEnabled, setParallelSessions } from '../lib/layout';
 import { ActivitySettings, AppsSettings } from '../components/LauncherSettings';
 import { githubToken, setGithubToken } from '../lib/github';
-import { ENVIRONMENTS, ENVIRONMENT_ORDER } from '../lib/environments';
+import EnvironmentPicker from '../components/EnvironmentPicker';
 import { useEnvironments } from '../lib/useEnvironments';
 import { GithubLogo } from '@phosphor-icons/react';
 import { ORIGIN, storedInstallId, setTelemetry, telemetryAvailable, telemetryEnabled } from '../lib/telemetry';
@@ -813,32 +813,7 @@ function EnvironmentsSettings({ selected, saving, onChange }) {
     if (on && selected.length === 1) return; // sempre fica pelo menos um
     onChange(on ? selected.filter((x) => x !== id) : [...selected, id]);
   }
-  return (
-    <div className="grid grid-cols-2 max-[720px]:grid-cols-1 gap-2">
-      {ENVIRONMENT_ORDER.map((id) => {
-        const e = ENVIRONMENTS[id];
-        const on = selected.includes(id);
-        return (
-          <button
-            key={id}
-            type="button"
-            className="card p-3 text-left flex flex-col gap-1"
-            style={on ? { borderColor: 'var(--c-phosphor)' } : undefined}
-            aria-pressed={on}
-            disabled={saving}
-            onClick={() => toggle(id)}
-          >
-            <span className="flex items-center gap-2 font-medium">
-              {e.label}
-              {on && <Check size={13} weight="bold" className="text-phosphor" />}
-            </span>
-            <span className="text-[12px] text-muted">{e.hint}</span>
-            <span className="text-[11px] text-muted">{e.adds}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <EnvironmentPicker selected={selected} onToggle={toggle} disabled={saving} />;
 }
 
 function GithubSettings() {

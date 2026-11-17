@@ -43,8 +43,8 @@ export function ProfileProvider({ children }) {
       .finally(() => setLoading(false));
   }, [reload]);
 
-  const createProfile = useCallback(async (displayName, avatar = null) => {
-    await profileRepo.create(displayName.trim(), avatar);
+  const createProfile = useCallback(async (displayName, avatar = null, environments = null) => {
+    await profileRepo.create(displayName.trim(), avatar, environments);
     return reload();
   }, [reload]);
 

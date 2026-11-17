@@ -87,7 +87,7 @@ O código já separa bem o que é genérico. O mapeamento de apps tem categorias
 - [`DAT-001`](../DAT-001-modelo-de-dados.md) ganha a coluna `environments` na tabela `profiles` e a migração correspondente.
 - Apps sem protocolo conhecido (Docker, DBeaver, Photoshop, Illustrator, Premiere, Blender) aparecem como sugestão que preenche o nome e pede o caminho do executável.
 - Reconhecer Power BI e outros programas de dados no mapeamento de tempo por programa é uma mudança separada. Ela independe do ambiente e ainda não foi feita.
-- O onboarding da 0.12 passa a ter a escolha de ambientes como primeira pergunta. A configuração por ambiente é feita antes dele, para o onboarding só consumir.
+- O onboarding passa a ter duas etapas: o nome e a foto, e depois a escolha de ambientes, que vale Geral se ficar em branco. A configuração por ambiente foi feita antes dele, para o onboarding só consumir. Quem escolhe "Começar e importar da nuvem" pula a etapa e recebe os ambientes que estiverem na nuvem.
 - Um novo ambiente passa a ser um objeto novo em `src/lib/environments.js`, sem mexer nas telas.
 
 ### $ revisitar quando
