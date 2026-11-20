@@ -33,23 +33,23 @@ const MODE_ICON = { escuro: Moon, claro: Sun, sistema: Desktop };
 /** Linha do topo: onde a pessoa está e o que vem depois. Etapas anteriores voltam ao clicar. */
 function Stepper({ step, onGo }) {
   return (
-    <ol className="flex items-center gap-1.5 mb-9 flex-wrap" aria-label="Etapas da primeira configuração">
+    <ol className="flex items-center gap-2 mb-10 flex-wrap" aria-label="Etapas da primeira configuração">
       {STEPS.map((s, i) => {
         const n = i + 1;
         const done = n < step;
         const current = n === step;
         return (
-          <li key={s.id} className="flex items-center gap-1.5">
+          <li key={s.id} className="flex items-center gap-2">
             <button
               type="button"
               disabled={n > step}
               onClick={() => onGo(n)}
               aria-current={current ? 'step' : undefined}
-              className={`mono text-[12px] px-2.5 py-1 rounded-full border transition-colors ${
+              className={`mono text-[15px] px-4 py-1.5 rounded-full border transition-colors ${
                 current ? 'border-phosphor text-bone' : done ? 'border-rule text-bone/80 hover:text-bone' : 'border-rule text-muted opacity-60'
               }`}
             >
-              {done ? <Check size={11} weight="bold" className="inline mr-1 -mt-px" /> : `${n} `}
+              {done ? <Check size={13} weight="bold" className="inline mr-1.5 -mt-px" /> : `${n} `}
               {s.label}
             </button>
             {i < STEPS.length - 1 && <span className="w-3 h-px" style={{ background: 'var(--c-rule)' }} />}
@@ -71,13 +71,13 @@ function Choice({ on, onClick, icon: Icon, title, children, disabled }) {
       disabled={disabled}
       onClick={onClick}
     >
-      {Icon && <Icon size={22} weight={on ? 'fill' : 'regular'} className={`shrink-0 mt-0.5 ${on ? 'text-phosphor' : 'text-muted'}`} />}
+      {Icon && <Icon size={26} weight={on ? 'fill' : 'regular'} className={`shrink-0 mt-0.5 ${on ? 'text-phosphor' : 'text-muted'}`} />}
       <span className="flex flex-col gap-1 flex-1 min-w-0">
-        <span className="flex items-center gap-2 font-medium text-[16px]">
+        <span className="flex items-center gap-2 font-medium text-[18px]">
           {title}
-          {on && <Check size={14} weight="bold" className="text-phosphor" />}
+          {on && <Check size={16} weight="bold" className="text-phosphor" />}
         </span>
-        {children && <span className="text-[13.5px] text-muted leading-snug">{children}</span>}
+        {children && <span className="text-[15.5px] text-muted leading-snug">{children}</span>}
       </span>
     </button>
   );
@@ -197,28 +197,28 @@ export default function Onboarding() {
 
             {step === 1 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6">
+                <p className="mono text-[19px] text-muted mb-6">
                   $ gwen <span className="text-bone font-semibold">--boas-vindas</span>
                 </p>
                 <h1 className="font-display font-bold leading-[0.95] tracking-[-0.04em] text-[clamp(40px,4.4vw,58px)]">
                   Como devemos
                   <span className="block onb-out">te chamar?</span>
                 </h1>
-                <p className="text-[16px] text-muted mt-5 mb-9 leading-relaxed">
+                <p className="text-[19px] text-muted mt-5 mb-9 leading-relaxed">
                   Olá, eu sou a <span className="text-bone font-medium">G.W.E.N.</span>, sua assistente desktop. Não é preciso ter conta nem
                   senha. São <span className="text-bone">6 passos rápidos</span>, em menos de um minuto, e dá para pular o que quiser: tudo muda depois em Ajustes.
                 </p>
 
                 <div className="mb-6">
-                  <span className="field-label block mb-2.5 !text-[12.5px]">Foto (opcional)</span>
+                  <span className="field-label block mb-2.5 !text-[15px]">Foto (opcional)</span>
                   <AvatarPicker avatar={avatar} name={name} onChange={setAvatar} disabled={busy} />
                 </div>
 
                 <label className="field mb-2">
-                  <span className="field-label !text-[12.5px]">Seu nome</span>
+                  <span className="field-label !text-[15px]">Seu nome</span>
                   <input
                     className="input"
-                    style={{ height: 50, padding: '0 16px', fontSize: 16 }}
+                    style={{ height: 54, padding: '0 18px', fontSize: 18 }}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Como você prefere ser chamado(a)?"
@@ -230,14 +230,14 @@ export default function Onboarding() {
 
             {step === 2 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6">
+                <p className="mono text-[19px] text-muted mb-6">
                   $ gwen <span className="text-bone font-semibold">--ambientes</span>
                 </p>
                 <h1 className="font-display font-bold leading-[0.95] tracking-[-0.04em] text-[clamp(36px,4vw,52px)]">
                   O que você faz
                   <span className="block onb-out">por aqui?</span>
                 </h1>
-                <p className="text-[16px] text-muted mt-5 mb-7 leading-relaxed">
+                <p className="text-[19px] text-muted mt-5 mb-7 leading-relaxed">
                   {firstName ? `Prazer, ${firstName}. ` : ''}Marque um ou mais. Eu adapto as pastas, os apps sugeridos e os exemplos. Sem escolher, começo no Geral.
                 </p>
                 <EnvironmentPicker selected={environments} onToggle={toggle(setEnvironments)} disabled={busy} large />
@@ -246,16 +246,16 @@ export default function Onboarding() {
 
             {step === 3 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6">
+                <p className="mono text-[19px] text-muted mb-6">
                   $ gwen <span className="text-bone font-semibold">--aparencia</span>
                 </p>
                 <h1 className="font-display font-bold leading-[0.95] tracking-[-0.04em] text-[clamp(36px,4vw,52px)]">
                   Como você quer
                   <span className="block onb-out">me ver?</span>
                 </h1>
-                <p className="text-[16px] text-muted mt-5 mb-7 leading-relaxed">A mudança aparece na hora. Cores personalizadas ficam em Ajustes, Aparência.</p>
+                <p className="text-[19px] text-muted mt-5 mb-7 leading-relaxed">A mudança aparece na hora. Cores personalizadas ficam em Ajustes, Aparência.</p>
 
-                <span className="field-label block mb-2.5 !text-[12.5px]">Modo</span>
+                <span className="field-label block mb-2.5 !text-[15px]">Modo</span>
                 <div className="grid grid-cols-3 max-[720px]:grid-cols-1 gap-3 mb-6">
                   {Object.entries(MODES).map(([id, m]) => (
                     <Choice
@@ -271,7 +271,7 @@ export default function Onboarding() {
                   ))}
                 </div>
 
-                <span className="field-label block mb-2.5 !text-[12.5px]">Estilo</span>
+                <span className="field-label block mb-2.5 !text-[15px]">Estilo</span>
                 <div className="grid grid-cols-2 max-[720px]:grid-cols-1 gap-3">
                   {Object.entries(STYLES).map(([id, st]) => (
                     <Choice
@@ -292,14 +292,14 @@ export default function Onboarding() {
 
             {step === 4 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6">
+                <p className="mono text-[19px] text-muted mb-6">
                   $ gwen <span className="text-bone font-semibold">--apps</span>
                 </p>
                 <h1 className="font-display font-bold leading-[0.95] tracking-[-0.04em] text-[clamp(36px,4vw,52px)]">
                   Quais apps eu
                   <span className="block onb-out">abro pra você?</span>
                 </h1>
-                <p className="text-[16px] text-muted mt-5 mb-7 leading-relaxed">
+                <p className="text-[19px] text-muted mt-5 mb-7 leading-relaxed">
                   Sugestões para {traits.ids.map((id) => ENVIRONMENTS[id].label).join(' + ')}. Eu abro pelo Início, pelo Ctrl + K ou junto com um projeto. Precisam estar instalados.
                 </p>
                 <div className="grid grid-cols-2 max-[720px]:grid-cols-1 gap-3">
@@ -308,7 +308,7 @@ export default function Onboarding() {
                   ))}
                 </div>
                 {hasPathApps && (
-                  <p className="text-[13px] text-muted mt-4 leading-relaxed">
+                  <p className="text-[15px] text-muted mt-4 leading-relaxed">
                     Os que pedem o caminho do executável (como Docker, DBeaver e Photoshop) você adiciona depois em Ajustes, Apps.
                   </p>
                 )}
@@ -317,14 +317,14 @@ export default function Onboarding() {
 
             {step === 5 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6">
+                <p className="mono text-[19px] text-muted mb-6">
                   $ gwen <span className="text-bone font-semibold">--saude</span>
                 </p>
                 <h1 className="font-display font-bold leading-[0.95] tracking-[-0.04em] text-[clamp(36px,4vw,52px)]">
                   Quer que eu cuide
                   <span className="block onb-out">de você?</span>
                 </h1>
-                <p className="text-[16px] text-muted mt-5 mb-7 leading-relaxed">
+                <p className="text-[19px] text-muted mt-5 mb-7 leading-relaxed">
                   O modo saúde manda lembretes no meio do trabalho. Eles contam o tempo que você trabalhou, não o relógio, e param nas pausas.
                 </p>
                 <div className="grid grid-cols-2 max-[720px]:grid-cols-1 gap-3">
@@ -344,10 +344,10 @@ export default function Onboarding() {
 
             {step === 6 && (
               <>
-                <p className="mono text-[17px] text-muted mb-6 anim-rise" style={{ animationFillMode: 'both' }}>
+                <p className="mono text-[19px] text-muted mb-6 anim-rise" style={{ animationFillMode: 'both' }}>
                   $ gwen <span className="text-bone font-semibold">--iniciar</span>
                 </p>
-                <div className="card p-5 mono text-[14px] leading-loose">
+                <div className="card p-5 mono text-[16px] leading-loose">
                   {summary.map(([k, v], i) => (
                     <p key={k} className="anim-rise" style={{ animationDelay: `${150 + i * 170}ms`, animationFillMode: 'both' }}>
                       <span className="text-phosphor">✓</span> <span className="text-muted">{k}:</span> <span className="text-bone">{v}</span>
@@ -358,8 +358,8 @@ export default function Onboarding() {
                   </p>
                 </div>
                 <div className="card p-4 mt-6 flex gap-3.5">
-                  <HardDrives size={20} className="text-phosphor shrink-0 mt-0.5" />
-                  <p className="text-[14px] text-muted leading-relaxed">
+                  <HardDrives size={24} className="text-phosphor shrink-0 mt-0.5" />
+                  <p className="text-[16px] text-muted leading-relaxed">
                     Vou guardar seus projetos, tempos e pausas aqui, <span className="text-bone">neste computador</span>. Seu nome e sua foto ficam
                     registrados com a G.W.E.N., junto da versão e do sistema, para sabermos quem está usando. Dá para desligar em Ajustes.
                   </p>
@@ -367,12 +367,12 @@ export default function Onboarding() {
               </>
             )}
 
-            {error && <p className="mt-4 text-[14px] text-ember">{error}</p>}
+            {error && <p className="mt-4 text-[15px] text-ember">{error}</p>}
 
             <div className="flex items-center gap-3 mt-9">
               {step > 1 && (
-                <button type="button" className="btn btn-quiet" onClick={() => setStep(step - 1)} disabled={busy}>
-                  <ArrowLeft size={15} />
+                <button type="button" className="btn btn-ghost btn-lg min-w-[140px] text-[15px]" onClick={() => setStep(step - 1)} disabled={busy}>
+                  <ArrowLeft size={16} weight="bold" />
                   <Label>Voltar</Label>
                 </button>
               )}

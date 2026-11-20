@@ -19,20 +19,20 @@ export default function EnvironmentPicker({ selected, onToggle, disabled = false
           <button
             key={id}
             type="button"
-            className={`card text-left flex items-start gap-3 ${large ? 'p-5 min-h-[150px]' : 'p-3'}`}
+            className={`card text-left flex items-start gap-3 ${large ? 'p-5 min-h-[170px]' : 'p-3'}`}
             style={on ? { borderColor: 'var(--c-phosphor)' } : undefined}
             aria-pressed={on}
             disabled={disabled}
             onClick={() => onToggle(id)}
           >
-            {large && <Icon size={28} weight={on ? 'fill' : 'regular'} className={`shrink-0 mt-0.5 ${on ? 'text-phosphor' : 'text-muted'}`} />}
+            {large && <Icon size={32} weight={on ? 'fill' : 'regular'} className={`shrink-0 mt-0.5 ${on ? 'text-phosphor' : 'text-muted'}`} />}
             <span className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <span className={`flex items-center gap-2 font-medium ${large ? 'text-[18px]' : ''}`}>
+              <span className={`flex items-center gap-2 font-medium ${large ? 'text-[21px]' : ''}`}>
                 {e.label}
-                {on && <Check size={large ? 15 : 13} weight="bold" className="text-phosphor" />}
+                {on && <Check size={large ? 17 : 13} weight="bold" className="text-phosphor" />}
               </span>
-              <span className={`${large ? 'text-[14px]' : 'text-[12px]'} text-muted`}>{e.hint}</span>
-              <span className={`${large ? 'text-[13px] leading-snug' : 'text-[11px]'} text-muted`}>{e.adds}</span>
+              <span className={`${large ? 'text-[16px]' : 'text-[12px]'} text-muted`}>{e.hint}</span>
+              <span className={`${large ? 'text-[15px] leading-snug' : 'text-[11px]'} text-muted`}>{e.adds}</span>
             </span>
           </button>
         );
