@@ -11,7 +11,7 @@
 ![Status](https://img.shields.io/badge/status-beta-171717?style=for-the-badge)
 ![Escopo](https://img.shields.io/badge/escopo-pessoal-171717?style=for-the-badge)
 ![Plataforma](https://img.shields.io/badge/plataforma-windows-171717?style=for-the-badge)
-![Versão](https://img.shields.io/badge/versão-0.9.1-171717?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.9.2-171717?style=for-the-badge)
 ![Licença](https://img.shields.io/badge/licença-proprietária-171717?style=for-the-badge)
 
 ![Tauri](https://img.shields.io/badge/Tauri%202-171717?style=flat-square&logo=tauri&logoColor=FFC131)
@@ -181,7 +181,7 @@ yarn app:build
 Ao terminar, o instalador fica em:
 
 ```text
-src-tauri/target/release/bundle/nsis/GWEN_0.9.1_x64-setup.exe
+src-tauri/target/release/bundle/nsis/GWEN_0.9.2_x64-setup.exe
 ```
 
 Rode o `.exe` e instale (para atualizar, instale a versão nova por cima). A G.W.E.N. aparece no menu Iniciar como qualquer outro programa e pode ser fixada na barra de tarefas. Os dados ficam em `%APPDATA%\sh.devs-sam.gwen\` e não são tocados ao reinstalar, atualizar ou desinstalar.
