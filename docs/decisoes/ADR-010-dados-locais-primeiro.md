@@ -25,6 +25,7 @@
 3. [Alternativas consideradas](#-alternativas-consideradas)
 4. [Consequências](#-consequências)
 5. [Revisitar quando](#-revisitar-quando)
+6. [Nota de 19/11/2026: registro de instalação](#-nota-de-19112026-registro-de-instalação)
 
 ---
 
@@ -80,6 +81,24 @@ flowchart LR
 
 - A sincronização entrar: aí é preciso decidir o modelo de conflito (última escrita vence por registro é o mais simples) e se a nuvem é da autora (assinatura) ou da pessoa (Supabase próprio).
 - Os dados de alguém crescerem a ponto de carregar tudo em memória pesar: os filtros descem para SQL, sem mudar a interface do repositório.
+
+### $ nota de 19/11/2026: registro de instalação
+
+Em 17/11/2026 foi decidido que cada instalação envia um **registro de instalação** ao Supabase da autora, para contar quantas pessoas usam a G.W.E.N. e em qual versão. Esse registro é a **única exceção** à regra "os dados ficam no computador" desta ADR.
+
+| Sai do computador (registro de instalação) | Continua só no computador |
+|---|---|
+| ID da instalação | Projetos |
+| Versão do app | Sessões de trabalho |
+| Sistema operacional | Mapeamento de uso (apps e jogos) |
+| Nome | Tarefas |
+| Foto | Pausas, modo saúde e aparência |
+
+Consequências:
+
+- A promessa de privacidade não pode dizer que "tudo fica no computador". O texto da política de privacidade (versão 0.12) e a landing precisam listar o que sai e o que não sai, como na tabela acima.
+- O registro serve só para contagem e controle de plano. Não carrega conteúdo de trabalho.
+- O envio do nome e da foto deve ser revisto antes do lançamento público: para apenas contar instalações e versões bastam ID, versão e sistema.
 
 ---
 

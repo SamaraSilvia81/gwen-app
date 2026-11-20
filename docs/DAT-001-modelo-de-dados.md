@@ -112,8 +112,8 @@ erDiagram
 
 ```json
 "folders": [
-  { "label": "landing", "path": "C:\\Dev\\checkai-lp", "actions": ["vscode", "gitbash"], "action": "vscode", "on_launch": true, "front": "Landing" },
-  { "label": "plataforma", "path": "C:\\Dev\\checkai-app", "actions": ["vscode"], "action": "vscode", "on_launch": true, "front": "Plataforma" }
+  { "label": "landing", "path": "C:\\Dev\\meu-site", "actions": ["vscode", "gitbash"], "action": "vscode", "on_launch": true, "front": "Landing" },
+  { "label": "plataforma", "path": "C:\\Dev\\meu-app", "actions": ["vscode"], "action": "vscode", "on_launch": true, "front": "Plataforma" }
 ],
 "links": [
   { "label": "GitHub", "url": "https://github.com/...", "on_launch": false, "front": "" }

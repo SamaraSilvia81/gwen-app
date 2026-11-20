@@ -15,7 +15,7 @@
 | Status | Aceita |
 | Decisão de | Samara Silvia |
 | Redigido por | Samara Silvia |
-| Referências | [`FBK-001`](../feedbacks/FBK-001-feedback-uso-beta-0.9.md), [`ADR-010`](ADR-010-dados-locais-primeiro.md), [`ADR-013`](ADR-013-sessoes-em-paralelo-e-mapeamento-local.md), [`ADR-014`](ADR-014-tarefas-locais-e-issues-somente-leitura.md) |
+| Referências | `FBK-001` (feedback interno de uso), [`ADR-010`](ADR-010-dados-locais-primeiro.md), [`ADR-013`](ADR-013-sessoes-em-paralelo-e-mapeamento-local.md), [`ADR-014`](ADR-014-tarefas-locais-e-issues-somente-leitura.md) |
 | Histórico | [ver alterações](https://github.com/SamaraSilvia81/gwen-app/commits/main/docs/decisoes/ADR-015-ambientes-de-uso.md) |
 
 **Sumário**
@@ -33,7 +33,7 @@
 
 A G.W.E.N. nasceu para TI. Ao criar um projeto, a pasta já vem marcada para abrir no VS Code, o campo "Comando ao começar" pede algo como `yarn dev`, os exemplos de texto citam `CuraData` e `C:\Projetos`, e as Issues do GitHub aparecem nas tarefas. Isso não serve para quem estuda, desenha ou só usa o computador para trabalhar.
 
-O [`FBK-001`](../feedbacks/FBK-001-feedback-uso-beta-0.9.md) já registra o desejo de expandir para Acadêmico, Design e Geral, com o mesmo núcleo para todos (sessões, tempo, tarefas, pausa). O roadmap pede que o onboarding da 0.12 traga exemplos que não pressupõem programador. Faltava definir o que muda em cada ambiente.
+O `FBK-001` (feedback interno de uso) já registra o desejo de expandir para Acadêmico, Design e Geral, com o mesmo núcleo para todos (sessões, tempo, tarefas, pausa). O roadmap pede que o onboarding da 0.12 traga exemplos que não pressupõem programador. Faltava definir o que muda em cada ambiente.
 
 O código já separa bem o que é genérico. O mapeamento de apps tem categorias como design, escrita, trabalho e conversa. O lançador abre qualquer programa. A linha de status do Git só aparece quando a pasta é um repositório. Sobra um conjunto pequeno de pontos que pressupõem TI.
 
